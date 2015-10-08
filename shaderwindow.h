@@ -14,13 +14,17 @@ public:
   void render() Q_DECL_OVERRIDE;
   void update() Q_DECL_OVERRIDE;
 
+protected:
+
+  void keyPressEvent(QKeyEvent* event) Q_DECL_OVERRIDE;
+
 private:
   GLuint loadShader(GLenum type, const char *source);
 
   GLuint m_vtxPosAttr;
   GLuint m_vtxUVAttr;
 
-  //GLuint m_matrixUniform;
+  GLuint m_matrixUniform;
 
   GLuint m_resXUniform, m_resYUniform;
   GLuint m_aspectUniform;
@@ -29,6 +33,9 @@ private:
   GLuint m_center;
   GLuint m_zoom;
   GLuint m_c;
+
+  QVector3D m_camPos;
+  QQuaternion m_camRot;
 
   QOpenGLShaderProgram *m_program;
   int m_frame;

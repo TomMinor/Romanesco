@@ -1,6 +1,7 @@
 #include "shaderwindow.h"
 #include <QScreen>
 #include <QDebug>
+#include <QKeyEvent>
 #include <unistd.h>
 #include <math.h>
 
@@ -34,12 +35,12 @@ void ShaderWindow::initialize()
   m_zoom = m_program->uniformLocation("zoom");
   m_c = m_program->uniformLocation("c");
 
-  m_resXUniform = m_program->uniformLocation("resX");
-  m_resYUniform = m_program->uniformLocation("resY");
+  m_resXUniform = m_program->uniformLocation("resx");
+  m_resYUniform = m_program->uniformLocation("resy");
   m_aspectUniform = m_program->uniformLocation("aspect");
   m_timeUniform = m_program->uniformLocation("time");
 
-  //m_matrixUniform = m_program->uniformLocation("matrix");
+  m_matrixUniform = m_program->uniformLocation("matrix");
 }
 
 void ShaderWindow::update()
@@ -59,9 +60,10 @@ void ShaderWindow::render()
   m_program->bind();
 
   QMatrix4x4 matrix;
-  matrix.perspective(60.0f, 4.0f/3.0f, 0.1f, 100.0f);
-  matrix.translate(0, 0, -2);
-  matrix.rotate(100.0f * m_frame / screen()->refreshRate(), 0, 1, 0);
+  //matrix.perspective(60.0f, 4.0f/3.0f, 0.1f, 100.0f);
+  matrix.translate(m_camPos);
+  matrix.rotate(m_camRot);
+  m_program->setUniformValue(m_matrixUniform, matrix);
 
   QVector2D center(0.0f, 0.0f);
   m_program->setUniformValueArray(m_center, &center, 2);
@@ -78,10 +80,8 @@ void ShaderWindow::render()
   float time = (float)m_frame / 32.0;
   m_program->setUniformValue(m_timeUniform, time);
 
-  qDebug() << m_frame;
-
   m_program->setUniformValue(m_zoom, float( ( (sin(m_frame / 32.0) + 1.5 ) * 0.5 ) * 3.0 + 1.0) );
-  //m_program->setUniformValue(m_matrixUniform, matrix);
+
 
   GLfloat vertices[] = {
     -1,	-1, 0,
@@ -123,4 +123,19 @@ GLuint ShaderWindow::loadShader(GLenum type, const char *source)
   glShaderSource(shader, 1, &source, 0);
   glCompileShader(shader);
   return shader;
+}
+
+void ShaderWindow::keyPressEvent(QKeyEvent* event)
+{
+  const float offset = 0.01f;
+
+  if( event->key() ==  Qt::Key_W ) { m_camPos.setX( m_camPos.x() + offset ); }
+  if( event->key() ==  Qt::Key_S ) { m_camPos.setX( m_camPos.x() - offset ); }
+  if( event->key() ==  Qt::Key_A ) { m_camPos.setY( m_camPos.y() + offset ); }
+  if( event->key() ==  Qt::Key_D ) { m_camPos.setY( m_camPos.y() - offset ); }
+
+  if( event->key() ==  Qt::Key_Left )   { m_camRot.setX( m_camRot.x() + offset ); }
+  if( event->key() ==  Qt::Key_Right )  { m_camRot.setX( m_camRot.x() - offset ); }
+  if( event->key() ==  Qt::Key_Up )     { m_camRot.setY( m_camRot.y() + offset ); }
+  if( event->key() ==  Qt::Key_Down )   { m_camRot.setY( m_camRot.y() - offset ); }
 }
