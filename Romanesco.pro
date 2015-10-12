@@ -11,17 +11,19 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 TARGET = Romanesco
 TEMPLATE = app
 
-SOURCES += main.cpp\
-        mainwindow.cpp \
-    openglwindow.cpp \
-    shaderwindow.cpp
+SOURCES += src/*.cpp
 
-HEADERS  += mainwindow.h \
-    openglwindow.h \
-    shaderwindow.h
+HEADERS  += include/*.h
 
-FORMS    += mainwindow.ui
+INCLUDEPATH += include/
+
+OBJECTS_DIR = .obj/
+MOC_DIR = .moc/
+UI_DIR = .ui/
+RCC_DIR = .rcc/
+
+FORMS    += ui/mainwindow.ui
 
 DISTFILES += \
-    raymarch.frag \
-    raymarch.vert
+    shaders/raymarch.frag \
+    shaders/raymarch.vert

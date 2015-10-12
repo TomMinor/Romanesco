@@ -1,0 +1,137 @@
+\documentclass[11pt,a4paper,final,notitlepage]{report}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{fullpage}
+\usepackage{graphicx}
+\usepackage{grffile}
+\usepackage{url}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{textcomp}
+\usepackage{listings}
+\renewcommand{\baselinestretch}{1.25} %Increase 
+
+\makeatletter
+\newcommand*{\toccontents}{\@starttoc{toc}}
+\makeatother
+
+\newcommand{\noNumberChapter}[2]{
+    \setcounter{chapter}{#1}
+    \setcounter{section}{0}
+    \chapter*{#2}
+    \addcontentsline{toc}{chapter}{#2}
+}
+
+\begin{document}
+
+\title{ Major Project Report }
+
+\author{ Tom Minor - Level H\\
+		Major Project\\
+		Bournemouth University - NCCA}
+
+\maketitle
+
+\renewcommand{\abstractname}{Project Overview}
+\begin{abstract}
+
+\textit{Main Aspects}
+\begin{enumerate}
+\item Fractal Renderer
+\item FX Work
+\item Pipeline
+\end{enumerate}
+
+\end{abstract}
+
+\toccontents
+
+
+\noNumberChapter{1}{Initial Research}
+\section{Trying out existing stuff}
+
+Mandelbulb in Houdini
+
+\lstset{language=C++, 
+		keywordstyle=\color{blue}}
+\begin{lstlisting}
+int iter = chi("iterations");
+int n = chi("n");
+float limit = chf("limit");
+
+vector Z = ptransform("space:current", "space:object", @P);
+
+for(int i = 0; i < iter; i += 1)
+{
+    /// Convert to spherical coords ///
+
+    // Precompute component squares
+    float xpow = Z.x * Z.x;
+    float ypow = Z.y * Z.y;
+    float zpow = Z.z * Z.z;
+    
+    // Spherical coords = (r, theta, phi)
+    float r = sqrt(xpow + ypow + zpow);
+    float theta = atan2(sqrt(xpow + ypow), Z.z);
+    float phi = atan2(Z.y, Z.x);
+    
+    /// Exponentiation term (raise {x,y,z} to nth power) ///
+    // 
+    /* -> simplified form
+       {x,y,z}^n = r^n { sin(theta*n) * cos(phi*n), 
+                         sin(theta*n) * sin(phi*n), 
+                         cos(theta*n) }
+                         
+       -> expanded form
+       {x,y,z}^n = { r^n * sin(theta*n) * cos(phi*n), 
+                     r^n * sin(theta*n) * sin(phi*n), 
+                     r^n * cos(theta*n) }
+    */
+    float tmpPow = pow(r, n);
+    float tmp = tmpPow * sin(theta * n);
+    
+    vector newZ = set(  
+        tmp * cos(phi * n),
+        tmp * sin(phi * n),
+        tmpPow * cos(theta * n)
+    );
+   
+    
+   
+    Z += newZ;
+}
+
+if( length(Z) < limit) {
+    @density = 1.0;
+} else {
+    @density = 0.0;
+}
+\end{lstlisting}
+
+\begin{center}
+\includegraphics[scale=0.2]{"images/houdini_mandelbulb"}
+\end{center}
+
+
+\section{Render Tests}
+
+\section{Reading the documentation and tutorials}
+
+Superquads \cite{superquad}
+
+\noNumberChapter{2}{Production}
+\section{Initial Tests}
+
+\section{Results}
+
+\section{Unforeseen Problems}
+
+\noNumberChapter{3}{Conclusion}
+
+\nocite{*}
+
+\bibliographystyle{plain-annote}
+\bibliography{bib_icereport}
+\end{document}
