@@ -3,6 +3,9 @@ const int iterations = 100;
 precision highp float;
 
 varying vec2 texcoord;
+varying vec3 v_in;
+varying vec3 EP_in;
+
 
 uniform sampler2D uSampler;
 uniform vec2 center;
@@ -14,13 +17,11 @@ uniform int resy;
 uniform float aspect;
 uniform float time;
 
-uniform mat4 matrix;
-
 const float epsilon = 0.0001;
-const float fov = 120.0;
+const float fov = 75.0;
 
 // p = eye + right*u + up*v;
-vec3 eye = vec3( matrix * vec4(0, 0.5, -2, 1.0) );
+vec3 eye = vec3(0, 0.5, -1.25);
 vec3 up	= vec3(0, 1, 0);
 vec3 right = vec3(1, 0, 0);
 vec3 forward = normalize(cross(right, up));
@@ -39,7 +40,7 @@ vec4 shade(vec3 p, vec3 n)
 {
   const vec3 lightPos = vec3( .5, .5, -2.0 );
 
-  return max(0.0, dot( normalize(lightPos - p ), n)) * 16.0;
+  return 0.2 + max(0.0, dot( normalize(lightPos - p ), n)) * 16.0;
 }
 
 vec3 rotate( vec3 pos, float x, float y, float z )
@@ -96,19 +97,29 @@ void main(void)
   vec3 rayOrigin = eye;
   vec3 rayDirection = normalize(forward*fov_ratio + right*u + up*v);
 
-  const int maxSteps = 64;
+  //rayOrigin = vec3( matrix * vec4(rayOrigin, 1.0) );
+  //rayDirection = vec3( matrix * vec4(rayDirection, 1.0) );
+
+  rayOrigin = EP_in;
+  rayDirection = v_in - rayOrigin;
+
+  const int maxSteps = 128;
 
   float t = 0.0;
 
   float d = 0.0;
   vec3 r = vec3(0,0,0);
+
+  int a = 0;
   for(int i = 0; i < maxSteps; ++i)
   {
     r = rayOrigin + (rayDirection * t);
     d = hit(r);
+    //d = sdSphere(r, 1.0);
 
     if( d < epsilon )
     {
+      a = i;
       break;
     }
 
@@ -119,5 +130,7 @@ void main(void)
                  hit( r + eps.yxz ) - hit( r - eps.yxz ),
                  hit( r + eps.zyx ) - hit( r - eps.zyx ) );
 
-  gl_FragColor = shade(r,n);
+  //gl_FragColor = shade(r,n);
+  gl_FragColor = a / (float)maxSteps;
+  //gl_FragColor = vec4(rayDirection, 1.0);
 }

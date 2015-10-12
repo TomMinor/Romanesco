@@ -19,8 +19,8 @@ ShaderWindow::~ShaderWindow()
 void ShaderWindow::initialize()
 {
   m_program = new QOpenGLShaderProgram(this);
-  m_program->addShaderFromSourceFile(QOpenGLShader::Vertex, "/home/tom/src/romanesco/Romanesco/raymarch.vert");
-  m_program->addShaderFromSourceFile(QOpenGLShader::Fragment, "/home/tom/src/romanesco/Romanesco/raymarch.frag");
+  m_program->addShaderFromSourceFile(QOpenGLShader::Vertex, "shaders/raymarch.vert");
+  m_program->addShaderFromSourceFile(QOpenGLShader::Fragment, "shaders/raymarch.frag");
 
   if(!m_program->link())
   {
@@ -129,13 +129,15 @@ void ShaderWindow::keyPressEvent(QKeyEvent* event)
 {
   const float offset = 0.01f;
 
-  if( event->key() ==  Qt::Key_W ) { m_camPos.setX( m_camPos.x() + offset ); }
-  if( event->key() ==  Qt::Key_S ) { m_camPos.setX( m_camPos.x() - offset ); }
-  if( event->key() ==  Qt::Key_A ) { m_camPos.setY( m_camPos.y() + offset ); }
-  if( event->key() ==  Qt::Key_D ) { m_camPos.setY( m_camPos.y() - offset ); }
+  if( event->key() ==  Qt::Key_A ) { m_camPos.setX( m_camPos.x() + offset ); }
+  if( event->key() ==  Qt::Key_D ) { m_camPos.setX( m_camPos.x() - offset ); }
+  if( event->key() ==  Qt::Key_W ) { m_camPos.setY( m_camPos.y() + offset ); }
+  if( event->key() ==  Qt::Key_S ) { m_camPos.setY( m_camPos.y() - offset ); }
 
-  if( event->key() ==  Qt::Key_Left )   { m_camRot.setX( m_camRot.x() + offset ); }
-  if( event->key() ==  Qt::Key_Right )  { m_camRot.setX( m_camRot.x() - offset ); }
-  if( event->key() ==  Qt::Key_Up )     { m_camRot.setY( m_camRot.y() + offset ); }
-  if( event->key() ==  Qt::Key_Down )   { m_camRot.setY( m_camRot.y() - offset ); }
+  if( event->key() ==  Qt::Key_Up )   { m_camRot.setX( m_camRot.x() + offset ); }
+  if( event->key() ==  Qt::Key_Down )  { m_camRot.setX( m_camRot.x() - offset ); }
+  if( event->key() ==  Qt::Key_Left )     { m_camRot.setY( m_camRot.y() + offset ); }
+  if( event->key() ==  Qt::Key_Right )   { m_camRot.setY( m_camRot.y() - offset ); }
+
+  renderNow();
 }
