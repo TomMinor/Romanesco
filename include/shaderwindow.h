@@ -24,18 +24,22 @@ private:
   GLuint m_vtxPosAttr;
   GLuint m_vtxUVAttr;
 
-  GLuint m_matrixUniform;
+  GLuint m_rotateMatrixUniform, m_transMatrixUniform;
 
   GLuint m_resXUniform, m_resYUniform;
   GLuint m_aspectUniform;
   GLuint m_timeUniform;
+
+  GLuint m_pitchUniform, m_yawUniform, m_posUniform, m_rotUniform;
+
+  GLuint m_matrix, m_normalMatrix;
 
   GLuint m_center;
   GLuint m_zoom;
   GLuint m_c;
 
   QVector3D m_camPos;
-  QQuaternion m_camRot;
+  QVector3D m_camRot;
 
   QOpenGLShaderProgram *m_program;
   int m_frame;
