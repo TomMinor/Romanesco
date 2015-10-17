@@ -121,7 +121,7 @@ void OpenGLWindow::timerEvent(QTimerEvent *_event)
   {
     if (isExposed())
     {
-      //renderNow();
+      renderNow();
     }
   }
 }
