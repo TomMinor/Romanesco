@@ -31,38 +31,166 @@ vec3 rotate( vec3 pos, float x, float y, float z )
   return rotX * rotY * rotZ * pos;
 }
 
-float hit( vec3 r )
+vec3 bulbPower(in vec3 z, float p)
 {
-  //r = rotate( r, sin(time), cos(time), 0.0 );
-  vec3 zn = vec3( r.xyz );
-  float rad = 0.0;
-  float hit = 0.0;
-  float p = 8.0;
-  float d = 1.0;
-  for( int i = 0; i < 10; i++ )
+  vec3 zn = z;
+  float rad = length(zn);
+
+  // convert to polar coords
+  float th = acos(zn.z / rad);
+  float phi = atan( zn.y, zn.x );
+  //d = pow(rad, p - 1.0) * (p - 1.0) * d + 1.0;
+
+  // scale and rotate the point
+  float zr = pow(rad, p);
+  th = th * p;
+  phi = phi * p;
+
+  // Convert to cartesian
+  //float sint = sin(th);
+  zn = zr * vec3( sin(th) * cos(phi),
+                  sin(th) * sin(phi),
+                  cos(th));
+
+  return z;
+}
+
+int last = 0;
+float escapeLength(in vec3 pos)
+{
+  const int iterations = 10;
+  const float bailout = 2.0;
+  const float p = 8.0;
+
+  vec3 z = pos;
+
+  for(int i = 1; i < iterations; i++)
   {
-      rad = length( zn );
+    z = bulbPower(z, p) + pos;
 
-      if( rad > 2.0 )
-      {
-        hit = 0.5 * log(rad) * rad / d;
-      }else{
-
-      float th = atan( length( zn.xy ), zn.z );
-      float phi = atan( zn.y, zn.x );
-      float rado = pow(rad,8.0);
-      d = pow(rad, 7.0) * 7.0 * d + 1.0;
-
-      float sint = sin( th * p );
-      zn.x = rado * sint * cos( phi * p );
-      zn.y = rado * sint * sin( phi * p );
-      zn.z = rado * cos( th * p ) ;
-      zn += r;
-      }
-
+    float r2 = dot(z,z);
+    if( (r2 > bailout && last == 0) || (i==last) )
+    {
+      last = i;
+      break;
+    }
   }
 
-  return hit;
+  return length(z);
+}
+
+float gradient = 0.0f;
+const float EPS = 0.00001f;
+float DE(vec3 p)
+{
+  vec3 xDir = vec3(1, 0, 0);
+  vec3 yDir = vec3(0, 1, 0);
+  vec3 zDir = vec3(0, 0, 1);
+
+  const float bailout = 2.0;
+
+  last = 0;
+  float r = escapeLength(p);
+  if( r*r > bailout) { return 0.0; }
+
+  gradient = (vec3(escapeLength(p + xDir*EPS), escapeLength(p + yDir*EPS), escapeLength(p + zDir*EPS)) -r)/EPS;
+
+  return 0.5 * r * log(r) / length(gradient);
+}
+
+float mandelbulb( vec3 w, float min_dist )
+{
+  // mat4 rotate;
+  // w = vec4(w, 1.0) * rotate; // How to rotate ~the object~
+
+  const int iterations = 10;
+  const float bailout = 2.0;
+
+  //r = rotate( r, sin(time), cos(time), 0.0 );
+  vec3 zn = vec3( w.xyz );
+//  float rad = 0.0;
+//  float hit = 0.0;
+  float p = 8.0;
+  float pd = p - 1.0; // Derivative power
+//  float d = 1.0;
+
+  float c = w;
+  float r = length(w);
+  float th = atan(w.y, w.x);
+  float ph = asin(w.z / r);
+
+  // z orbit distance for AO shading
+  if( r < min_dist ) min_dist = r;
+
+  // Derivative
+  vec3 dw;
+  float ph_dw = 0.0;
+  float th_dw = 0.0;
+  float r_dw = 1.0;
+  float powR, powRsin;
+
+  for( int i = 0; i < iterations; i++ )
+  {
+      // Calculate derivative
+      powR = p * pow(r, pd);
+      powRsin = powR * r_dw * sin(ph_dw * pd*ph);
+      dw = vec3( powRsin * cos(th_dw + pd*th) + 1.0,
+                 powRsin * sin(th_dw + pd*th),
+                 powR * r_dw * cos(ph_dw + pd*ph)
+                );
+
+      // Polar coords of derivative dw
+      r_dw = length(dw);
+      th_dw = atan(dw.y, dw.x);
+      ph_dw = acos(dw.z / r_dw);
+
+      // Z iteration
+      powR = pow(r, p);
+      powRsin = sin(p* ph);
+      w = powR * vec3(  powRsin * cos(p * th),
+                        powRsin * sin(p * th),
+                        cos(p * ph)
+                      );
+      w += c;
+
+      // The triplex power formula applies the azimuthal angle rotation about the y-axis.
+      // Constrain this to get some funky effects
+      //if()
+
+      r = length(w);
+      if( r < min_dist) min_dist = r;
+      if( r > bailout) break;
+
+      th = atan(w.y, w.x);
+      ph = acos(w.z / r);
+
+
+//      rad = length( zn );
+//      if( rad > bailout ) {
+//        hit = 0.5 * log(rad) * rad / d;
+//        break;
+//      }
+
+//      // convert to polar coords
+//      float th = acos(zn.z / rad);
+//      float phi = atan( zn.y, zn.x );
+//      d = pow(rad, p - 1.0) * (p - 1.0) * d + 1.0;
+
+//      // scale and rotate the point
+//      float zr = pow(rad, p);
+//      th = th * p;
+//      phi = phi * p;
+
+//      // Convert to cartesian
+//      //float sint = sin(th);
+//      zn = zr * vec3( sin(th) * cos(phi),
+//                      sin(th) * sin(phi),
+//                      cos(th));
+
+//      zn += w;
+  }
+
+  return 0.5 * r * log(r) / r_dw;
 
 }
 
@@ -101,24 +229,37 @@ void main(void)
 
   int A = 0;
   vec3 colour = vec3(0.25,0.1,1.0);
+  float min_dist;
   for(int i = 0; i < maxSteps && d < 2.0; ++i)
   {
     r = rayOrigin + (rayDirection * t);
 
-    d = hit(r);
+    //d = DE(r);
+    d = mandelbulb(r, min_dist);
     //d = dScene(r);
 
     if( d < epsilon )
     {
       a = i;
+
+//      for(int j = 0; j < 8; ++j)
+//      {
+//        r += rayDirection * d;
+//        d = mandelbulb(r);
+//        colour += (a / (float)maxSteps) * ( 1.0/8);
+//      }
+
       break;
     }
 
     t += d;
   }
 
+  //gl_FragColor = vec4(colour, 1.0);
   //gl_FragColor = shade(r,n);
   gl_FragColor = a / (float)maxSteps ;
+  //gl_FragColor = vec4(min_dist);
   //gl_FragColor = (a / (float)maxSteps) * 2;
+  //gl_FragColor = vec4(r, 1.0);
 }
 

@@ -235,8 +235,6 @@ void ShaderWindow::keyPressEvent(QKeyEvent* event)
 
   if( event->key() ==  Qt::Key_A )
   {
-      //m_desiredCamPos.setX( m_desiredCamPos.x() + offset );
-
       float radius = offset;
       float pitch = m_camRot.x();
       float yaw = m_camRot.y() + ( M_PI/2.0f );
@@ -255,8 +253,6 @@ void ShaderWindow::keyPressEvent(QKeyEvent* event)
   }
   if( event->key() ==  Qt::Key_D )
   {
-      //m_desiredCamPos.setX( m_desiredCamPos.x() - offset );
-
       float radius = offset;
       float pitch = m_camRot.x();
       float yaw = m_camRot.y() + ( M_PI/2.0f );
@@ -275,8 +271,6 @@ void ShaderWindow::keyPressEvent(QKeyEvent* event)
   }
   if( event->key() ==  Qt::Key_W )
   {
-      //m_camPos.setZ( m_camPos.z() + offset );
-
       float radius = offset;
       float pitch = m_camRot.x();
       float yaw = m_camRot.y();
@@ -296,8 +290,6 @@ void ShaderWindow::keyPressEvent(QKeyEvent* event)
 
   if( event->key() ==  Qt::Key_S )
   {
-      //m_camPos.setZ( m_camPos.z() - offset );
-
       float radius = offset;
       float pitch = m_camRot.x();
       float yaw = m_camRot.y();
