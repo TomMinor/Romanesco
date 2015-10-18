@@ -1,4 +1,3 @@
-#include "shaderwindow.h"
 #include <QScreen>
 #include <QDebug>
 #include <QKeyEvent>
@@ -6,9 +5,22 @@
 #include <math.h>
 #include <QtMath>
 
+#include "shaderwindow.h"
+#include "rendermath.h"
+
 ShaderWindow::ShaderWindow()
   : m_program(0), m_frame(0)
 {
+  int numJoyPads = SDL_NumJoysticks();
+  if(numJoyPads > 0)
+  {
+    SDL_JoystickEventState(SDL_ENABLE);
+    js = SDL_JoystickOpen(0);
+  }
+  else
+  {
+    js = NULL;
+  }
 
 }
 
@@ -32,24 +44,24 @@ void ShaderWindow::initialize()
   m_vtxPosAttr = m_program->attributeLocation("vtxPos");
   m_vtxUVAttr = m_program->attributeLocation("vtxUV");
 
-  m_center = m_program->uniformLocation("center");
-  m_zoom = m_program->uniformLocation("zoom");
-  m_c = m_program->uniformLocation("c");
+//  m_center = m_program->uniformLocation("center");
+//  m_zoom = m_program->uniformLocation("zoom");
+//  m_c = m_program->uniformLocation("c");
 
   m_resXUniform = m_program->uniformLocation("resx");
   m_resYUniform = m_program->uniformLocation("resy");
   m_aspectUniform = m_program->uniformLocation("aspect");
   m_timeUniform = m_program->uniformLocation("time");
 
-  m_rotateMatrixUniform = m_program->uniformLocation("rotmatrix");
-  m_transMatrixUniform = m_program->uniformLocation("posmatrix");
+//  m_rotateMatrixUniform = m_program->uniformLocation("rotmatrix");
+//  m_transMatrixUniform = m_program->uniformLocation("posmatrix");
 
-  m_pitchUniform = m_program->uniformLocation("pitch");
-  m_yawUniform = m_program->uniformLocation("yaw");
+//  m_pitchUniform = m_program->uniformLocation("pitch");
+//  m_yawUniform = m_program->uniformLocation("yaw");
   m_posUniform = m_program->uniformLocation("pos");
-  m_rotUniform = m_program->uniformLocation("rot");
+//  m_rotUniform = m_program->uniformLocation("rot");
 
-  m_matrix = m_program->uniformLocation("matrix");
+//  m_matrix = m_program->uniformLocation("matrix");
   m_normalMatrix = m_program->uniformLocation("normalMatrix");
 
   //m_camPos = QVector3D(-1, 1, 1);
@@ -58,6 +70,14 @@ void ShaderWindow::initialize()
 
 void ShaderWindow::update()
 {
+  m_camPos.setX( FInterpTo( m_camPos.x(), m_desiredCamPos.x(), m_frame, 0.0001) );
+  m_camPos.setY( FInterpTo( m_camPos.y(), m_desiredCamPos.y(), m_frame, 0.0001) );
+  m_camPos.setZ( FInterpTo( m_camPos.z(), m_desiredCamPos.z(), m_frame, 0.0001) );
+
+  m_camRot.setX( FInterpTo( m_camRot.x(), m_desiredCamRot.x(), m_frame, 0.00025) );
+  m_camRot.setY( FInterpTo( m_camRot.y(), m_desiredCamRot.y(), m_frame, 0.00025) );
+  m_camRot.setZ( FInterpTo( m_camRot.z(), m_desiredCamRot.z(), m_frame, 0.00025) );
+
   render();
 }
 
@@ -73,19 +93,19 @@ void ShaderWindow::render()
   m_program->bind();
 
 
-  QMatrix4x4 translateMatrix;
-  translateMatrix.translate(m_camPos);
-  m_program->setUniformValue(m_transMatrixUniform, translateMatrix);
+//  QMatrix4x4 translateMatrix;
+//  translateMatrix.translate(m_camPos);
+//  m_program->setUniformValue(m_transMatrixUniform, translateMatrix);
 
 //  QMatrix4x4 rotateMatrix;
 //  //rotateMatrix.translate(m_camPos);
 //  rotateMatrix.rotate(m_camRot);
 //  m_program->setUniformValue(m_rotateMatrixUniform, rotateMatrix);
 
-  QMatrix4x4 matrix;
-  //matrix.rotate(m_camRot);
-  matrix.translate(m_camPos);
-  m_program->setUniformValue(m_matrix, matrix);
+//  QMatrix4x4 matrix;
+//  //matrix.rotate(m_camRot);
+//  matrix.translate(m_camPos);
+//  m_program->setUniformValue(m_matrix, matrix);
 
   QMatrix4x4 normalmatrix, rotX, rotY, rotZ;
 
@@ -140,17 +160,17 @@ void ShaderWindow::render()
   normalmatrix = rotX * rotY * rotZ;
   m_program->setUniformValue(m_normalMatrix, normalmatrix);
 
-  QVector2D center(0.0f, 0.0f);
-  m_program->setUniformValueArray(m_center, &center, 2);
+//  QVector2D center(0.0f, 0.0f);
+//  m_program->setUniformValueArray(m_center, &center, 2);
 
-  QVector2D c(0.0f, 0.0f);
-  m_program->setUniformValueArray(m_c, &c, 2);
+//  QVector2D c(0.0f, 0.0f);
+//  m_program->setUniformValueArray(m_c, &c, 2);
 
 
 
-  m_program->setUniformValue(m_pitchUniform, m_camRot.x() );
-  m_program->setUniformValue(m_yawUniform, m_camRot.y() );
-  m_program->setUniformValue(m_rotUniform, m_camRot);
+//  m_program->setUniformValue(m_pitchUniform, m_camRot.x() );
+//  m_program->setUniformValue(m_yawUniform, m_camRot.y() );
+//  m_program->setUniformValue(m_rotUniform, m_camRot);
   m_program->setUniformValue(m_posUniform, m_camPos);
 
 
@@ -163,7 +183,7 @@ void ShaderWindow::render()
   float time = (float)m_frame / 32.0;
   m_program->setUniformValue(m_timeUniform, time);
 
-  m_program->setUniformValue(m_zoom, float( ( (sin(m_frame / 32.0) + 1.5 ) * 0.5 ) * 3.0 + 1.0) );
+  //m_program->setUniformValue(m_zoom, float( ( (sin(m_frame / 32.0) + 1.5 ) * 0.5 ) * 3.0 + 1.0) );
 
 
   GLfloat vertices[] = {
@@ -210,13 +230,17 @@ GLuint ShaderWindow::loadShader(GLenum type, const char *source)
 
 void ShaderWindow::keyPressEvent(QKeyEvent* event)
 {
-  const float offset = 0.05f;
+  const float offset = 0.025f;
+  const float rotateOffset = 0.10f;
 
   if( event->key() ==  Qt::Key_A )
   {
-    m_camPos.setX( m_camPos.x() + offset );
+      m_desiredCamPos.setX( m_desiredCamPos.x() + offset );
   }
-  if( event->key() ==  Qt::Key_D ) { m_camPos.setX( m_camPos.x() - offset ); }
+  if( event->key() ==  Qt::Key_D )
+  {
+      m_desiredCamPos.setX( m_desiredCamPos.x() - offset );
+  }
   if( event->key() ==  Qt::Key_W )
   {
       //m_camPos.setZ( m_camPos.z() + offset );
@@ -233,9 +257,9 @@ void ShaderWindow::keyPressEvent(QKeyEvent* event)
       float yMove = radius * sinf( pitchRad );
       float zMove = radius * cosf( yawRad ) * cosf( pitchRad );
 
-      m_camPos.setX( m_camPos.x() + xMove );
-      m_camPos.setY( m_camPos.y() + yMove );
-      m_camPos.setZ( m_camPos.z() + zMove );
+      m_desiredCamPos.setX( m_desiredCamPos.x() + xMove );
+      m_desiredCamPos.setY( m_desiredCamPos.y() + yMove );
+      m_desiredCamPos.setZ( m_desiredCamPos.z() + zMove );
   }
 
   if( event->key() ==  Qt::Key_S )
@@ -254,15 +278,43 @@ void ShaderWindow::keyPressEvent(QKeyEvent* event)
       float yMove = radius * sinf( pitchRad );
       float zMove = radius * cosf( yawRad ) * cosf( pitchRad );
 
-      m_camPos.setX( m_camPos.x() - xMove );
-      m_camPos.setY( m_camPos.y() - yMove );
-      m_camPos.setZ( m_camPos.z() - zMove );
+      m_desiredCamPos.setX( m_desiredCamPos.x() - xMove );
+      m_desiredCamPos.setY( m_desiredCamPos.y() - yMove );
+      m_desiredCamPos.setZ( m_desiredCamPos.z() - zMove );
   }
 
-  if( event->key() ==  Qt::Key_Up )   { m_camRot.setX( m_camRot.x() + offset ); }
-  if( event->key() ==  Qt::Key_Down )  { m_camRot.setX( m_camRot.x() - offset ); }
-  if( event->key() ==  Qt::Key_Left )     { m_camRot.setY( m_camRot.y() + offset ); }
-  if( event->key() ==  Qt::Key_Right )   { m_camRot.setY( m_camRot.y() - offset ); }
+  if( event->key() ==  Qt::Key_Up )
+  {
+      m_desiredCamRot.setX( m_desiredCamRot.x() + rotateOffset );
+  }
+  if( event->key() ==  Qt::Key_Down )
+  {
+      m_desiredCamRot.setX( m_desiredCamRot.x() - rotateOffset );
+  }
+  if( event->key() ==  Qt::Key_Left )
+  {
+      m_desiredCamRot.setY( m_desiredCamRot.y() + rotateOffset );
+  }
+  if( event->key() ==  Qt::Key_Right )
+  {
+      m_desiredCamRot.setY( m_desiredCamRot.y() - rotateOffset );
+  }
+
 
   renderNow();
+}
+
+void ShaderWindow::keyReleaseEvent(QKeyEvent* event)
+{
+  if(m_firstRelease)
+  {
+      processMultipleKeyEvents();
+  }
+  m_firstRelease = false;
+  keysPressed.remove((Qt::Key) event->key());
+}
+
+void ShaderWindow::processMultipleKeyEvents(  )
+{
+
 }

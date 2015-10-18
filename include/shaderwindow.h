@@ -1,6 +1,8 @@
 #ifndef SHADERWINDOW_H
 #define SHADERWINDOW_H
 
+#include <SDL.h>
+#include <SDL_haptic.h>
 #include <QOpenGLShaderProgram>
 #include "openglwindow.h"
 
@@ -16,7 +18,13 @@ public:
 
 protected:
 
+  void processMultipleKeyEvents(  );
+
+  //http://stackoverflow.com/questions/7176951/how-to-get-multiple-key-presses-in-single-event
+  bool m_firstRelease = true;
+  QSet<Qt::Key> keysPressed;
   void keyPressEvent(QKeyEvent* event) Q_DECL_OVERRIDE;
+  void keyReleaseEvent(QKeyEvent* event) Q_DECL_OVERRIDE;
 
 private:
   GLuint loadShader(GLenum type, const char *source);
@@ -24,25 +32,21 @@ private:
   GLuint m_vtxPosAttr;
   GLuint m_vtxUVAttr;
 
-  GLuint m_rotateMatrixUniform, m_transMatrixUniform;
-
   GLuint m_resXUniform, m_resYUniform;
   GLuint m_aspectUniform;
   GLuint m_timeUniform;
 
-  GLuint m_pitchUniform, m_yawUniform, m_posUniform, m_rotUniform;
+  GLuint m_posUniform;
 
-  GLuint m_matrix, m_normalMatrix;
+  GLuint m_normalMatrix;
 
-  GLuint m_center;
-  GLuint m_zoom;
-  GLuint m_c;
-
-  QVector3D m_camPos;
-  QVector3D m_camRot;
+  QVector3D m_camPos, m_desiredCamPos;
+  QVector3D m_camRot, m_desiredCamRot;
 
   QOpenGLShaderProgram *m_program;
   int m_frame;
+
+  SDL_Joystick *js;
 };
 
 #endif // SHADERWINDOW_H
