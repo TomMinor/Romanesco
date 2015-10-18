@@ -235,11 +235,43 @@ void ShaderWindow::keyPressEvent(QKeyEvent* event)
 
   if( event->key() ==  Qt::Key_A )
   {
-      m_desiredCamPos.setX( m_desiredCamPos.x() + offset );
+      //m_desiredCamPos.setX( m_desiredCamPos.x() + offset );
+
+      float radius = offset;
+      float pitch = m_camRot.x();
+      float yaw = m_camRot.y() + ( M_PI/2.0f );
+
+      float pitchRad = pitch;//qDegreesToRadians( pitch );
+      float yawRad = yaw;//qDegreesToRadians( yaw );
+
+      //These equations are from the wikipedia page, linked above
+      float xMove = radius * -sinf( yawRad ) * cosf( pitchRad );
+      float yMove = radius * sinf( pitchRad );
+      float zMove = radius * cosf( yawRad ) * cosf( pitchRad );
+
+      m_desiredCamPos.setX( m_desiredCamPos.x() + xMove );
+      m_desiredCamPos.setY( m_desiredCamPos.y() + yMove );
+      m_desiredCamPos.setZ( m_desiredCamPos.z() + zMove );
   }
   if( event->key() ==  Qt::Key_D )
   {
-      m_desiredCamPos.setX( m_desiredCamPos.x() - offset );
+      //m_desiredCamPos.setX( m_desiredCamPos.x() - offset );
+
+      float radius = offset;
+      float pitch = m_camRot.x();
+      float yaw = m_camRot.y() + ( M_PI/2.0f );
+
+      float pitchRad = pitch;//qDegreesToRadians( pitch );
+      float yawRad = yaw;//qDegreesToRadians( yaw );
+
+      //These equations are from the wikipedia page, linked above
+      float xMove = radius * -sinf( yawRad ) * cosf( pitchRad );
+      float yMove = radius * sinf( pitchRad );
+      float zMove = radius * cosf( yawRad ) * cosf( pitchRad );
+
+      m_desiredCamPos.setX( m_desiredCamPos.x() - xMove );
+      m_desiredCamPos.setY( m_desiredCamPos.y() - yMove );
+      m_desiredCamPos.setZ( m_desiredCamPos.z() - zMove );
   }
   if( event->key() ==  Qt::Key_W )
   {
