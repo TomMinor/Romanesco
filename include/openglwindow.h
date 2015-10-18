@@ -38,7 +38,7 @@ protected:
 private:
     bool m_update_pending;
     bool m_animating;
-    int m_updateTimer;
+    int m_updateTimer, m_drawTimer;
 
     QOpenGLContext *m_context;
     QOpenGLPaintDevice *m_device;

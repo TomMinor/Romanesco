@@ -11,9 +11,16 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 TARGET = Romanesco
 TEMPLATE = app
 
+QMAKE_CXXFLAGS+=$$system(sdl2-config  --cflags)
+message(output from sdl2-config --cflags added to CXXFLAGS= $$QMAKE_CXXFLAGS)
+
+LIBS+=$$system(sdl2-config  --libs)
+message(output from sdl2-config --libs added to LIB=$$LIBS)
+
 SOURCES += src/*.cpp
 
-HEADERS  += include/*.h
+HEADERS  += include/*.h \
+    include/rendermath.h
 
 INCLUDEPATH += include/
 

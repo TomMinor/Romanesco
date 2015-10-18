@@ -12,7 +12,8 @@ OpenGLWindow::OpenGLWindow(QWindow *parent)
 {
   setSurfaceType(QWindow::OpenGLSurface);
 
-  m_updateTimer = startTimer(1);
+  m_updateTimer = startTimer(30);
+  m_drawTimer = startTimer(30);
 }
 
 OpenGLWindow::~OpenGLWindow()
@@ -121,8 +122,12 @@ void OpenGLWindow::timerEvent(QTimerEvent *_event)
   {
     if (isExposed())
     {
-      renderNow();
+      update();
     }
+  }
+  if(_event->timerId() == m_drawTimer)
+  {
+    renderNow();
   }
 }
 
