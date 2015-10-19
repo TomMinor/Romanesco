@@ -11,17 +11,19 @@
 ShaderWindow::ShaderWindow()
   : m_program(0), m_frame(0)
 {
-  int numJoyPads = SDL_NumJoysticks();
-  if(numJoyPads > 0)
-  {
-    SDL_JoystickEventState(SDL_ENABLE);
-    js = SDL_JoystickOpen(0);
-  }
-  else
-  {
-    js = NULL;
-  }
+//  int numJoyPads = SDL_NumJoysticks();
+//  if(numJoyPads > 0)
+//  {
+//    SDL_JoystickEventState(SDL_ENABLE);
+//    js = SDL_JoystickOpen(0);
+//  }
+//  else
+//  {
+//    js = NULL;
+//  }
 
+    m_desiredCamPos = m_camPos = QVector3D(-0.453845, -0.104768, -1.61916);
+    m_desiredCamRot = m_camRot = QVector3D(-0.101546, -0.200124, 0);
 }
 
 ShaderWindow::~ShaderWindow()
@@ -167,12 +169,10 @@ void ShaderWindow::render()
 //  m_program->setUniformValueArray(m_c, &c, 2);
 
 
-
 //  m_program->setUniformValue(m_pitchUniform, m_camRot.x() );
 //  m_program->setUniformValue(m_yawUniform, m_camRot.y() );
 //  m_program->setUniformValue(m_rotUniform, m_camRot);
   m_program->setUniformValue(m_posUniform, m_camPos);
-
 
   QSize res = getResolution();
   float aspect = (res.height() > 0) ? ( (float)res.width() / res.height()) : 1.0f;

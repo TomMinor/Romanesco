@@ -1,6 +1,6 @@
-const int iterations = 100;
+#version 330
 
-precision highp float;
+const int iterations = 100;
 
 varying vec2 texcoord;
 
@@ -94,9 +94,9 @@ float DE(vec3 p)
 //                          hit( r + eps.yxz ) - hit( r - eps.yxz ),
 //                          hit( r + eps.zyx ) - hit( r - eps.zyx ) ) );
 
-  gradient = (vec3( escapeLength(p + eps),
-                    escapeLength(p + eps.yxz),
-                    escapeLength(p + eps.zyx)) -r) / eps;
+//  gradient = (vec3( escapeLength(p + eps),
+//                    escapeLength(p + eps.yxz),
+//                    escapeLength(p + eps.zyx)) -r) / eps;
 
   return 0.5 * r * log(r) / length(gradient);
 }
@@ -181,11 +181,10 @@ float sdSphere( vec3 p, float s )
   return length(p)-s;
 }
 
-vec3 refract(vec3 r)
-{
-  //http://www.math.ubc.ca/~cass/courses/m309-03a/text/refraction/refraction.html
-}
-
+//vec3 refract(vec3 r)
+//{
+//  //http://www.math.ubc.ca/~cass/courses/m309-03a/text/refraction/refraction.html
+//}
 
 // p = eye + right*u + up*v;
 vec3 eye = vec3(0, 0.5, -1.0);
@@ -252,14 +251,18 @@ void main(void)
 
   //gl_FragColor = vec4(colour, 1.0);
   //gl_FragColor = shade(r, nrm);
-  gl_FragColor = a / (float)maxSteps ;
+  float iterValue = maxSteps;
+  iterValue = a / iterValue;
+  gl_FragColor = vec4(iterValue, iterValue, iterValue, 1.0);
   //gl_FragColor = vec4(nrm, 1.0);
   //gl_FragColor = (a / (float)maxSteps) * 2;
 
   // Check if we missed
   if( t > 5 )
   {
-    gl_FragColor = vec4(mix( vec3(0.25, 0.3, 0.18), vec3(0.25, 0.3, 0.175), v), 1.0);
+    gl_FragColor = vec4(mix( vec3(0.72, 0.91, 0.92),
+                             vec3(0.9, 0.9, 0.9),
+                             v), 1.0);
   }
 
 //  gl_FragColor = vec4(arse, 1.0);
