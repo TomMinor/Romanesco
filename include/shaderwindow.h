@@ -1,8 +1,8 @@
 #ifndef SHADERWINDOW_H
 #define SHADERWINDOW_H
 
-#include <SDL.h>
-#include <SDL_haptic.h>
+//#include <SDL.h>
+//#include <SDL_haptic.h>
 #include <QOpenGLShaderProgram>
 #include "openglwindow.h"
 
@@ -46,7 +46,7 @@ private:
   QOpenGLShaderProgram *m_program;
   int m_frame;
 
-  SDL_Joystick *js;
+  //SDL_Joystick *js;
 };
 
 #endif // SHADERWINDOW_H
