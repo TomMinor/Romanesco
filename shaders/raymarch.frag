@@ -13,13 +13,13 @@ uniform mat4 normalMatrix;
 uniform vec3 pos;
 
 const float epsilon = 0.001;
-const float fov = 75.0;
+const float fov = 45.0;
 
 vec4 shade(vec3 p, vec3 n)
 {
-  const vec3 lightPos = vec3( .5, .5, -2.0 );
+  vec3 lightPos = vec3(sin(time), sin(time), cos(time)) * vec3( 2.0, 2.0, 2.0 );
 
-  return 0.2 + max(0.0, dot( normalize(lightPos - p ), n)) * 16.0;
+  return 0.1 + max(0.0, dot( normalize(lightPos - p ), n));
 }
 
 vec3 rotate( vec3 pos, float x, float y, float z )
@@ -81,19 +81,22 @@ float escapeLength(in vec3 pos)
 
 float gradient = 0.0f;
 const float EPS = 0.00001f;
+vec3 eps = vec3( 0.1, 0, 0 );
 float DE(vec3 p)
 {
-  vec3 xDir = vec3(1, 0, 0);
-  vec3 yDir = vec3(0, 1, 0);
-  vec3 zDir = vec3(0, 0, 1);
-
   const float bailout = 2.0;
 
   last = 0;
   float r = escapeLength(p);
   if( r*r > bailout) { return 0.0; }
 
-  gradient = (vec3(escapeLength(p + xDir*EPS), escapeLength(p + yDir*EPS), escapeLength(p + zDir*EPS)) -r)/EPS;
+//  return normalize(vec3(  hit( r + eps ) - hit( r - eps ),
+//                          hit( r + eps.yxz ) - hit( r - eps.yxz ),
+//                          hit( r + eps.zyx ) - hit( r - eps.zyx ) ) );
+
+  gradient = (vec3( escapeLength(p + eps),
+                    escapeLength(p + eps.yxz),
+                    escapeLength(p + eps.zyx)) -r) / eps;
 
   return 0.5 * r * log(r) / length(gradient);
 }
@@ -137,10 +140,8 @@ float hit( vec3 w )
       }
 
       // convert to polar coords
-      //float th = acos(zn.z / rad);
-      float th = atan( length( zn.xy ), zn.z );
-      //float phi = atan( zn.y, zn.x );
-      float phi = atan(zn.y, zn.x);
+      float th = acos(zn.z / rad);
+      float phi = atan( zn.y, zn.x );
       d = pow(rad, pd) * (pd) * d + 1.0;
 
       // scale and rotate the point
@@ -155,52 +156,36 @@ float hit( vec3 w )
                       cos(th) );
 
       zn += w;
-
-      //      // Calculate derivative
-      //      powR = p * pow(r, pd);
-      //      powRsin = powR * r_dw * sin(ph_dw * pd*ph);
-      //      dw = vec3( powRsin * cos(th_dw + pd*th) + 1.0,
-      //                 powRsin * sin(th_dw + pd*th),
-      //                 powR * r_dw * cos(ph_dw + pd*ph)
-      //                );
-
-      //      // Polar coords of derivative dw
-      //      r_dw = length(dw);
-      //      th_dw = atan(dw.y, dw.x);
-      //      ph_dw = acos(dw.z / r_dw);
-
-      //      // Z iteration
-      //      powR = pow(r, p);
-      //      powRsin = sin(p * ph);
-      //      w = vec3( powR * powRsin * cos(p * th),
-      //                powR * powRsin * sin(p * th),
-      //                powR * cos(p * ph)
-      //                      );
-      //      w += c;
-
-      //      // The triplex power formula applies the azimuthal angle rotation about the y-axis.
-      //      // Constrain this to get some funky effects
-      //      //if()
-
-      //      r = length(w);
-      //      if( r < min_dist) min_dist = r;
-      //      if( r > bailout) break;
-
-      //      th = atan(w.y, w.x) + phase.x;
-      //      ph = acos(w.z / r) + phase.y;
   }
 
   return 0.5 * rad * log(rad) / d;
-
 }
 
-vec3 eps = vec3( .1, 0.0, 0.0 );
+//vec3 eps = vec3( 0.1, 0.1, -0.1 );
+vec3 getNormal( vec3 r )
+{
+  return normalize(vec3(  hit( r + eps ) - hit( r - eps ),
+                          hit( r + eps.yxz ) - hit( r - eps.yxz ),
+                          hit( r + eps.zyx ) - hit( r - eps.zyx ) ) );
+}
+
 
 int pMod(inout float p, float d)
 {
     p = mod(p + d, d * 2.0) - d;
     return int( float(p) / float(d) );
 }
+
+float sdSphere( vec3 p, float s )
+{
+  return length(p)-s;
+}
+
+vec3 refract(vec3 r)
+{
+  //http://www.math.ubc.ca/~cass/courses/m309-03a/text/refraction/refraction.html
+}
+
 
 // p = eye + right*u + up*v;
 vec3 eye = vec3(0, 0.5, -1.0);
@@ -226,38 +211,57 @@ void main(void)
   vec3 r = vec3(0,0,0);
 
   int a = 0;
-
-  int A = 0;
   vec3 colour = vec3(0.25,0.1,1.0);
-  float min_dist = 2.0;
+
+  vec3 arse = rayOrigin + (rayDirection * 800);
+
   for(int i = 0; i < maxSteps && d < 2.0; ++i)
   {
     r = rayOrigin + (rayDirection * t);
 
-    d = hit(r, min_dist);
+    d = hit(r);
 
-    if( d < epsilon)
+    if( d < epsilon )
     {
       a = i;
-
-//      for(int j = 0; j < 8; ++j)
-//      {
-//        r += rayDirection * d;
-//        d = mandelbulb(r);
-//        colour += (a / (float)maxSteps) * ( 1.0/8);
-//      }
-
       break;
     }
 
     t += d;
   }
 
+  vec3 nrm = getNormal(r);
+
+//  a = 0;
+//  rayOrigin = r + (rayDirection * 0.5);
+//  t = 0;
+//  for(int i = 0; i < maxSteps && d < 2.0; ++i)
+//  {
+//    r = rayOrigin + (rayDirection * t);
+
+//    d = hit(r);
+
+//    if( d < epsilon )
+//    {
+//      a = i;
+//      break;
+//    }
+
+//    t += d;
+//  }
+
   //gl_FragColor = vec4(colour, 1.0);
-  //gl_FragColor = shade(r,n);
+  //gl_FragColor = shade(r, nrm);
   gl_FragColor = a / (float)maxSteps ;
-  //gl_FragColor = vec4(min_dist);
+  //gl_FragColor = vec4(nrm, 1.0);
   //gl_FragColor = (a / (float)maxSteps) * 2;
-  //gl_FragColor = vec4(r, 1.0);
+
+  // Check if we missed
+  if( t > 5 )
+  {
+    gl_FragColor = vec4(mix( vec3(0.25, 0.3, 0.18), vec3(0.25, 0.3, 0.175), v), 1.0);
+  }
+
+//  gl_FragColor = vec4(arse, 1.0);
 }
 
