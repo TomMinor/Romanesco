@@ -98,7 +98,7 @@ float DE(vec3 p)
   return 0.5 * r * log(r) / length(gradient);
 }
 
-float mandelbulb( vec3 w, float min_dist )
+float hit( vec3 w )
 {
   // mat4 rotate;
   // w = vec4(w, 1.0) * rotate; // How to rotate ~the object~
@@ -106,91 +106,91 @@ float mandelbulb( vec3 w, float min_dist )
   const int iterations = 10;
   const float bailout = 2.0;
 
-  //r = rotate( r, sin(time), cos(time), 0.0 );
   vec3 zn = vec3( w.xyz );
-//  float rad = 0.0;
-//  float hit = 0.0;
+  float rad = 0.0;
   float p = 8.0;
   float pd = p - 1.0; // Derivative power
-//  float d = 1.0;
+  float d = 1.0;
 
-  float c = w;
-  float r = length(w);
-  float th = atan(w.y, w.x);
-  float ph = asin(w.z / r);
+//  float c = w;
+//  float r = length(w);
+//  float th = atan(w.y, w.x);
+//  float ph = asin(w.z / r);
 
-  // z orbit distance for AO shading
-  if( r < min_dist ) min_dist = r;
+//  // z orbit distance for AO shading
+//  if( r < min_dist ) min_dist = r;
 
-  // Derivative
-  vec3 dw;
-  float ph_dw = 0.0;
-  float th_dw = 0.0;
-  float r_dw = 1.0;
-  float powR, powRsin;
+//  // Derivative
+//  vec3 dw;
+//  float ph_dw = 0.0;
+//  float th_dw = 0.0;
+///  float r_dw = 1.0;
+//  float powR, powRsin;
+
+//  vec3 phase = vec3(sin(time), sin(time), sin(time));
 
   for( int i = 0; i < iterations; i++ )
   {
-      // Calculate derivative
-      powR = p * pow(r, pd);
-      powRsin = powR * r_dw * sin(ph_dw * pd*ph);
-      dw = vec3( powRsin * cos(th_dw + pd*th) + 1.0,
-                 powRsin * sin(th_dw + pd*th),
-                 powR * r_dw * cos(ph_dw + pd*ph)
-                );
+      rad = length( zn );
+      if( rad > bailout ) {
+        break;
+      }
 
-      // Polar coords of derivative dw
-      r_dw = length(dw);
-      th_dw = atan(dw.y, dw.x);
-      ph_dw = acos(dw.z / r_dw);
+      // convert to polar coords
+      //float th = acos(zn.z / rad);
+      float th = atan( length( zn.xy ), zn.z );
+      //float phi = atan( zn.y, zn.x );
+      float phi = atan(zn.y, zn.x);
+      d = pow(rad, pd) * (pd) * d + 1.0;
 
-      // Z iteration
-      powR = pow(r, p);
-      powRsin = sin(p* ph);
-      w = powR * vec3(  powRsin * cos(p * th),
-                        powRsin * sin(p * th),
-                        cos(p * ph)
-                      );
-      w += c;
+      // scale and rotate the point
+      float zr = pow(rad, p);
+      th = th * p;
+      phi = phi * p;
 
-      // The triplex power formula applies the azimuthal angle rotation about the y-axis.
-      // Constrain this to get some funky effects
-      //if()
+      // Convert to cartesian
+      float sint = sin(th);
+      zn = zr * vec3( sint * cos(phi),
+                      sint * sin(phi),
+                      cos(th) );
 
-      r = length(w);
-      if( r < min_dist) min_dist = r;
-      if( r > bailout) break;
+      zn += w;
 
-      th = atan(w.y, w.x);
-      ph = acos(w.z / r);
+      //      // Calculate derivative
+      //      powR = p * pow(r, pd);
+      //      powRsin = powR * r_dw * sin(ph_dw * pd*ph);
+      //      dw = vec3( powRsin * cos(th_dw + pd*th) + 1.0,
+      //                 powRsin * sin(th_dw + pd*th),
+      //                 powR * r_dw * cos(ph_dw + pd*ph)
+      //                );
 
+      //      // Polar coords of derivative dw
+      //      r_dw = length(dw);
+      //      th_dw = atan(dw.y, dw.x);
+      //      ph_dw = acos(dw.z / r_dw);
 
-//      rad = length( zn );
-//      if( rad > bailout ) {
-//        hit = 0.5 * log(rad) * rad / d;
-//        break;
-//      }
+      //      // Z iteration
+      //      powR = pow(r, p);
+      //      powRsin = sin(p * ph);
+      //      w = vec3( powR * powRsin * cos(p * th),
+      //                powR * powRsin * sin(p * th),
+      //                powR * cos(p * ph)
+      //                      );
+      //      w += c;
 
-//      // convert to polar coords
-//      float th = acos(zn.z / rad);
-//      float phi = atan( zn.y, zn.x );
-//      d = pow(rad, p - 1.0) * (p - 1.0) * d + 1.0;
+      //      // The triplex power formula applies the azimuthal angle rotation about the y-axis.
+      //      // Constrain this to get some funky effects
+      //      //if()
 
-//      // scale and rotate the point
-//      float zr = pow(rad, p);
-//      th = th * p;
-//      phi = phi * p;
+      //      r = length(w);
+      //      if( r < min_dist) min_dist = r;
+      //      if( r > bailout) break;
 
-//      // Convert to cartesian
-//      //float sint = sin(th);
-//      zn = zr * vec3( sin(th) * cos(phi),
-//                      sin(th) * sin(phi),
-//                      cos(th));
-
-//      zn += w;
+      //      th = atan(w.y, w.x) + phase.x;
+      //      ph = acos(w.z / r) + phase.y;
   }
 
-  return 0.5 * r * log(r) / r_dw;
+  return 0.5 * rad * log(rad) / d;
 
 }
 
@@ -229,16 +229,14 @@ void main(void)
 
   int A = 0;
   vec3 colour = vec3(0.25,0.1,1.0);
-  float min_dist;
+  float min_dist = 2.0;
   for(int i = 0; i < maxSteps && d < 2.0; ++i)
   {
     r = rayOrigin + (rayDirection * t);
 
-    //d = DE(r);
-    d = mandelbulb(r, min_dist);
-    //d = dScene(r);
+    d = hit(r, min_dist);
 
-    if( d < epsilon )
+    if( d < epsilon)
     {
       a = i;
 
