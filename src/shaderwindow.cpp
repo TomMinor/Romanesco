@@ -22,8 +22,8 @@ ShaderWindow::ShaderWindow()
 //    js = NULL;
 //  }
 
-    m_desiredCamPos = m_camPos = QVector3D(-0.453845, -0.104768, -1.61916);
-    m_desiredCamRot = m_camRot = QVector3D(-0.101546, -0.200124, 0);
+    m_desiredCamPos = m_camPos = QVector3D(1.09475, 0.0750364, -1.00239);
+    m_desiredCamRot = m_camRot = QVector3D(-0.301546, 0.399876, 0);
 }
 
 ShaderWindow::~ShaderWindow()
@@ -94,6 +94,8 @@ void ShaderWindow::render()
 
   m_program->bind();
 
+//  qDebug() << m_camPos;
+//  qDebug() << m_camRot;
 
 //  QMatrix4x4 translateMatrix;
 //  translateMatrix.translate(m_camPos);
