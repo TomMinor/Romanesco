@@ -38,7 +38,7 @@ void ShaderWindow::initialize()
   m_program->addShaderFromSourceFile(QOpenGLShader::Fragment, "shaders/raymarch.frag");
 
   if(!m_program->link())
-  {
+  {  
     qDebug() << "Link error in shader program\n";
     exit(1);
   }
