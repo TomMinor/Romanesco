@@ -27,8 +27,7 @@
 #include <iostream>
 
 #include "optixscene.h"
-
-
+#include <ImageLoader.h>
 
 
 struct Image
@@ -335,8 +334,16 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height)
     m_context["bad_color"]->setFloat( 1.0f, 1.0f, 0.0f );
 
     // Miss program
-    m_context->setMissProgram( 0, m_context->createProgramFromPTXFile( "ptx/constantbg.cu.ptx", "miss" ) );
+    //m_context->setMissProgram( 0, m_context->createProgramFromPTXFile( "ptx/constantbg.cu.ptx", "miss" ) );
     m_context["bg_color"]->setFloat( optix::make_float3(108.0f/255.0f, 166.0f/255.0f, 205.0f/255.0f) * 0.5f );
+
+    m_context->setMissProgram( 0, m_context->createProgramFromPTXFile( "ptx/julia.cu.ptx", "envmap_miss" ) );
+
+    const optix::float3 default_color = optix::make_float3(1.0f, 1.0f, 1.0f);
+    //m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/tom/src/optix/SDK/tutorial/data/CedarCity.hdr", default_color) );
+//    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/tom/src/Fragmentarium/Fragmentarium-Source/Examples/Include/Ditch-River_2k.hdr", default_color) );
+    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/tom/Downloads/Milkyway/Milkyway_small.hdr", default_color) );
+
 
     // Setup lights
     m_context["ambient_light_color"]->setFloat(0.1f,0.1f,0.3f);
@@ -476,9 +483,12 @@ void OptixScene::createGeometry()
     sphere_matl->setClosestHitProgram( 0, chrome_ch );
     sphere_matl->setAnyHitProgram( 1, chrome_ah );
 
-    m_context["Ka"]->setFloat(0.3f,0.3f,0.3f);
+//    m_context["Ka"]->setFloat(0.3f,0.3f,0.3f);
+//    m_context["Kd"]->setFloat(.6f, 0.1f, 0.1f);
+//    m_context["Ks"]->setFloat(.6f, .6f, .6f);
+    m_context["Ka"]->setFloat(0.5f,0.0f,0.0f);
     m_context["Kd"]->setFloat(.6f, 0.1f, 0.1f);
-    m_context["Ks"]->setFloat(.6f, .6f, .6f);
+    m_context["Ks"]->setFloat(.6f, .2f, .1f);
     m_context["phong_exp"]->setFloat(32);
     m_context["reflectivity"]->setFloat(.4f, .4f, .4f);
 

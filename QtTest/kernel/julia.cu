@@ -62,6 +62,7 @@ struct PerRayData_radiance
   float3 result_world;
   float result_depth;
   float  importance;
+  int iter;
   int depth;
 };
 
@@ -172,6 +173,8 @@ struct JuliaSet
     const float3 weg = (x - particle) / max(0.01f,part_dist);
     x -= weg * force;
 
+
+
     // Iterated values.
     float3 zn  = x;//make_float3( x, 0 );
     float4 fp_n = make_float4( 1, 0, 0, 0 );  // start derivative at real 1 (see [2]).
@@ -179,7 +182,7 @@ struct JuliaSet
     const float sq_threshold = 2.0f;   // divergence threshold
 
     float oscillatingTime = sin(global_t / 256.0f );
-    float p =  (5.0f * abs(oscillatingTime)) + 3.0f; //8;
+    float p = (5.0f * abs(oscillatingTime)) + 3.0f; //8;
     float rad = 0.0f;
     float dist = 0.0f;
     float d = 1.0;
@@ -188,8 +191,8 @@ struct JuliaSet
     int i = m_max_iterations;
     while( i-- )
     {
-      //fp_n = 2.0f * mul( zn, fp_n );   // z prime in [2]
-      //zn = square( zn ) + c4;         // equation (1) in [1]
+//      fp_n = 2.0f * mul( make_float4(zn), fp_n );   // z prime in [2]
+//      zn = square( make_float4(zn) ) + c4;         // equation (1) in [1]
 
       // Stop when we know the point diverges.
       // TODO: removing this condition burns 2 less registers and results in
@@ -243,6 +246,9 @@ RT_PROGRAM void intersect(int primIdx)
   if( intersectBoundingSphere(ray.origin - center, ray.direction, tmin, tmax) )
   {
     JuliaSet distance( max_iterations );
+    //distance.m_max_iterations = 64;
+
+    // === Raymarching (Sphere Tracing) Procedure ===
 
     // XXX inline the sphere tracing procedure here because nvcc isn't
     //     generating the right code i guess
@@ -257,7 +263,11 @@ RT_PROGRAM void intersect(int primIdx)
     const float epsilon = 1e-3f;
 
     float dist = 0;
-    for( unsigned int i = 0; i < 800; ++i )
+
+    int step = 0;
+    const int maxSteps = 800;
+
+    for( step = 0; step < maxSteps; ++step )
     {
       dist = distance( x );
 
@@ -276,7 +286,8 @@ RT_PROGRAM void intersect(int primIdx)
       if( rtPotentialIntersection(dist_from_origin) )
       {
         // color HACK
-        distance.m_max_iterations = 14;  // more iterations for normal estimate, to fake some more detail
+        //distance.m_max_iterations = 14;  // more iterations for normal estimate, to fake some more detail
+        distance.m_max_iterations = 6;
         normal = estimate_normal(distance, x, DEL);
         rtReportIntersection( 0 );
       }
@@ -315,13 +326,13 @@ RT_PROGRAM void julia_ch_radiance()
   occlusion *= occlusion;
   occlusion = clamp( occlusion, 0.2f, 1.0f );
 
-  // base colors
+//   base colors
   float3 red   = normal*0.5f + make_float3(0.5f);
   float3 green = red;
   float3 blue  = red;
 
 
-  // red/orange
+//   red/orange
   red.x = abs(normal.x)*0.5f + 0.5f;
   red.x = max( red.x, 0.1f );
   red = red * make_float3( 0.8f, 0.1f+red.x, 0.1f );
@@ -364,7 +375,7 @@ RT_PROGRAM void julia_ch_radiance()
     c1 = blue;
     ct -= 1.0f;
   }
-  float3 result = dot(p,p) > ct*3.0f ? c0 : c1;
+  float3 result = red; //dot(p,p) > ct*3.0f ? c0 : c1;
 
   // add glow close to particle
   const float part_dist = length( p-particle );
@@ -379,21 +390,43 @@ RT_PROGRAM void julia_ch_radiance()
     result = result + make_float3( 0.6f * occlusion * pow(ndh,20.0f) );
   }
 
+  //  float magic_ambient_occlusion(const float3 &x, const float3 &n,
+//                                const float del,
+//                                const float k,
+//                                Distance distance)
+
+//  float ao = magic_ambient_occlusion( );
+
   //result = make_float3( occlusion );
 
   // Reflection (disabled, doesn't look too great)
-  
-  PerRayData_radiance new_prd;             
-  new_prd.importance = prd_radiance.importance;
-  new_prd.depth = prd_radiance.depth + 1;
-  // if( prd_radiance.depth < 3 )
-  // {
-  //   float3 refl = make_float3(0,0,0);
-  //   refract( refl, ray.direction, normal, 1.3);
-  //   const optix::Ray refl_ray = optix::make_Ray( p, refl, 0, 1e-3f, RT_DEFAULT_MAX );
-  //   rtTrace( top_object, refl_ray, new_prd );
-  //   result = lerp( new_prd.result * occlusion, result, 0.3 );
-  // }
+
+  //if( prd_radiance.depth < 5 )
+  //if( prd_radiance.depth < 5 )
+  {
+      PerRayData_radiance new_prd;
+      new_prd.importance = prd_radiance.importance;
+      new_prd.depth = prd_radiance.depth + 1;
+      new_prd.result = make_float3(1,0,0);
+
+      float3 refl = make_float3(0,0,0);
+      refl = reflect( ray.direction, normal );
+      const optix::Ray refl_ray = optix::make_Ray( p, refl, 0, 1e-3f, RT_DEFAULT_MAX );
+      rtTrace( top_object, refl_ray, new_prd );
+
+      PerRayData_radiance new_prd2;
+      new_prd2.importance = prd_radiance.importance;
+      new_prd2.depth = prd_radiance.depth + 1;
+      new_prd2.result = make_float3(1,0,0);
+
+      float3 refr = make_float3(0,0,0);
+      refract( refr, ray.direction, normal, 1.3);
+      const optix::Ray refr_ray = optix::make_Ray( p, refr, 0, 1e-3f, RT_DEFAULT_MAX );
+      rtTrace( top_object, refr_ray, new_prd2 );
+
+      //result = (red * occlusion) + new_prd.result;
+      result =  lerp(new_prd.result + new_prd2.result, result, 0.05);//lerp( new_prd.result * occlusion, result, 0 );
+  }
 
   prd_radiance.result = result;
   prd_radiance.result_nrm = normal;//normalize( rtTransformNormal(RT_OBJECT_TO_WORLD, normal) )*0.5f + 0.5f;
@@ -442,4 +475,14 @@ RT_PROGRAM void chrome_ah_shadow()
   // this material is opaque, so it fully attenuates all shadow rays
   prd_shadow.attenuation = make_float3(0);
   rtTerminateRay();
+}
+
+rtTextureSampler<float4, 2> envmap;
+RT_PROGRAM void envmap_miss()
+{
+  float theta = atan2f( ray.direction.x, ray.direction.z );
+  float phi   = M_PIf * 0.5f -  acosf( ray.direction.y );
+  float u     = (theta + M_PIf) * (0.5f * M_1_PIf);
+  float v     = 0.5f * ( 1.0f + sin(phi) );
+  prd_radiance.result = make_float3( tex2D(envmap, u, v) );
 }

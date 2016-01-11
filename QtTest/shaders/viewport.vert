@@ -1,7 +1,7 @@
 in vec3 vtxPos;
 in vec2 vtxUV;
 
-out vec2 texcoord;
+varying vec2 texcoord;
 
 void main(void)
 {

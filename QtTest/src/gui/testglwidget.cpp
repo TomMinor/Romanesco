@@ -21,11 +21,12 @@ void TestGLWidget::initializeGL()
 {
     initializeOpenGLFunctions();
 
+
+
     glClearColor(1, 0, 0, 1);
 
+    m_optixScene = 0;
     m_optixScene = new OptixScene(width(), height());
-
-
 
     QString vertexPath = QDir::currentPath() + "/shaders/raymarch.vert";
     QString fragmentPath = QDir::currentPath() + "/shaders/raymarch.frag";
@@ -93,7 +94,10 @@ void TestGLWidget::resizeGL(int w, int h)
         m_previousHeight = height();
         m_previousWidth = width();
 
-        m_optixScene->updateBufferSize( width(), height() );
+        if(m_optixScene)
+        {
+            m_optixScene->updateBufferSize( width(), height() );
+        }
     }
 }
 
@@ -162,13 +166,16 @@ void TestGLWidget::paintGL()
     m_camRot.setY( FInterpTo( m_camRot.y(), m_desiredCamRot.y(), m_frame, 0.00025) );
     m_camRot.setZ( FInterpTo( m_camRot.z(), m_desiredCamRot.z(), m_frame, 0.00025) );
 
-    m_optixScene->setVar("global_t", m_frame);
+    if(m_optixScene)
+    {
+        m_optixScene->setVar("global_t", m_frame);
 
-    m_optixScene->setVar("normalmatrix", normalmatrix);
-    m_optixScene->setCamera(  optix::make_float3( m_camPos.x(), m_camPos.y(), m_camPos.z() ),
-                              90.0f,
-                              width(), height()
-                              );
+        m_optixScene->setVar("normalmatrix", normalmatrix);
+        m_optixScene->setCamera(  optix::make_float3( m_camPos.x(), m_camPos.y(), m_camPos.z() ),
+                                  90.0f,
+                                  width(), height()
+                                  );
+    }
 
     const qreal retinaScale = devicePixelRatio();
     glViewport(0, 0, width() * retinaScale, height() * retinaScale);
@@ -202,7 +209,10 @@ void TestGLWidget::paintGL()
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
 
-    m_optixScene->drawToBuffer();
+    if(m_optixScene)
+    {
+        m_optixScene->drawToBuffer();
+    }
     glDrawArrays(GL_TRIANGLES, 0, 6);
 
     glDisableVertexAttribArray(1);

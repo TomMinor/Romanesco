@@ -87,6 +87,7 @@ MainWindow::MainWindow(QWidget *parent) :
     QDockWidget *dockGL = new QDockWidget(tr("Viewport"), this);
     dockGL->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 
+    glwidget = 0;
     glwidget = new TestGLWidget(dockGL);
 
     dockGL->setWidget(glwidget);
@@ -123,6 +124,7 @@ void MainWindow::timerEvent(QTimerEvent *_event)
     if(_event->timerId() == m_updateTimer)
     {
       //if (isExposed())
+      if(glwidget)
       {
           glwidget->update();
       }
