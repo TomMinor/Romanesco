@@ -15,65 +15,59 @@
 #include <vector>
 #include <QDebug>
 
-#define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
-inline void gpuAssert(CUresult code, const char *file, int line, bool abort=true)
-{
-   if (code != CUDA_SUCCESS)
-   {
-       const char* sPtr = new char[512];
-
-       cuGetErrorName(code, &sPtr);
-       fprintf(stderr,"GPUassert: %s %s %d\n", sPtr, file, line);
-       if (abort) exit(code);
-   }
-}
-
-#define NVRTC_SAFE_CALL(Name, x)                                             \
-  do {                                                                       \
-    nvrtcResult result = x;                                                  \
-    if (result != NVRTC_SUCCESS) {                                           \
-      std::cerr << "\nerror: " << Name << " failed with error " <<           \
-                                               nvrtcGetErrorString(result);  \
-      exit(1);                                                               \
-    }                                                                        \
+#define NVRTC_SAFE_CALL(x)                                        \
+  do {                                                            \
+    nvrtcResult result = x;                                       \
+    if (result != NVRTC_SUCCESS) {                                \
+      std::cerr << "\nerror: " #x " failed with error "           \
+                << nvrtcGetErrorString(result) << '\n';           \
+      exit(1);                                                    \
+    }                                                             \
   } while(0)
+#define CUDA_SAFE_CALL(x)                                         \
+  do {                                                            \
+    CUresult result = x;                                          \
+    if (result != CUDA_SUCCESS) {                                 \
+      const char *msg;                                            \
+      cuGetErrorName(result, &msg);                               \
+      std::cerr << "\nerror: " #x " failed with error "           \
+                << msg << '\n';                                   \
+      exit(1);                                                    \
+    }                                                             \
+  } while(0)
+
+
+const char* functionSource = "                                  		\n\
+__device__  int function(int x, int y, int z)                                 	\n\
+{                                                               			\n\
+    printf(\"%d, %d, %d\\n\", x, y, z);                                       	\n\
+    return 0;							\n\
+}                                                               			\n";
+
+const char* funcSource = " \n\
+__device__ float ARSE(float a, float b) \n\
+{\n\
+   return a + b + 27;\n\
+}\n\
+\n";
 
 void nvrtc_test()
 {
-    const char* functionSource = "                                  \n\
-                             #include <optix.h>                     \n\
-    __device__ void function(int x)                                 \n\
-    {                                                               \n\
-        printf(\"%d\\n\", x);                                       \n\
-    }                                                               \n";
-
-
     // Create an instance of nvrtcProgram with the SAXPY code string.
     nvrtcProgram prog;
-    NVRTC_SAFE_CALL("nvrtcCreateProgram", nvrtcCreateProgram(&prog, functionSource, "function", 0, NULL, NULL));
-
-
-    //NVCCFLAGS = --compiler-options -fno-strict-aliasing -use_fast_math --ptxas-options=-v -ptx
-    //optix.commands = $$CUDA_DIR/bin/nvcc -m64 -gencode arch=compute_50,code=sm_50 $$NVCCFLAGS $$CUDA_INC $$LIBS  ${QMAKE_FILE_NAME} -o ${QMAKE_FILE_OUT}
-    ///home/tom/src/optix/include
+    NVRTC_SAFE_CALL(nvrtcCreateProgram(&prog, funcSource, "ARSE", 0, NULL, NULL));
 
     // Compile the program for compute_35.
-    const char *opts[] = {"--gpu-architecture=compute_35", "-rdc=true",
-                          "-I /home/tom/src/optix/include",
-                          "-I /usr/local/cuda-7.0/targets/x86_64-linux/include",
-                          "-I /home/tom/src/optix/include/internal",
-
-
-                         };
-    nvrtcResult compileResult = nvrtcCompileProgram(prog, 5, opts);
+    const char *opts[] = {"--gpu-architecture=compute_35", "-rdc=true" };
+    nvrtcResult compileResult = nvrtcCompileProgram(prog, 2, opts);
 
     // Obtain compilation log from the program.
     size_t logSize;
-    NVRTC_SAFE_CALL("nvrtcGetProgramLogSize", nvrtcGetProgramLogSize(prog, &logSize));
+    NVRTC_SAFE_CALL(nvrtcGetProgramLogSize(prog, &logSize));
     if (logSize > 1)
     {
         std::vector<char> log(logSize);
-        NVRTC_SAFE_CALL("nvrtcGetProgramLog", nvrtcGetProgramLog(prog, &log[0]));
+        NVRTC_SAFE_CALL(nvrtcGetProgramLog(prog, &log[0]));
         std::cout << &log[0] << std::endl;
     }
     if (compileResult != NVRTC_SUCCESS)
@@ -81,15 +75,14 @@ void nvrtc_test()
 
     // Obtain PTX from the program.
     size_t ptxSize;
-    NVRTC_SAFE_CALL("nvrtcGetPTXSize", nvrtcGetPTXSize(prog, &ptxSize));
+    NVRTC_SAFE_CALL(nvrtcGetPTXSize(prog, &ptxSize));
     char *ptx = new char[ptxSize];
-    NVRTC_SAFE_CALL("nvrtcGetPTX", nvrtcGetPTX(prog, ptx));
+    NVRTC_SAFE_CALL(nvrtcGetPTX(prog, ptx));
 
     qDebug() << ptx;
 
     // Destroy the program.
-    NVRTC_SAFE_CALL("nvrtcDestroyProgram", nvrtcDestroyProgram(&prog));
-
+    NVRTC_SAFE_CALL(nvrtcDestroyProgram(&prog));
     // Load precompiled relocatable source with call to external function
     // and link it together with NVRTC-compiled function.
 //    CUlinkState linker;
@@ -105,7 +98,7 @@ void nvrtc_test()
 
 int main(int argc, char *argv[])
 {
-//    nvrtc_test();
+    nvrtc_test();
 
 //  if (SDL_Init(SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC) < 0 )
 //  {
