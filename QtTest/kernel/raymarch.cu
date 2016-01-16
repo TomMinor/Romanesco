@@ -26,10 +26,11 @@
 #include <optixu/optixu_aabb_namespace.h>
 #include "distance_field.h"
 
-#include "raymarch_geo.cu"
-#include "raymarch_shader.cu"
 
 using namespace optix;
+
+extern float3 shade_hook(float3 p, float iteration);
+extern float distancehit_hook(float3 p, float iteration);
 
 
 // References:
@@ -174,9 +175,6 @@ struct JuliaSet
     const float part_dist = length( particle - x );
     const float force = smoothstep( 0.0f, 1.0f, 0.1f / (part_dist*part_dist) ) * 0.2f;
     const float3 weg = (x - particle) / max(0.01f,part_dist);
-    x -= weg * force;
-
-
 
     // Iterated values.
     float3 zn  = x;//make_float3( x, 0 );

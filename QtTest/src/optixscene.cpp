@@ -337,7 +337,7 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height)
     //m_context->setMissProgram( 0, m_context->createProgramFromPTXFile( "ptx/constantbg.cu.ptx", "miss" ) );
     m_context["bg_color"]->setFloat( optix::make_float3(108.0f/255.0f, 166.0f/255.0f, 205.0f/255.0f) * 0.5f );
 
-    m_context->setMissProgram( 0, m_context->createProgramFromPTXFile( "ptx/julia.cu.ptx", "envmap_miss" ) );
+    m_context->setMissProgram( 0, m_context->createProgramFromPTXFile( "ptx/raymarch.cu.ptx", "envmap_miss" ) );
 
     const optix::float3 default_color = optix::make_float3(1.0f, 1.0f, 1.0f);
     //m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/tom/src/optix/SDK/tutorial/data/CedarCity.hdr", default_color) );
@@ -455,8 +455,8 @@ void OptixScene::createGeometry()
 {
     optix::Geometry julia = m_context->createGeometry();
     julia->setPrimitiveCount( 1u );
-    julia->setBoundingBoxProgram( m_context->createProgramFromPTXFile( "ptx/julia.cu.ptx", "bounds" ) );
-    julia->setIntersectionProgram( m_context->createProgramFromPTXFile( "ptx/julia.cu.ptx", "intersect" ) );
+    julia->setBoundingBoxProgram( m_context->createProgramFromPTXFile( "ptx/raymarch.cu.ptx", "bounds" ) );
+    julia->setIntersectionProgram( m_context->createProgramFromPTXFile( "ptx/raymarch.cu.ptx", "intersect" ) );
 
     // Sphere
     optix::Geometry sphere = m_context->createGeometry();
@@ -465,10 +465,10 @@ void OptixScene::createGeometry()
     sphere->setIntersectionProgram( m_context->createProgramFromPTXFile( "ptx/sphere.cu.ptx", "intersect" ) );
     m_context["sphere"]->setFloat( 1, 1, 1, 0.2f );
 
-    optix::Program julia_ch = m_context->createProgramFromPTXFile( "ptx/julia.cu.ptx", "julia_ch_radiance" );
-    optix::Program julia_ah = m_context->createProgramFromPTXFile( "ptx/julia.cu.ptx", "julia_ah_shadow" );
-    optix::Program chrome_ch = m_context->createProgramFromPTXFile( "ptx/julia.cu.ptx", "chrome_ch_radiance" );
-    optix::Program chrome_ah = m_context->createProgramFromPTXFile( "ptx/julia.cu.ptx", "chrome_ah_shadow" );
+    optix::Program julia_ch = m_context->createProgramFromPTXFile( "ptx/raymarch.cu.ptx", "julia_ch_radiance" );
+    optix::Program julia_ah = m_context->createProgramFromPTXFile( "ptx/raymarch.cu.ptx", "julia_ah_shadow" );
+    optix::Program chrome_ch = m_context->createProgramFromPTXFile( "ptx/raymarch.cu.ptx", "chrome_ch_radiance" );
+    optix::Program chrome_ah = m_context->createProgramFromPTXFile( "ptx/raymarch.cu.ptx", "chrome_ah_shadow" );
     //optix::Program floor_ch = m_context->createProgramFromPTXFile( "ptx/block_floor.cu.ptx", "block_floor_ch_radiance" );
     //optix::Program floor_ah = m_context->createProgramFromPTXFile( "ptx/block_floor.cu.ptx", "block_floor_ah_shadow" );
     optix::Program normal_ch = m_context->createProgramFromPTXFile( "ptx/normal_shader.cu.ptx", "closest_hit_radiance" );

@@ -28,17 +28,6 @@
 
 using namespace optix;
 
-// Disable name mangling
-extern "C"
-{
-
-__device__ __attribute__ ((noinline)) float3 shade(float3 p, float iteration)
-{
-    return make_float3(1, 0, 0);
-}
-
-}
-
 
 // References:
 // [1] Hart, J. C., Sandin, D. J., and Kauffman, L. H. 1989. Ray tracing deterministic 3D fractals
@@ -438,8 +427,6 @@ RT_PROGRAM void julia_ch_radiance()
       //result = (red * occlusion) + new_prd.result;
       result =  lerp(new_prd.result + new_prd2.result, result, 0.05);//lerp( new_prd.result * occlusion, result, 0 );
   }
-
-  result = shade(p, prd_radiance.iter);
 
   prd_radiance.result = result;
   prd_radiance.result_nrm = normal;//normalize( rtTransformNormal(RT_OBJECT_TO_WORLD, normal) )*0.5f + 0.5f;

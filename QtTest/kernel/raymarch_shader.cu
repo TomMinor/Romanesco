@@ -1,12 +1,15 @@
 #include <vector_types.h>
 #include "cutil_math.h"
 
+// Disable name mangling
 extern "C"
 {
 
-__device__ float3 shade(float3 p, float iteration)
+// Default implementation
+__device__ __attribute__ ((noinline)) float3 shade_hook(float3 p, float iteration)
 {
-    return make_float3(0,1,0);
+    return make_float3(1, 0, 0);
 }
 
 }
+
