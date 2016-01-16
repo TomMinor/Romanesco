@@ -29,8 +29,22 @@
 
 using namespace optix;
 
-extern float3 shade_hook(float3 p, float iteration);
-extern float distancehit_hook(float3 p, float iteration);
+extern "C"
+{
+extern __device__ __attribute__ ((noinline)) float3 shade_hook(
+        float3 p, float3 nrm, float iteration
+        );
+}
+
+extern "C"
+{
+__device__ __attribute__ ((noinline)) float distancehit_hook(
+        float3 p, float iteration
+        )
+{
+    return 0.0f;
+}
+}
 
 
 // References:
@@ -315,119 +329,22 @@ RT_PROGRAM void julia_ch_radiance()
 
   // ambient occlusion
   JuliaSet distance( max_iterations );
+
   float occlusion = 1.f;
   float fact = 7.f;
   const float delta = 0.05f;
+
   for( int i=0; i<4; ++i ) {
     const float dist = delta * i;
     occlusion -= fact * (dist - distance(p+dist*normal));
     fact *= 0.5f;
   }
+
   occlusion += 0.3f;
   occlusion *= occlusion;
   occlusion = clamp( occlusion, 0.2f, 1.0f );
 
-//   base colors
-  float3 red   = normal*0.5f + make_float3(0.5f);
-  float3 green = red;
-  float3 blue  = red;
-
-
-//   red/orange
-  red.x = abs(normal.x)*0.5f + 0.5f;
-  red.x = max( red.x, 0.1f );
-  red = red * make_float3( 0.8f, 0.1f+red.x, 0.1f );
-  red.y += 0.2f * red.x;
-  red.x += 0.6f;
-  red.x *= max(occlusion,0.8f);
-  red.y *= occlusion;
-  red.z *= occlusion;
-  
-  // green
-  green.x = abs(normal.x)*0.5f + 0.5f;
-  green.z = -abs(normal.z)*0.5f + 0.5f;
-  green.y = green.y * 0.7f + 0.3f;
-  green = green * make_float3( 0.9f*green.y*green.y, 1.0f, 0.2f );
-  green.x += 0.2f;
-  green.x *= green.x;
-  green.x *= occlusion;
-  green.y = max(0.3f,green.y*occlusion);
-  green.z *= occlusion;
-
-  // blue
-  blue.x = abs(normal.x)*0.5f + 0.5f;
-  blue.y = abs(normal.y)*0.5f + 0.5f;
-  blue.z = -abs(normal.z)*0.5f + 0.5f;
-  blue.z = blue.z * 0.7f + 0.3f;
-  blue.x += 0.2f;
-  blue.y += 0.2f;
-  blue = blue * make_float3( 0.9f*blue.y*blue.y, 1.0f*blue.z*blue.y, 1.0f );
-  blue.z += 0.3f;
-  blue.x *= blue.z * max(0.3f,occlusion);
-  blue.y *= occlusion;
-  blue.z = blue.z * max(0.6f,occlusion);
-
-  // select color
-  float3 c0 = green;
-  float3 c1 = red;
-  float ct = color_t;
-  if( color_t > 1.0f ) {
-    c0 = red;
-    c1 = blue;
-    ct -= 1.0f;
-  }
-  float3 result = red; //dot(p,p) > ct*3.0f ? c0 : c1;
-
-  // add glow close to particle
-  const float part_dist = length( p-particle );
-  const float glow = 1.0f - smoothstep( 0.0f, 1.0f, part_dist );
-  result = result + make_float3(glow*0.4f);
-
-  // add phong highlight
-  const float3 l = make_float3( 1, 3, 1 );
-  const float3 h = normalize( l - ray.direction );
-  const float ndh = dot( normal, h );
-  if( ndh > 0.0f ) {
-    result = result + make_float3( 0.6f * occlusion * pow(ndh,20.0f) );
-  }
-
-  //  float magic_ambient_occlusion(const float3 &x, const float3 &n,
-//                                const float del,
-//                                const float k,
-//                                Distance distance)
-
-//  float ao = magic_ambient_occlusion( );
-
-  //result = make_float3( occlusion );
-
-  // Reflection (disabled, doesn't look too great)
-
-  //if( prd_radiance.depth < 5 )
-  //if( prd_radiance.depth < 5 )
-  {
-      PerRayData_radiance new_prd;
-      new_prd.importance = prd_radiance.importance;
-      new_prd.depth = prd_radiance.depth + 1;
-      new_prd.result = make_float3(1,0,0);
-
-      float3 refl = make_float3(0,0,0);
-      refl = reflect( ray.direction, normal );
-      const optix::Ray refl_ray = optix::make_Ray( p, refl, 0, 1e-3f, RT_DEFAULT_MAX );
-      rtTrace( top_object, refl_ray, new_prd );
-
-      PerRayData_radiance new_prd2;
-      new_prd2.importance = prd_radiance.importance;
-      new_prd2.depth = prd_radiance.depth + 1;
-      new_prd2.result = make_float3(1,0,0);
-
-      float3 refr = make_float3(0,0,0);
-      refract( refr, ray.direction, normal, 1.3);
-      const optix::Ray refr_ray = optix::make_Ray( p, refr, 0, 1e-3f, RT_DEFAULT_MAX );
-      rtTrace( top_object, refr_ray, new_prd2 );
-
-      //result = (red * occlusion) + new_prd.result;
-      result =  lerp(new_prd.result + new_prd2.result, result, 0.05);//lerp( new_prd.result * occlusion, result, 0 );
-  }
+  float3 result = shade_hook(p, normal, prd_radiance.iter);
 
   prd_radiance.result = result;
   prd_radiance.result_nrm = normal;//normalize( rtTransformNormal(RT_OBJECT_TO_WORLD, normal) )*0.5f + 0.5f;

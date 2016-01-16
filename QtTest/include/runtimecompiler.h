@@ -33,8 +33,12 @@
 class RuntimeCompiler
 {
 public:
-    RuntimeCompiler(const std::string& _name, const std::string _source);
+    RuntimeCompiler(const std::string& _name, const std::string _source,
+                    std::vector<std::string> _includePaths = std::vector<std::string>(),
+                    std::vector<std::string> _includeFiles = std::vector<std::string>());
     ~RuntimeCompiler();
+
+    char* getResult() { return m_result; }
 
 private:
     nvrtcProgram m_prog;

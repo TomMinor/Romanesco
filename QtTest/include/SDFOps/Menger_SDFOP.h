@@ -1,8 +1,9 @@
 #ifndef MENGERSDFOP_H
 #define MENGERSDFOP_H
 
+#include "Base_SDFOP.h"
 
-class MengerSDFOp
+class MengerSDFOp : public BaseSDFOP
 {
 public:
     MengerSDFOp();
