@@ -31,19 +31,21 @@ using namespace optix;
 
 extern "C"
 {
-extern __device__ __attribute__ ((noinline)) float3 shade_hook(
+__device__ __attribute__ ((noinline)) float3 shade_hook(
         float3 p, float3 nrm, float iteration
-        );
+        )
+{
+    return p;
+}
 }
 
 extern "C"
 {
-__device__ __attribute__ ((noinline)) float distancehit_hook(
-        float3 p, float iteration
-        )
-{
-    return 0.0f;
-}
+
+extern __device__ __attribute__ ((noinline)) float distancehit_hook(
+        float3 x, float _t, float _max_iterations
+        );
+
 }
 
 
@@ -206,13 +208,6 @@ struct JuliaSet
     int i = m_max_iterations;
     while( i-- )
     {
-//      fp_n = 2.0f * mul( make_float4(zn), fp_n );   // z prime in [2]
-//      zn = square( make_float4(zn) ) + c4;         // equation (1) in [1]
-
-      // Stop when we know the point diverges.
-      // TODO: removing this condition burns 2 less registers and results in
-      //       in a big perf improvement. Can we do something about it?
-
       rad = length(zn);
 
       if( rad > sq_threshold )
@@ -284,7 +279,8 @@ RT_PROGRAM void intersect(int primIdx)
 
     for( step = 0; step < maxSteps; ++step )
     {
-      dist = distance( x );
+      //dist = distance( x );
+      dist = distancehit_hook(x, global_t, max_iterations );
 
       // Step along the ray and accumulate the distance from the origin.
       x += dist * ray_direction;
@@ -303,7 +299,7 @@ RT_PROGRAM void intersect(int primIdx)
         // color HACK
         //distance.m_max_iterations = 14;  // more iterations for normal estimate, to fake some more detail
         distance.m_max_iterations = 6;
-        normal = estimate_normal(distance, x, DEL);
+//        normal = estimate_normal(distance, x, DEL);
         rtReportIntersection( 0 );
       }
     }

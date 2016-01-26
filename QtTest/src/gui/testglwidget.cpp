@@ -367,7 +367,7 @@ void TestGLWidget::keyPressEvent(QKeyEvent *_event)
 
         case Qt::Key_P:
             testctr++;
-            m_optixScene->testSceneUpdate(1);
+            m_optixScene->createGeometry(testctr % 2);
 
         default:
             _event->ignore();

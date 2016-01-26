@@ -47,7 +47,7 @@ public:
 
     void updateBufferSize(unsigned int _width, unsigned int _height);
     void drawToBuffer();
-    void createGeometry();
+    void createGeometry(int choose = 0);
 
     optix::Buffer createOutputBuffer(RTformat _format, unsigned int _width, unsigned int _height);
 
