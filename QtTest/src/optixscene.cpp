@@ -555,31 +555,38 @@ bool hookPtxFunction( const std::string& _ptxPath,
     return true;
 }
 
+#include "Base_SDFOP.h"
+#include "Sphere_SDFOP.h"
+#include "Transform_SDFOP.h"
+
 void OptixScene::createGeometry(int choose)
 {
+    std::vector<BaseSDFOP*> ops;
 
+    ops.push_back( new Sphere_SDFOP );
+    ops.push_back( new Transform_SDFOP );
 
-    std::string shade_hook_src_A = ""
-    "#include \"cutil_math.h\" \n"
-    "extern \"C\" { \n"
-    "__device__ float3 shade_hook("
-            "float3 p, float3 nrm, float iteration"
-            ")"
-    "{\n"
-"        return nrm;\n"
-    "}\n } \n";
+//    std::string shade_hook_src_A = ""
+//    "#include \"cutil_math.h\" \n"
+//    "extern \"C\" { \n"
+//    "__device__ float3 shade_hook("
+//            "float3 p, float3 nrm, float iteration"
+//            ")"
+//    "{\n"
+//"        return nrm;\n"
+//    "}\n } \n";
 
-    std::string shade_hook_src_B = ""
-    "#include \"cutil_math.h\" \n"
-    "extern \"C\" { \n"
-    "__device__ float3 shade_hook("
-            "float3 p, float3 nrm, float iteration"
-            ")"
-    "{\n"
-"        return p;\n"
-    "}\n } \n";
+//    std::string shade_hook_src_B = ""
+//    "#include \"cutil_math.h\" \n"
+//    "extern \"C\" { \n"
+//    "__device__ float3 shade_hook("
+//            "float3 p, float3 nrm, float iteration"
+//            ")"
+//    "{\n"
+//"        return p;\n"
+//    "}\n } \n";
 
-    std::string shade_hook_src = shade_hook_src_B;//(choose == 0) ? shade_hook_src_A : shade_hook_src_B;
+//    std::string shade_hook_src = shade_hook_src_B;//(choose == 0) ? shade_hook_src_A : shade_hook_src_B;
 
 
     std::string mandelbulb_hit_src =

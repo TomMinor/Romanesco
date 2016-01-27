@@ -13,18 +13,13 @@ public:
     BaseSDFOP();
     ~BaseSDFOP();
 
-    virtual std::string getSource() = 0;
+    virtual std::string getSource();
 
 protected:
     ///
     /// \brief m_displayName
     ///
     std::string m_displayName = "Base Operator";
-
-    ///
-    /// \brief m_source Inline source code snippet
-    ///
-    std::string m_source = "";
 
     std::vector<std::string> m_headers;
 

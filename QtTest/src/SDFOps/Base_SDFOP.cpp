@@ -10,3 +10,8 @@ BaseSDFOP::~BaseSDFOP()
 {
 
 }
+
+std::string BaseSDFOP::getSource()
+{
+    return "assert()";
+}
