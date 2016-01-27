@@ -3,6 +3,7 @@
 
 #include <string>
 #include <map>
+#include <vector>
 
 typedef std::map<std::string, std::string> OperatorParams;
 
@@ -21,14 +22,11 @@ protected:
     std::string m_displayName = "Base Operator";
 
     ///
-    /// \brief m_sourcePath Source code snippet filepath
-    ///
-    std::string m_sourcePath = "";
-
-    ///
     /// \brief m_source Inline source code snippet
     ///
     std::string m_source = "";
+
+    std::vector<std::string> m_headers;
 
     OperatorParams m_params;
 };

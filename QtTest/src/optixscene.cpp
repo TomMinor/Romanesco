@@ -20,7 +20,6 @@
 #include <cerrno>
 #include <assert.h>
 
-
 #include <OpenEXR/ImfRgba.h>
 #include <OpenEXR/ImfRgbaFile.h>
 #include <OpenEXR/ImfChannelList.h>
@@ -116,8 +115,8 @@ void writeRGBA2(std::string fileName, std::vector<Image> _layers)
         framebuffer.insert( name_a, Imf::Slice( Imf::HALF, channel_aPtr, xstride, ystride ) );
     }
 
-  Imf::OutputFile file(fileName.c_str(), header);
-  file.setFrameBuffer( framebuffer );
+    Imf::OutputFile file(fileName.c_str(), header);
+    file.setFrameBuffer( framebuffer );
     file.writePixels( _layers[0].m_height );
 }
 
