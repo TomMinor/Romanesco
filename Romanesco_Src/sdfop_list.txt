@@ -1,0 +1,16 @@
+sphere
+box
+torus
+cylinder
+cone
+capsule
+union
+subtraction
+intersection
+repetition
+transform
+scale
+blend
+displace
+twist
+bend
