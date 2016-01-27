@@ -494,6 +494,7 @@ bool hookPtxFunction( const std::string& _ptxPath,
             src_ptx.push_back(line);
         }
     }
+
     // Remove the compiler comments/version info
     // @todo Make this more robust
     src_ptx.erase(src_ptx.begin(), src_ptx.begin() + 13);

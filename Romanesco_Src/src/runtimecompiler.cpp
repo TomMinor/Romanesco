@@ -1,10 +1,18 @@
 #include "include/runtimecompiler.h"
 
+#ifndef NVRTC_AVAILABLE
+#include <stdlib.h>
+#include <cstring>
+#endif
+
+#include "macrohelpers.h"
+
 RuntimeCompiler::RuntimeCompiler(const std::string &_name, const std::string _source,
                                  std::vector<std::string> _includePaths,
                                  std::vector<std::string> _includeFiles)
     : m_result(nullptr)
 {
+#ifdef NVRTC_AVAILABLE
     NVRTC_SAFE_CALL( nvrtcCreateProgram(&m_prog, _source.c_str(), _name.c_str(), 0, NULL, NULL) );
 
     std::vector<const char*> opts;
@@ -35,13 +43,21 @@ RuntimeCompiler::RuntimeCompiler(const std::string &_name, const std::string _so
 
     m_result = new char[ptxSize];
     NVRTC_SAFE_CALL(nvrtcGetPTX(m_prog, m_result));
+#else
+    qDebug() << MACROTOSTRING(CUDA_EXE);
+
+    m_result = new char[strlen(_source.c_str())];
+    strcpy(m_result, _source.c_str());
+#endif
 }
 
 RuntimeCompiler::~RuntimeCompiler()
 {
     delete m_result;
 
+#ifdef NVRTC_AVAILABLE
     // Destroy the program.
     NVRTC_SAFE_CALL(nvrtcDestroyProgram(&m_prog));
+#endif
 }
 

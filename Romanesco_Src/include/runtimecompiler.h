@@ -5,7 +5,9 @@
 #include <QDebug>
 
 #include <cuda.h>
-#include <nvrtc.h>
+#ifdef NVRTC_AVAILABLE
+    #include <nvrtc.h>
+#endif
 
 ///@todo Update these to the modern CUDA style stuff
 #define NVRTC_SAFE_CALL(x)                                        \
@@ -41,7 +43,9 @@ public:
     char* getResult() { return m_result; }
 
 private:
+#ifdef NVRTC_AVAILABLE
     nvrtcProgram m_prog;
+#endif
 
     char* m_result;
 };
