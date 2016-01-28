@@ -28,7 +28,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 #include <QOpenGLWidget>
 
 #include "mainwindow.h"
-#include "ui_qnemainwindow.h"
+//#include "ui_qnemainwindow.h"
 
 #include "qneblock.h"
 #include "qnodeseditor.h"

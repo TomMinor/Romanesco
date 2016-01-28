@@ -15,8 +15,9 @@ RuntimeCompiler::RuntimeCompiler(const std::string &_name, const std::string _so
     std::vector<const char*> opts;
     opts.push_back("--gpu-architecture=compute_35");
     opts.push_back("-rdc=true");
-    opts.push_back("-I$HOME/src/Romanesco/QtTest/kernel");
-    opts.push_back("-I/usr/local/cuda-7.0/targets/x86_64-linux/include");
+    opts.push_back("-I./kernel");
+    // CUDA_INCLUDE_PATH include folder is set in the .pro file at compile time for now
+    opts.push_back("-I" MACROTOSTRING(CUDA_INCLUDE_PATH)); // compiler automatically concatenates the string and macro
 
 #ifdef NVRTC_AVAILABLE
     NVRTC_SAFE_CALL( nvrtcCreateProgram(&m_prog, _source.c_str(), _name.c_str(), 0, NULL, NULL) );

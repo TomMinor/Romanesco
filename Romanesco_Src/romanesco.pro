@@ -53,16 +53,19 @@ CUDA_SOURCES += kernel/*.cu
 
 # Setup CUDA paths
 linux:CUDA_DIR = $$system( dirname $(dirname $(which nvcc)) )
+linux:CUDA_INCLUDE = $$CUDA_DIR/include
 linux:CUDA_SDK = $$CUDA_DIR/samples
 linux:CUDA_VERSION = $$system($$CUDA_DIR/bin/nvcc --version | grep release | grep -o -E '[0-9]\.[0-9]' | head -1)
 INCLUDEPATH += $$CUDA_DIR/include
 INCLUDEPATH += $$CUDA_DIR/common/inc/
 INCLUDEPATH += $$CUDA_DIR/../shared/inc/
 
+DEFINES += CUDA_INCLUDE_PATH=$$CUDA_INCLUDE
+
 # Setup Optix paths
 linux:OPTIX_DIR = $(HOME)/src/optix
 PTX_DIR = ./ptx
- 
+
 linux:INCLUDEPATH += $$OPTIX_DIR/SDK/sutil
 linux:INCLUDEPATH += $$OPTIX_DIR/SDK
 linux:INCLUDEPATH += $$OPTIX_DIR/include

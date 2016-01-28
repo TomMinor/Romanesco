@@ -1,9 +1,11 @@
 #include "Base_SDFOP.h"
 
+std::set<std::string> BaseSDFOP::m_headers;
+
 BaseSDFOP::BaseSDFOP()
 {
     // Everything will probably need this
-    m_headers.push_back( "cutil_math.h" );
+    m_headers.insert( "cutil_math.h" );
 }
 
 BaseSDFOP::~BaseSDFOP()
@@ -13,5 +15,5 @@ BaseSDFOP::~BaseSDFOP()
 
 std::string BaseSDFOP::getSource()
 {
-    return "assert()";
+    return "assert(\"UNUSED\")";
 }
