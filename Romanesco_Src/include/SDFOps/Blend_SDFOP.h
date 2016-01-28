@@ -7,7 +7,7 @@
 class Blend_SDFOP : public BaseSDFOP 
 { 
 public: 
-    Blend_SDFOP(); 
+    Blend_SDFOP();
     ~Blend_SDFOP(); 
 }; 
  
