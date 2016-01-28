@@ -559,13 +559,14 @@ bool hookPtxFunction( const std::string& _ptxPath,
 #include "Base_SDFOP.h"
 #include "Sphere_SDFOP.h"
 #include "Transform_SDFOP.h"
+#include <glm/gtc/matrix_transform.hpp>
 
 void OptixScene::createGeometry(int choose)
 {
     std::vector<BaseSDFOP*> ops;
 
-    ops.push_back( new Sphere_SDFOP );
-    ops.push_back( new Transform_SDFOP );
+    ops.push_back( new Transform_SDFOP( glm::vec3(choose, 0.0f, 0.0f)) );
+    ops.push_back( new Sphere_SDFOP(1.0f) );
 
 //    std::string shade_hook_src_A = ""
 //    "#include \"cutil_math.h\" \n"
@@ -576,7 +577,7 @@ void OptixScene::createGeometry(int choose)
 //    "{\n"
 //"        return nrm;\n"
 //    "}\n } \n";
-
+p
 //    std::string shade_hook_src_B = ""
 //    "#include \"cutil_math.h\" \n"
 //    "extern \"C\" { \n"
@@ -649,16 +650,42 @@ void OptixScene::createGeometry(int choose)
             "}\n"
             "}\n";
 
-    std::string hit_src = (choose == 0) ? mandelbulb_hit_src : sphere_hit_src;
+    //std::string hit_src = (choose == 0) ? mandelbulb_hit_src : sphere_hit_src;
+
+    std::stringstream hit_src;
+
+    //@todo This is kinda terribly implemented right now
+    for(std::string header : BaseSDFOP::m_headers)
+    {
+        hit_src << "#include \"" << header << "\" \n";
+    }
+
+    // Define generic structure for hit function
+    hit_src << "extern \"C\" {\n";
+    hit_src << "__device__ float distancehit_hook(";
+    hit_src <<      "float3 _p, float _t, float _max_iterations";
+    hit_src << ")\n";
+    hit_src << "{\n";
+
+    // Generate main block
+    for(BaseSDFOP* op : ops)
+    {
+        hit_src << op->getSource();
+    }
+
+    hit_src << "}\n";
+    hit_src << "}\n";
 
     std::string ptx;
     //hookPtxFunction("ptx/raymarch.cu.ptx", "shade_hook", shade_hook_src, ptx);
 
-    qDebug() << mandelbulb_hit_src.c_str();
+//    qDebug() << mandelbulb_hit_src.c_str();
 
-    hookPtxFunction("ptx/raymarch.cu.ptx", "distancehit_hook", hit_src, ptx);
+    qDebug() << hit_src.str().c_str();
 
-    qDebug() << ptx.c_str();
+    hookPtxFunction("ptx/raymarch.cu.ptx", "distancehit_hook", hit_src.str(), ptx);
+
+//    qDebug() << ptx.c_str();
 
     //qDebug() << result.c_str();
 

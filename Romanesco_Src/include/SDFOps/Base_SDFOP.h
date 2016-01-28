@@ -4,6 +4,7 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <set>
 
 typedef std::map<std::string, std::string> OperatorParams;
 
@@ -15,13 +16,15 @@ public:
 
     virtual std::string getSource();
 
+    static std::set<std::string> m_headers;
+
 protected:
     ///
     /// \brief m_displayName
     ///
     std::string m_displayName = "Base Operator";
 
-    std::vector<std::string> m_headers;
+
 
     OperatorParams m_params;
 };
