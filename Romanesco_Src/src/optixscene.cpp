@@ -342,8 +342,7 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height)
     //m_context->setMissProgram( 0, m_context->createProgramFromPTXFile( "ptx/constantbg.cu.ptx", "miss" ) );
     m_context["bg_color"]->setFloat( optix::make_float3(108.0f/255.0f, 166.0f/255.0f, 205.0f/255.0f) * 0.5f );
 
-    //m_context->setMissProgram( 0, m_context->createProgramFromPTXFile( "ptx/julia.cu.ptx", "envmap_miss" ) );
-
+    m_context->setMissProgram( 0, m_context->createProgramFromPTXFile( "ptx/julia.cu.ptx", "envmap_miss" ) );
 
     const optix::float3 default_color = optix::make_float3(1.0f, 1.0f, 1.0f);
     //m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/tom/src/optix/SDK/tutorial/data/CedarCity.hdr", default_color) );
@@ -577,7 +576,7 @@ void OptixScene::createGeometry(int choose)
 {
     std::vector<BaseSDFOP*> ops;
 
-    ops.push_back( new Transform_SDFOP( glm::vec3(choose, 0.0f, 0.0f)) );
+    ops.push_back( new Transform_SDFOP( glm::vec3(choose * 0.25f, 0.0f, 0.0f)) );
     ops.push_back( new Sphere_SDFOP(1.0f) );
 
 //    std::string shade_hook_src_A = ""
@@ -722,7 +721,7 @@ void OptixScene::createGeometry(int choose)
     //optix::Program floor_ah = m_context->createProgramFromPTXFile( "ptx/block_floor.cu.ptx", "block_floor_ah_shadow" );
     //optix::Program normal_ch = m_context->createProgramFromPTXFile( "ptx/normal_shader.cu.ptx", "closest_hit_radiance" );
 
-    m_context->setMissProgram( 0, m_context->createProgramFromPTXString( ptx, "envmap_miss" ) );
+
 
     // Julia material
     optix::Material julia_matl = m_context->createMaterial();
