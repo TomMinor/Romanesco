@@ -101,7 +101,7 @@ lessThan(CUDA_VERSION, 7.0) {
 #for optix you can only have one architechture when using the PTX flags when using the -ptx flag you dont want to have the -c flag for compiling
 optix.input = CUDA_SOURCES
 optix.output = $$PTX_DIR/${QMAKE_FILE_BASE}.cu.ptx
-optix.commands = $$CUDA_DIR/bin/nvcc -m64 -gencode arch=compute_50,code=sm_50 $$NVCCFLAGS $$CUDA_INC $$LIBS  ${QMAKE_FILE_NAME} -o ${QMAKE_FILE_OUT}
+optix.commands = $$CUDA_DIR/bin/nvcc -m64 -gencode arch=compute_20,code=sm_20 $$NVCCFLAGS $$CUDA_INC $$LIBS  ${QMAKE_FILE_NAME} -o ${QMAKE_FILE_OUT}
 #use this line for debug code
 #optix.commands = $$CUDA_DIR/bin/nvcc -m64 -g -G -gencode arch=compute_50,code=sm_50 $$NVCCFLAGS $$CUDA_INC $$LIBS  ${QMAKE_FILE_NAME} -o ${QMAKE_FILE_OUT}
 optix.CONFIG = target_predeps

@@ -1,11 +1,32 @@
+#include <fstream>
+#include <ostream>
+
 #include "include/runtimecompiler.h"
+#include "macrohelpers.h"
 
 #ifndef NVRTC_AVAILABLE
+#include <string>
+#include <iostream>
+#include <cstdio>
+#include <memory>
+#include <exception>
+
 #include <stdlib.h>
 #include <cstring>
-#endif
 
-#include "macrohelpers.h"
+std::string exec(const char* cmd) {
+    std::shared_ptr<FILE> pipe(popen(cmd, "r"), pclose);
+    if (!pipe)
+        throw std::runtime_error("Error opening pipe");
+    char buffer[128];
+    std::string result = "";
+    while (!feof(pipe.get())) {
+        if (fgets(buffer, 128, pipe.get()) != NULL)
+            result += buffer;
+    }
+    return result;
+}
+#endif
 
 RuntimeCompiler::RuntimeCompiler(const std::string &_name, const std::string _source,
                                  std::vector<std::string> _includePaths,
@@ -13,7 +34,7 @@ RuntimeCompiler::RuntimeCompiler(const std::string &_name, const std::string _so
     : m_result(nullptr)
 {
     std::vector<const char*> opts;
-    opts.push_back("--gpu-architecture=compute_35");
+    opts.push_back("--gpu-architecture=compute_20");
     opts.push_back("-rdc=true");
     opts.push_back("-I./kernel");
     // CUDA_INCLUDE_PATH include folder is set in the .pro file at compile time for now
@@ -47,12 +68,32 @@ RuntimeCompiler::RuntimeCompiler(const std::string &_name, const std::string _so
 #else
     const std::string nvccbin = MACROTOSTRING(CUDA_EXE);
     const std::string nvccflags= "--compiler-options -fno-strict-aliasing -use_fast_math --ptxas-options=-v -ptx";
-    const std::string nvcccall = nvccbin + " -m64 -gencode arch=compute_50,code=sm_50 " + nvccflags;
 
-    system( nvcccall.c_str() );
+    std::string nvcc_opts;
+    for(std::string opt : opts)
+    {
+        nvcc_opts += opt + " ";
+    }
 
-    m_result = new char[strlen(_source.c_str())];
-    strcpy(m_result, _source.c_str());
+    static const std::string tmpFile = "/tmp/out.cu";
+    std::ofstream cudaFile(tmpFile, std::ofstream::out );
+    cudaFile << _source;
+    cudaFile.close();
+
+    const std::string nvcccall = nvccbin + " -m64 " + nvcc_opts + nvccflags + " " + " -o /dev/stdout " + tmpFile;
+
+    std::string result;
+    try
+    {
+        result = exec( nvcccall.c_str() );
+    }
+    catch( std::runtime_error e)
+    {
+        qCritical() << e.what();
+    }
+
+    m_result = new char[result.length()];
+    strcpy(m_result, result.c_str());
 #endif
 }
 

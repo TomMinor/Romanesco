@@ -342,7 +342,8 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height)
     //m_context->setMissProgram( 0, m_context->createProgramFromPTXFile( "ptx/constantbg.cu.ptx", "miss" ) );
     m_context["bg_color"]->setFloat( optix::make_float3(108.0f/255.0f, 166.0f/255.0f, 205.0f/255.0f) * 0.5f );
 
-    m_context->setMissProgram( 0, m_context->createProgramFromPTXFile( "ptx/raymarch.cu.ptx", "envmap_miss" ) );
+    //m_context->setMissProgram( 0, m_context->createProgramFromPTXFile( "ptx/julia.cu.ptx", "envmap_miss" ) );
+
 
     const optix::float3 default_color = optix::make_float3(1.0f, 1.0f, 1.0f);
     //m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/tom/src/optix/SDK/tutorial/data/CedarCity.hdr", default_color) );
@@ -495,9 +496,13 @@ bool hookPtxFunction( const std::string& _ptxPath,
         }
     }
 
-    // Remove the compiler comments/version info
+
+    int pos = find(src_ptx.begin(), src_ptx.end(), ".visible .func  (.param .b32 func_retval0) " + _functionName + "(") - src_ptx.begin();
+
+    //// Remove the compiler comments/version info
+    // Remove everything except the function body
     // @todo Make this more robust
-    src_ptx.erase(src_ptx.begin(), src_ptx.begin() + 13);
+    src_ptx.erase(src_ptx.begin(), src_ptx.begin() + pos);
 
     // Convert the ptx code to a vector of lines
     std::vector<std::string> ptx_lines;
@@ -544,8 +549,15 @@ bool hookPtxFunction( const std::string& _ptxPath,
 
     // Remove old extern block
     ptx_lines.erase(ptx_lines.begin() + startExtern, ptx_lines.begin() + endExtern + 1);
+//    for(auto ptx : src_ptx)
+//    {
+//        std::cout << ptx.c_str() << "\n";
+//    }
+
     // Replace with our actual function ptx
     ptx_lines.insert(ptx_lines.begin() + startExtern, src_ptx.begin(), src_ptx.end());
+
+//    for(auto ptx : ptx_lines) { std::cout << ptx.c_str() << "\n"; }
 
     // Join the list into a string
     std::string concatptx = boost::algorithm::join(ptx_lines, "\n");
@@ -577,7 +589,7 @@ void OptixScene::createGeometry(int choose)
 //    "{\n"
 //"        return nrm;\n"
 //    "}\n } \n";
-p
+
 //    std::string shade_hook_src_B = ""
 //    "#include \"cutil_math.h\" \n"
 //    "extern \"C\" { \n"
@@ -680,20 +692,9 @@ p
     //hookPtxFunction("ptx/raymarch.cu.ptx", "shade_hook", shade_hook_src, ptx);
 
 //    qDebug() << mandelbulb_hit_src.c_str();
-
-    qDebug() << hit_src.str().c_str();
+//    qDebug() << hit_src.str().c_str();
 
     hookPtxFunction("ptx/raymarch.cu.ptx", "distancehit_hook", hit_src.str(), ptx);
-
-//    qDebug() << ptx.c_str();
-
-    //qDebug() << result.c_str();
-
-    //qDebug() << ptx.find("shade_hook");
-
-//    qDebug() << ptx.c_str();
-
-//    qDebug() << ptx.c_str();
 
     ///@todo Optix error checking
 
@@ -701,6 +702,8 @@ p
     julia->setPrimitiveCount( 1u );
     julia->setBoundingBoxProgram( m_context->createProgramFromPTXString( ptx, "bounds" ) );
     julia->setIntersectionProgram( m_context->createProgramFromPTXString( ptx, "intersect" ) );
+//    julia->setBoundingBoxProgram( m_context->createProgramFromPTXFile( "ptx/julia.cu.ptx", "bounds" ) );
+//    julia->setIntersectionProgram( m_context->createProgramFromPTXFile( "ptx/julia.cu.ptx", "intersect" ) );
 
     // Sphere
 //    optix::Geometry sphere = m_context->createGeometry();
@@ -711,11 +714,15 @@ p
 
     optix::Program julia_ch = m_context->createProgramFromPTXString( ptx, "julia_ch_radiance" );
     optix::Program julia_ah = m_context->createProgramFromPTXString( ptx, "julia_ah_shadow" );
+//    optix::Program julia_ch = m_context->createProgramFromPTXFile( "ptx/julia.cu.ptx", "julia_ch_radiance" );
+//    optix::Program julia_ah = m_context->createProgramFromPTXFile( "ptx/julia.cu.ptx", "julia_ah_shadow" );
 //    optix::Program chrome_ch = m_context->createProgramFromPTXString( ptx, "chrome_ch_radiance" );
 //    optix::Program chrome_ah = m_context->createProgramFromPTXString( ptx, "chrome_ah_shadow" );
     //optix::Program floor_ch = m_context->createProgramFromPTXFile( "ptx/block_floor.cu.ptx", "block_floor_ch_radiance" );
     //optix::Program floor_ah = m_context->createProgramFromPTXFile( "ptx/block_floor.cu.ptx", "block_floor_ah_shadow" );
     //optix::Program normal_ch = m_context->createProgramFromPTXFile( "ptx/normal_shader.cu.ptx", "closest_hit_radiance" );
+
+    m_context->setMissProgram( 0, m_context->createProgramFromPTXString( ptx, "envmap_miss" ) );
 
     // Julia material
     optix::Material julia_matl = m_context->createMaterial();
