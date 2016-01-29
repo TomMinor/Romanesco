@@ -92,6 +92,11 @@ bool QNEPort::isOutput()
 	return isOutput_;
 }
 
+bool QNEPort::isIO()
+{
+    return !((m_portFlags & TypePort) || (m_portFlags & NamePort));
+}
+
 QVector<QNEConnection*>& QNEPort::connections()
 {
 	return m_connections;

@@ -47,6 +47,7 @@ public:
 	void save(QDataStream &ds);
 	void load(QDataStream &ds);
 
+    void getItems();
 private:
 	QGraphicsItem *itemAt(const QPointF&);
 

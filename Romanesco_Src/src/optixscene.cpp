@@ -576,7 +576,7 @@ void OptixScene::createGeometry(int choose)
 {
     std::vector<BaseSDFOP*> ops;
 
-    ops.push_back( new Transform_SDFOP( glm::vec3(choose * 0.25f, 0.0f, 0.0f)) );
+    ops.push_back( new Transform_SDFOP(glm::vec3(choose * 0.25f, 0.0f, 0.0f)) );
     ops.push_back( new Sphere_SDFOP(1.0f) );
 
 //    std::string shade_hook_src_A = ""
@@ -696,7 +696,6 @@ void OptixScene::createGeometry(int choose)
     hookPtxFunction("ptx/raymarch.cu.ptx", "distancehit_hook", hit_src.str(), ptx);
 
     ///@todo Optix error checking
-
     optix::Geometry julia = m_context->createGeometry();
     julia->setPrimitiveCount( 1u );
     julia->setBoundingBoxProgram( m_context->createProgramFromPTXString( ptx, "bounds" ) );

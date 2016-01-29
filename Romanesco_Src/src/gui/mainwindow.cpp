@@ -34,6 +34,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 #include "qnodeseditor.h"
 #include "qneport.h"
 
+#include "nodes/distanceopnode.h"
+
 #include "gridscene.h"
 #include "testglwidget.h"
 
@@ -97,23 +99,14 @@ MainWindow::MainWindow(QWidget *parent) :
     nodesEditor = new QNodesEditor(this);
     nodesEditor->install(scene);
 
+    DistanceOpNode *c = new DistanceOpNode(scene, 0);
 
-    QNEBlock *b = new QNEBlock(0);
-    scene->addItem(b);
-    b->addPort("test", 0, QNEPort::NamePort);
-    b->addPort("TestBlock", 0, QNEPort::TypePort);
-    b->addInputPort("in1");
-    b->addInputPort("in2");
-    b->addInputPort("in3");
-    b->addOutputPort("out1");
-    b->addOutputPort("out2");
-    b->addOutputPort("out3");
+//    scene->addItem(c);
 
-    b = b->clone();
-    b->setPos(150, 0);
+//    b = b->clone();
+//    b->setPos(150, 150);
 
-    b = b->clone();
-    b->setPos(150, 150);
+    nodesEditor->getItems();
 
     m_updateTimer = startTimer(30);
     m_drawTimer = startTimer(30);
