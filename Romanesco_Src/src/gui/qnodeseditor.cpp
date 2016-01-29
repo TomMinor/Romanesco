@@ -32,6 +32,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 #include "qneport.h"
 #include "qneconnection.h"
 #include "qneblock.h"
+#include "nodes/terminatenode.h"
 
 #include <QDebug>
 
@@ -45,6 +46,8 @@ void QNodesEditor::install(QGraphicsScene *s)
 {
 	s->installEventFilter(this);
 	scene = s;
+
+    endBlock = new TerminateNode(scene, 0);
 }
 
 QGraphicsItem* QNodesEditor::itemAt(const QPointF &pos)
@@ -59,6 +62,7 @@ QGraphicsItem* QNodesEditor::itemAt(const QPointF &pos)
 }
 
 #include <QKeyEvent>
+#include "gui/nodes/distanceopnode.h"
 
 bool QNodesEditor::eventFilter(QObject *o, QEvent *e)
 {
@@ -71,8 +75,16 @@ bool QNodesEditor::eventFilter(QObject *o, QEvent *e)
                 QKeyEvent *k = static_cast<QKeyEvent *>(e);
                 switch(k->key())
                 {
-                    case Qt::Key_X:
-                        this->getItems();
+                    case Qt::Key_P:
+                        {
+                            this->getItems(endBlock);
+                            break;
+                        }
+                    case Qt::Key_C:
+                        {
+                            DistanceOpNode *c = new DistanceOpNode("Union", scene, 0);
+                            break;
+                        }
                 }
             }
         case QEvent::GraphicsSceneMousePress:
@@ -152,16 +164,67 @@ bool QNodesEditor::eventFilter(QObject *o, QEvent *e)
     return QObject::eventFilter(o, e);
 }
 
-void QNodesEditor::getItems()
+void QNodesEditor::getItems(QNEBlock* _node, int _depth)
 {
-    foreach(QGraphicsItem *item, scene->items())
+    std::string indent = std::string(_depth, '\t').c_str();
+//    qDebug() << indent.c_str() << "Eval " << _node->displayName();
+
+    for(QNEPort* port : _node->inputPorts())
     {
-        QNEBlock* node = qgraphicsitem_cast<QNEBlock*>(item);
-        if(node)
+        QVector<QNEConnection*>& connections = port->connections();
+        for(int i = 0; i < connections.length(); i++)
         {
-            qDebug() << node->displayName();
+            QNEConnection* connection = connections[i];
+
+            QNEPort* p1 = connection->port1();
+            QNEPort* p2 = connection->port2();
+
+            qDebug() << indent.c_str() << "Eval " << _node->displayName() << " Input " << i << " : " << p1->block()->displayName();
+
+            if(_depth < 5)
+                getItems(p1->block(), _depth + 1);
         }
     }
+
+//    foreach(QGraphicsItem *item, scene->items())
+//    {
+//        QNEBlock* node = qgraphicsitem_cast<QNEBlock*>(item);
+//        if(node)
+//        {
+//            qDebug() << node->displayName();
+//            for(auto port : node->ports())
+//            {
+//                QVector<QNEConnection*>& connections = port->connections();
+//                for(QNEConnection* connection : connections)
+//                {
+//                    QNEPort* p1 = connection->port1();
+//                    QNEPort* p2 = connection->port2();
+
+//                    qDebug() << "\t" << p1->block()->displayName() << "->" << p2->block()->displayName();
+//                }
+//            }
+//        }
+//    }
+
+//    foreach(QGraphicsItem *item, scene->items())
+//    {
+//        QNEBlock* node = qgraphicsitem_cast<QNEBlock*>(item);
+//        if(node)
+//        {
+//            qDebug() << node->displayName();
+//            for(auto port : node->ports())
+//            {
+//                QVector<QNEConnection*>& connections = port->connections();
+//                for(QNEConnection* connection : connections)
+//                {
+//                    QNEPort* p1 = connection->port1();
+//                    QNEPort* p2 = connection->port2();
+
+//                    qDebug() << "\t" << p1->block()->displayName() << "->" << p2->block()->displayName();
+//                }
+//            }
+//        }
+//    }
 
 //    foreach(QGraphicsItem *item, scene->items())
 //    {

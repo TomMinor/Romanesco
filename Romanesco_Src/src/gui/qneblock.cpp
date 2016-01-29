@@ -86,8 +86,10 @@ QNEPort* QNEBlock::addPort(const QString &name, bool isOutput, int flags, int pt
 		QNEPort *port = (QNEPort*) port_;
         if(!port->isIO())
         {
+            // Name ports etc
             port->setPos(-width/2 - port->radius(), y);
             y += h;
+            continue;
         }
         else
         {
@@ -107,8 +109,8 @@ QNEPort* QNEBlock::addPort(const QString &name, bool isOutput, int flags, int pt
 
     const float portSpacing = 0.0f;
     const float portOffset = (h + (portSpacing * port->radius()));
-    float yIn = y + portOffset;
-    float yOut = y + portOffset;
+    float yIn = portOffset;//y + portOffset;
+    float yOut = portOffset;//y + portOffset;
 
     if(inputCtr < outputCtr)
     {
@@ -312,8 +314,7 @@ QVector<QNEPort*> QNEBlock::inputPorts()
             GraphicsItemFlags flags = port->flags();
 
             // Don't add name ports etc
-            if( !((flags & QNEPort::NamePort)
-               || (flags & QNEPort::TypePort)) )
+            if( port->isIO() )
             {
                 if(!port->isOutput())
                 {

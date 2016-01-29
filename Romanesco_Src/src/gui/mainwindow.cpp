@@ -99,12 +99,10 @@ MainWindow::MainWindow(QWidget *parent) :
     nodesEditor = new QNodesEditor(this);
     nodesEditor->install(scene);
 
-    DistanceOpNode *c = new DistanceOpNode("Union", scene, 0);
+    //DistanceOpNode *c = new DistanceOpNode("Union", scene, 0);
 
 //    b = b->clone();
 //    b->setPos(150, 150);
-
-    nodesEditor->getItems();
 
     m_updateTimer = startTimer(30);
     m_drawTimer = startTimer(30);
@@ -154,11 +152,11 @@ void MainWindow::loadFile()
 
 void MainWindow::addBlock()
 {
-    QNEBlock *b = new QNEBlock(scene, 0);
-	static const char* names[] = {"Vin", "Voutsadfasdf", "Imin", "Imax", "mul", "add", "sub", "div", "Conv", "FFT"};
-	for (int i = 0; i < 4 + rand() % 3; i++)
-	{
-		b->addPort(names[rand() % 10], rand() % 2, 0, 0);
-        b->setPos(view->sceneRect().center().toPoint());
-	}
+   DistanceOpNode *c = new DistanceOpNode("Union", scene, 0);
+//	static const char* names[] = {"Vin", "Voutsadfasdf", "Imin", "Imax", "mul", "add", "sub", "div", "Conv", "FFT"};
+//	for (int i = 0; i < 4 + rand() % 3; i++)
+//	{
+//		b->addPort(names[rand() % 10], rand() % 2, 0, 0);
+//        b->setPos(view->sceneRect().center().toPoint());
+//	}
 }

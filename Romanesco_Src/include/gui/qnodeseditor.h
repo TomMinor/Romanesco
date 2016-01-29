@@ -48,14 +48,15 @@ public:
 	void save(QDataStream &ds);
 	void load(QDataStream &ds);
 
-    void getItems();
+    void getItems(QNEBlock *_node, int _depth = 0);
 private:
 	QGraphicsItem *itemAt(const QPointF&);
 
 private:
 	QGraphicsScene *scene;
 	QNEConnection *conn;
-	// QNEBlock *selBlock;
+
+    QNEBlock *endBlock;
 };
 
 #endif // QNODESEDITOR_H
