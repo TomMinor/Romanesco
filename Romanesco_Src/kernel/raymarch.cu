@@ -343,6 +343,7 @@ RT_PROGRAM void julia_ch_radiance()
   float3 result = shade_hook(p, normal, prd_radiance.iter);
 
   prd_radiance.result = result;
+  prd_radiance.result = ray.direction;
   prd_radiance.result_nrm = normal;//normalize( rtTransformNormal(RT_OBJECT_TO_WORLD, normal) )*0.5f + 0.5f;
   prd_radiance.result_world = p;
   prd_radiance.result_depth = length(p - eye) / 100.0;

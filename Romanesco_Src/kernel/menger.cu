@@ -147,7 +147,14 @@ float sdBox( float3 p, float3 b )
                         max( abs(p.z) - b.z, 0.0)
                           );
 
-  return min( max(d.x, max(d.y, d.z)), 0.0) + length( make_float3( max(d.x, 0.0), max(d.y, 0.0),max(d.z, 0.0)  ) );
+  return min( max(d.x, max(d.y, d.z)), 0.0) + length( make_float3( max(d.x, 0.0),
+                                                                   max(d.y, 0.0),
+                                                                   max(d.z, 0.0) ) );
+}
+
+__device__ float sdSphere( float3 p, float s )
+{
+  return length(p) - s;
 }
 
 __host__ __device__
@@ -156,6 +163,101 @@ float smin( float a, float b, float k )
     float h = clamp( 0.5f + 0.5f *  (b - a) / k, 0.0f, 1.0f );
     return lerp( b, a, h ) - k*h*(1.0-h);
 }
+
+__device__ float maxcomp(float3 _p )
+{
+    return max(_p.x,max(_p.y, _p.z));
+}
+
+__device__ float3 abs(float3 _p)
+{
+    return make_float3( abs(_p.x), abs(_p.y), abs(_p.z) );
+}
+
+
+#define inf 8
+
+__device__ float sdCross(float3 _p)
+{
+    float3 p1 = make_float3(_p.x, _p.y, _p.z);
+    float3 p2 = make_float3(_p.y, _p.z, _p.x);
+    float3 p3 = make_float3(_p.z, _p.x, _p.y);
+
+    float da = sdBox(p1, make_float3(inf, 1.0, 1.0));
+    float db = sdBox(p2, make_float3(1.0, inf, 1.0));
+    float dc = sdBox(p3, make_float3(1.0, 1.0, inf));
+
+//    float da = maxcomp(abs(p1));
+//    float db = maxcomp(abs(p2));
+//    float dc = maxcomp(abs(p3));
+
+    return min(da, min(db, dc));
+}
+
+
+//__device__ float4 map(float3 _p)
+//{
+//    float d = sdBox(_p, make_float3(0.25f));
+
+//    float s = 1.0;
+//    for(int m=0; m<4; m++)
+//    {
+//        float3 a = make_float3( fmod(_p.x * s, 2.0f),
+//                                fmod(_p.y * s, 2.0f),
+//                                fmod(_p.z * s, 2.0f)) - 1.0f;
+//        s *= 3.0;
+
+//        float3 r = (1.0 - (3.0 * abs(a)));
+
+//        float c = sdCross(r)/s;
+
+//        d = c;
+//    }
+
+//    return make_float4(d, 1.0, 1.0, 1.0);
+//}
+
+
+
+__device__ float fracf(float x)
+{
+    return x - floorf(x);
+}
+
+__device__ float3 fracf(float3 p)
+{
+    return make_float3( p.x - floorf(p.x),
+                        p.x - floorf(p.y),
+                        p.z - floorf(p.z) );
+}
+
+__device__ float map(float3 _p)
+{
+    float scale = 1.0f;
+
+    float4 orb = make_float4(1000.0);
+
+    for(int i=0; i<8; i++)
+    {
+        _p = -1.0 + 2.0 * fracf(0.5f * _p + 0.5f);
+//        float3 a = make_float3( fmod(_p.x * s, 2.0f),
+//                                fmod(_p.y * s, 2.0f),
+//                                fmod(_p.z * s, 2.0f)) - 1.0f;
+        float r2 = dot(_p, _p);
+
+        orb = make_float4( min( orb.x, abs(_p.x) ),
+                           min( orb.y, abs(_p.y) ),
+                           min( orb.z, abs(_p.z) ),
+                           min( orb.w, r2 ) );
+
+        float k = max( r2, 0.1f);
+        _p *= k;
+        scale *= k;
+    }
+
+    return 0.25 * abs(_p.y) / scale;
+}
+
 
 struct JuliaSet
 {
@@ -168,67 +270,72 @@ struct JuliaSet
   float operator()( float3 x ) const
   {
     // Warp space around the particle to get the blob-effect.
-    const float part_dist = length( particle - x );
-    const float force = smoothstep( 0.0f, 1.0f, 0.1f / (part_dist*part_dist) ) * 0.2f;
-    const float3 weg = (x - particle) / max(0.01f,part_dist);
-    x -= weg * force;
+//    const float part_dist = length( particle - x );
+//    const float force = smoothstep( 0.0f, 1.0f, 0.1f / (part_dist*part_dist) ) * 0.2f;
+//    const float3 weg = (x - particle) / max(0.01f,part_dist);
+//    x -= weg * force;
 
+//    // Iterated values.
+//    float3 zn  = x;//make_float3( x, 0 );
+//    float4 fp_n = make_float4( 1, 0, 0, 0 );  // start derivative at real 1 (see [2]).
 
+//    const float sq_threshold = 2.0f;   // divergence threshold
 
-    // Iterated values.
-    float3 zn  = x;//make_float3( x, 0 );
-    float4 fp_n = make_float4( 1, 0, 0, 0 );  // start derivative at real 1 (see [2]).
+//    float oscillatingTime = sin(global_t / 256.0f );
+//    float p = (5.0f * abs(oscillatingTime)) + 3.0f; //8;
+//    float rad = 0.0f;
+//    float dist = 0.0f;
+//    float d = 1.0;
 
-    const float sq_threshold = 2.0f;   // divergence threshold
+//    // Iterate to compute f_n and fp_n for the distance estimator.
+//    int i = m_max_iterations;
+//    while( i-- )
+//    {
+////      fp_n = 2.0f * mul( make_float4(zn), fp_n );   // z prime in [2]
+////      zn = square( make_float4(zn) ) + c4;         // equation (1) in [1]
 
-    float oscillatingTime = sin(global_t / 256.0f );
-    float p = (5.0f * abs(oscillatingTime)) + 3.0f; //8;
-    float rad = 0.0f;
-    float dist = 0.0f;
-    float d = 1.0;
+//      // Stop when we know the point diverges.
+//      // TODO: removing this condition burns 2 less registers and results in
+//      //       in a big perf improvement. Can we do something about it?
 
-    // Iterate to compute f_n and fp_n for the distance estimator.
-    int i = m_max_iterations;
-    while( i-- )
-    {
-//      fp_n = 2.0f * mul( make_float4(zn), fp_n );   // z prime in [2]
-//      zn = square( make_float4(zn) ) + c4;         // equation (1) in [1]
+//      rad = length(zn);
 
-      // Stop when we know the point diverges.
-      // TODO: removing this condition burns 2 less registers and results in
-      //       in a big perf improvement. Can we do something about it?
+//      if( rad > sq_threshold )
+//      {
+//        dist = 0.5f * rad * logf( rad ) / d;
+//      }
+//      else
+//      {
+//        float th = atan2( length( make_float3(zn.x, zn.y, 0.0f) ), zn.z );
+//        float phi = atan2( zn.y, zn.x );
+//        float rado = pow(rad, p);
+//        d = pow(rad, p - 1) * (p-1) * d + 1.0;
 
-      rad = length(zn);
+//        float sint = sin(th * p);
+//        zn.x = rado * sint * cos(phi * p);
+//        zn.y = rado * sint * sin(phi * p);
+//        zn.z = rado * cos(th * p);
+//        zn += x;
+//      }
+//    }
 
-      if( rad > sq_threshold )
-      {
-        dist = 0.5f * rad * logf( rad ) / d;
-      } 
-      else
-      {
-        float th = atan2( length( make_float3(zn.x, zn.y, 0.0f) ), zn.z );
-        float phi = atan2( zn.y, zn.x );
-        float rado = pow(rad, p);
-        d = pow(rad, p - 1) * (p-1) * d + 1.0;
+//    // Distance estimation. Equation (8) from [1], with correction mentioned in [2].
+//    //const float norm = length( zn );
 
-        float sint = sin(th * p);
-        zn.x = rado * sint * cos(phi * p);
-        zn.y = rado * sint * sin(phi * p);
-        zn.z = rado * cos(th * p);
-        zn += x;
-      }
-    }
-
-    // Distance estimation. Equation (8) from [1], with correction mentioned in [2].
-    //const float norm = length( zn );
-
-    //float a = length(x) - 1.0f;
-    float a = dist;
-    float b = sdBox(x, make_float3(1.0f) );
+//    //float a = length(x) - 1.0f;
+//    float a = dist;
+//    float b = sdBox(x, make_float3(1.0f) );
 
     //return dist;
 
-    return dist;//lerp(b, a, color_t );
+
+    float s = 3.0f;
+
+    float d1 = map(x / s) * s;
+    float d2 = sdBox(x, make_float3(1.0f));
+    float d3 = sdSphere(x, 1.0f);
+
+    return d1;
 
     //return julia_dist;
     //return fminf( julia_dist, part_dist - 0.2f );  // this "renders" the particle as well
@@ -286,7 +393,7 @@ RT_PROGRAM void intersect(int primIdx)
       if( rtPotentialIntersection(dist_from_origin) )
       {
         // color HACK
-        //distance.m_max_iterations = 14;  // more iterations for normal estimate, to fake some more detail
+        distance.m_max_iterations = 14;  // more iterations for normal estimate, to fake some more detail
         distance.m_max_iterations = 6;
         normal = estimate_normal(distance, x, DEL);
         rtReportIntersection( 0 );
@@ -425,7 +532,7 @@ RT_PROGRAM void julia_ch_radiance()
 //      rtTrace( top_object, refr_ray, new_prd2 );
 
 //      //result = (red * occlusion) + new_prd.result;
-//      result =  lerp(new_prd.result + new_prd2.result, result, 0.05);//lerp( new_prd.result * occlusion, result, 0 );
+//      //result =  lerp(new_prd.result + new_prd2.result, result, 0.05);//lerp( new_prd.result * occlusion, result, 0 );
 //  }
 
   prd_radiance.result = result;
