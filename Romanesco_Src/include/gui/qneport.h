@@ -46,6 +46,8 @@ public:
 	int radius();
 	bool isOutput();
     bool isIO();
+    bool isDisplayName();
+    bool isTypeName();
 	QVector<QNEConnection*>& connections();
 	void setPortFlags(int);
 

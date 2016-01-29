@@ -6,7 +6,7 @@
 class DistanceOpNode : public QNEBlock
 {
 public:
-    DistanceOpNode(QGraphicsScene* _scene, QGraphicsItem *parent = 0);
+    DistanceOpNode(const QString &_name, QGraphicsScene* _scene, QGraphicsItem *parent = 0);
     ~DistanceOpNode();
 
 };
