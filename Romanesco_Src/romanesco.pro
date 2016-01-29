@@ -24,12 +24,14 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 SOURCES += src/*.cpp \
            src/gui/*.cpp \
+           src/gui/nodes/*.cpp \
            src/SDFOps/*.cpp
+
  
 HEADERS += include/*.h \
            include/gui/*.h \
-           include/SDFOps/*.h \
-    include/macrohelpers.h
+           include/gui/nodes/*.h \
+           include/SDFOps/*.h
 
 OTHER_FILES += shaders/*
 

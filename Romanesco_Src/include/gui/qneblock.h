@@ -27,6 +27,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 #define QNEBLOCK_H
 
 #include <QGraphicsPathItem>
+#include <QGraphicsScene>
 
 class QNEPort;
 
@@ -35,20 +36,25 @@ class QNEBlock : public QGraphicsPathItem
 public:
 	enum { Type = QGraphicsItem::UserType + 3 };
 
-    QNEBlock(QGraphicsItem *parent = 0);
+    QNEBlock(QGraphicsScene* _scene, QGraphicsItem *parent = 0);
 
 	QNEPort* addPort(const QString &name, bool isOutput, int flags = 0, int ptr = 0);
-	void addInputPort(const QString &name);
+
+    void addInputPort(const QString &name);
 	void addOutputPort(const QString &name);
 	void addInputPorts(const QStringList &names);
 	void addOutputPorts(const QStringList &names);
+
 	void save(QDataStream&);
 	void load(QDataStream&, QMap<quint64, QNEPort*> &portMap);
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget);
 	QNEBlock* clone();
     QVector<QNEPort*> ports();
 
-	int type() const { return Type; }
+    QVector<QNEPort*> inputPorts();
+    QVector<QNEPort*> outputPorts();
+
+    int type() const { return Type; }
 
 protected:
 	QVariant itemChange(GraphicsItemChange change, const QVariant &value);

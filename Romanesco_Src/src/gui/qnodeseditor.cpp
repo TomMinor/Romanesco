@@ -33,6 +33,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 #include "qneconnection.h"
 #include "qneblock.h"
 
+#include <QDebug>
+
 QNodesEditor::QNodesEditor(QObject *parent) :
     QObject(parent)
 {
@@ -138,6 +140,28 @@ bool QNodesEditor::eventFilter(QObject *o, QEvent *e)
 	}
 	return QObject::eventFilter(o, e);
 }
+
+void QNodesEditor::getItems()
+{
+    foreach(QGraphicsItem *item, scene->items())
+    {
+        QNEBlock* node = qgraphicsitem_cast<QNEBlock*>(item);
+        if(node)
+        {
+            qDebug() << node->outputPorts().length();
+        }
+    }
+
+//    foreach(QGraphicsItem *item, scene->items())
+//    {
+//        if (item->type() == QNEConnection::Type)
+//        {
+//            qDebug() << item->type() - QGraphicsItem::UserType;
+////                ((QNEConnection*) item)->save(ds);
+//        }
+//    }
+}
+
 
 void QNodesEditor::save(QDataStream &ds)
 {
