@@ -345,9 +345,9 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height)
     m_context->setMissProgram( 0, m_context->createProgramFromPTXFile( "ptx/julia.cu.ptx", "envmap_miss" ) );
 
     const optix::float3 default_color = optix::make_float3(1.0f, 1.0f, 1.0f);
-    //m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/tom/src/optix/SDK/tutorial/data/CedarCity.hdr", default_color) );
+    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/i7245143/src/optix/SDK/tutorial/data/CedarCity.hdr", default_color) );
 //    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/tom/src/Fragmentarium/Fragmentarium-Source/Examples/Include/Ditch-River_2k.hdr", default_color) );
-    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/tom/Downloads/Milkyway/Milkyway_small.hdr", default_color) );
+    //m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/tom/Downloads/Milkyway/Milkyway_small.hdr", default_color) );
 
 
     // Setup lights
@@ -572,8 +572,11 @@ bool hookPtxFunction( const std::string& _ptxPath,
 #include "Transform_SDFOP.h"
 #include <glm/gtc/matrix_transform.hpp>
 
+//#define SHOWSTUFF
+
 void OptixScene::createGeometry(int choose)
 {
+#ifndef SHOWSTUFF
     std::vector<BaseSDFOP*> ops;
 
     ops.push_back( new Transform_SDFOP(glm::vec3(choose * 0.25f, 0.0f, 0.0f)) );
@@ -694,14 +697,19 @@ void OptixScene::createGeometry(int choose)
 //    qDebug() << hit_src.str().c_str();
 
     hookPtxFunction("ptx/raymarch.cu.ptx", "distancehit_hook", hit_src.str(), ptx);
+#endif
 
     ///@todo Optix error checking
     optix::Geometry julia = m_context->createGeometry();
     julia->setPrimitiveCount( 1u );
+
+#ifndef SHOWSTUFF
     julia->setBoundingBoxProgram( m_context->createProgramFromPTXString( ptx, "bounds" ) );
     julia->setIntersectionProgram( m_context->createProgramFromPTXString( ptx, "intersect" ) );
-//    julia->setBoundingBoxProgram( m_context->createProgramFromPTXFile( "ptx/julia.cu.ptx", "bounds" ) );
-//    julia->setIntersectionProgram( m_context->createProgramFromPTXFile( "ptx/julia.cu.ptx", "intersect" ) );
+#else
+    julia->setBoundingBoxProgram( m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "bounds" ) );
+    julia->setIntersectionProgram( m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "intersect" ) );
+#endif
 
     // Sphere
 //    optix::Geometry sphere = m_context->createGeometry();
@@ -710,10 +718,13 @@ void OptixScene::createGeometry(int choose)
 //    sphere->setIntersectionProgram( m_context->createProgramFromPTXFile( "ptx/sphere.cu.ptx", "intersect" ) );
 //    m_context["sphere"]->setFloat( 1, 1, 1, 0.2f );
 
+#ifndef SHOWSTUFF
     optix::Program julia_ch = m_context->createProgramFromPTXString( ptx, "julia_ch_radiance" );
     optix::Program julia_ah = m_context->createProgramFromPTXString( ptx, "julia_ah_shadow" );
-//    optix::Program julia_ch = m_context->createProgramFromPTXFile( "ptx/julia.cu.ptx", "julia_ch_radiance" );
-//    optix::Program julia_ah = m_context->createProgramFromPTXFile( "ptx/julia.cu.ptx", "julia_ah_shadow" );
+#else
+    optix::Program julia_ch = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "julia_ch_radiance" );
+    optix::Program julia_ah = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "julia_ah_shadow" );
+#endif
 //    optix::Program chrome_ch = m_context->createProgramFromPTXString( ptx, "chrome_ch_radiance" );
 //    optix::Program chrome_ah = m_context->createProgramFromPTXString( ptx, "chrome_ah_shadow" );
     //optix::Program floor_ch = m_context->createProgramFromPTXFile( "ptx/block_floor.cu.ptx", "block_floor_ch_radiance" );
