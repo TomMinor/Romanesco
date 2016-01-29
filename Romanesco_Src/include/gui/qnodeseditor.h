@@ -44,6 +44,7 @@ public:
 
 	bool eventFilter(QObject *, QEvent *);
 
+
 	void save(QDataStream &ds);
 	void load(QDataStream &ds);
 

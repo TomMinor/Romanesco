@@ -105,7 +105,7 @@ QNEPort* QNEBlock::addPort(const QString &name, bool isOutput, int flags, int pt
         return port;
     }
 
-    const float portSpacing = 0.5f;
+    const float portSpacing = 0.0f;
     const float portOffset = (h + (portSpacing * port->radius()));
     float yIn = y + portOffset;
     float yOut = y + portOffset;
@@ -113,14 +113,16 @@ QNEPort* QNEBlock::addPort(const QString &name, bool isOutput, int flags, int pt
     if(inputCtr < outputCtr)
     {
         float offsetRatio = (inputCtr > 0) ? (float)outputCtr / (float)inputCtr : 0.0f;
-        qDebug() << "In " << offsetRatio;
-        yIn += (0.5f * offsetRatio * portOffset);
+
+//        yIn += (offsetRatio * portOffset);
+//        qDebug() << "In " << yIn ;
     }
-    else if(inputCtr > outputCtr)
+    else if(inputCtr != outputCtr)
     {
         float offsetRatio = (outputCtr > 0) ? (float)inputCtr / (float)outputCtr : 0.0f;
-        qDebug() << "Out " << offsetRatio;
-        yOut += (0.5f * offsetRatio * portOffset);
+
+//        yOut += (offsetRatio * portOffset);
+//        qDebug() << "Out " << yOut ;
     }
 
     foreach(QGraphicsItem *port_, childItems()) {
@@ -143,10 +145,41 @@ QNEPort* QNEBlock::addPort(const QString &name, bool isOutput, int flags, int pt
         }
     }
 
-
-
-
 	return port;
+}
+
+QString QNEBlock::displayName()
+{
+    foreach(QGraphicsItem *port_, childItems()) {
+        QNEPort *port = qgraphicsitem_cast<QNEPort*>(port_);
+        if(!port)
+        {
+            continue;
+        }
+        if(port->isDisplayName())
+        {
+            return port->portName();
+        }
+    }
+
+    return QString();
+}
+
+QString QNEBlock::typeName()
+{
+    foreach(QGraphicsItem *port_, childItems()) {
+        QNEPort *port = qgraphicsitem_cast<QNEPort*>(port_);
+        if(!port)
+        {
+            continue;
+        }
+        if(port->isTypeName())
+        {
+            return port->portName();
+        }
+    }
+
+    return QString();
 }
 
 void QNEBlock::addInputPort(const QString &name)

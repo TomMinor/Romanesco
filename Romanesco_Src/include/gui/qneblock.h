@@ -51,6 +51,9 @@ public:
 	QNEBlock* clone();
     QVector<QNEPort*> ports();
 
+    QString displayName();
+    QString typeName();
+
     QVector<QNEPort*> inputPorts();
     QVector<QNEPort*> outputPorts();
 
