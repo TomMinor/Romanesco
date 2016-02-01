@@ -103,7 +103,7 @@ static __host__ __device__ float4 square( float4 a )
 // Intersect the bounding sphere of the Julia set.
 static __host__ __device__ bool intersectBoundingSphere( float3 o, float3 d, float& tmin, float &tmax )
 {
-  const float sq_radius = 4.0f;
+  const float sq_radius = 8.0f;
   const float b = dot( o, d );
   const float c = dot( o, o ) - sq_radius;
   const float disc = b*b - c;
@@ -122,7 +122,9 @@ static __host__ __device__ bool intersectBoundingSphere( float3 o, float3 d, flo
     }
 
     return true;
-  } else {
+  }
+  else
+  {
     tmin = tmax = 0;
   }
   return false;
@@ -132,24 +134,47 @@ __host__ __device__
 float udBox( float3 p, float3 b )
 {
   return length( make_float3( 
-                        max( abs(p.x) - b.x, 0.0),
-                        max( abs(p.y) - b.y, 0.0),
-                        max( abs(p.z) - b.z, 0.0)
+                        max( fabs(p.x) - b.x, 0.0),
+                        max( fabs(p.y) - b.y, 0.0),
+                        max( fabs(p.z) - b.z, 0.0)
                           ) );
 }
 
-__host__ __device__
-float sdBox( float3 p, float3 b )
-{
-  float3 d = make_float3( 
-                        max( abs(p.x) - b.x, 0.0),
-                        max( abs(p.y) - b.y, 0.0),
-                        max( abs(p.z) - b.z, 0.0)
-                          );
 
-  return min( max(d.x, max(d.y, d.z)), 0.0) + length( make_float3( max(d.x, 0.0),
-                                                                   max(d.y, 0.0),
-                                                                   max(d.z, 0.0) ) );
+__device__ float3 max(float3 _a, float _b)
+{
+  float a = max(_a.x, _b);
+  float b = max(_a.y, _b);
+  float c = max(_a.z, _b);
+
+  return make_float3(a,b,c);
+}
+
+__device__ float3 min(float3 _a, float _b)
+{
+  float a = min(_a.x, _b);
+  float b = min(_a.y, _b);
+  float c = min(_a.z, _b);
+
+  return make_float3(a,b,c);
+}
+
+__device__ float3 myfabs(float3 _p)
+{
+    return make_float3( fabs(_p.x), fabs(_p.y), fabs(_p.z) );
+}
+
+__device__ float sdBox( float3 p, float3 _b )
+{
+  //vec3 d = abs(p) - b;
+  float3 d = myfabs(p) - _b;
+
+  float a = max(d.y, d.z);
+  float b = max(d.x, a);
+
+  return min(b, 0.0f) + length( max(d, 0.0f) );
+  // return min(max(d.x,max(d.y,d.z)),0.0) +
+  //        length(max(d,0.0));
 }
 
 __device__ float sdSphere( float3 p, float s )
@@ -169,13 +194,9 @@ __device__ float maxcomp(float3 _p )
     return max(_p.x,max(_p.y, _p.z));
 }
 
-__device__ float3 abs(float3 _p)
-{
-    return make_float3( abs(_p.x), abs(_p.y), abs(_p.z) );
-}
 
 
-#define inf 8
+#define inf 10000000.0
 
 __device__ float sdCross(float3 _p)
 {
@@ -187,35 +208,47 @@ __device__ float sdCross(float3 _p)
     float db = sdBox(p2, make_float3(1.0, inf, 1.0));
     float dc = sdBox(p3, make_float3(1.0, 1.0, inf));
 
-//    float da = maxcomp(abs(p1));
-//    float db = maxcomp(abs(p2));
-//    float dc = maxcomp(abs(p3));
+//    float da = maxcomp(fabs(p1));
+//    float db = maxcomp(fabs(p2));
+//    float dc = maxcomp(fabs(p3));
 
     return min(da, min(db, dc));
 }
 
+__device__ float3 myfmod(float3 _p, float _s)
+{
+    return make_float3(
+                    fmod(_p.x, _s),
+                    fmod(_p.y, _s),
+                    fmod(_p.z, _s)
+                );
+}
 
-//__device__ float4 map(float3 _p)
-//{
-//    float d = sdBox(_p, make_float3(0.25f));
+__device__ float3 pMod(float3 _p, float d)
+{
+    return myfmod(_p + d, d * 2.0) - d;
+}
 
-//    float s = 1.0;
-//    for(int m=0; m<4; m++)
-//    {
-//        float3 a = make_float3( fmod(_p.x * s, 2.0f),
-//                                fmod(_p.y * s, 2.0f),
-//                                fmod(_p.z * s, 2.0f)) - 1.0f;
-//        s *= 3.0;
 
-//        float3 r = (1.0 - (3.0 * abs(a)));
+__device__ float map(float3 _p)
+{
+    float d = sdBox(_p, make_float3(1.0f));
 
-//        float c = sdCross(r)/s;
+    float s = 1.0;
+    for(int m=0; m<4; m++)
+    {
+        float3 a = myfmod(_p * s, 2.0f) - make_float3(1.0f);
+        s *= 3.0;
 
-//        d = c;
-//    }
+        float3 r = ( make_float3(1.0) - ( make_float3(3.0) * myfabs(a)));
 
-//    return make_float4(d, 1.0, 1.0, 1.0);
-//}
+        float c = (float)sdCross(r) / (float)s;
+
+        d = max(d, c);
+    }
+
+    return d;
+}
 
 
 
@@ -231,32 +264,32 @@ __device__ float3 fracf(float3 p)
                         p.z - floorf(p.z) );
 }
 
-__device__ float map(float3 _p)
-{
-    float scale = 1.0f;
+//__device__ float map(float3 _p)
+//{
+//    float scale = 1.0f;
 
-    float4 orb = make_float4(1000.0);
+//    float4 orb = make_float4(1000.0);
 
-    for(int i=0; i<8; i++)
-    {
-        _p = -1.0 + 2.0 * fracf(0.5f * _p + 0.5f);
-//        float3 a = make_float3( fmod(_p.x * s, 2.0f),
-//                                fmod(_p.y * s, 2.0f),
-//                                fmod(_p.z * s, 2.0f)) - 1.0f;
-        float r2 = dot(_p, _p);
+//    for(int i=0; i<8; i++)
+//    {
+//        _p = -1.0 + 2.0 * fracf(0.5f * _p + 0.5f);
+////        float3 a = make_float3( fmod(_p.x * s, 2.0f),
+////                                fmod(_p.y * s, 2.0f),
+////                                fmod(_p.z * s, 2.0f)) - 1.0f;
+//        float r2 = dot(_p, _p);
 
-        orb = make_float4( min( orb.x, abs(_p.x) ),
-                           min( orb.y, abs(_p.y) ),
-                           min( orb.z, abs(_p.z) ),
-                           min( orb.w, r2 ) );
+//        orb = make_float4( min( orb.x, abs(_p.x) ),
+//                           min( orb.y, abs(_p.y) ),
+//                           min( orb.z, abs(_p.z) ),
+//                           min( orb.w, r2 ) );
 
-        float k = max( r2, 0.1f);
-        _p *= k;
-        scale *= k;
-    }
+//        float k = max( r2, 0.1f);
+//        _p *= k;
+//        scale *= k;
+//    }
 
-    return 0.25 * abs(_p.y) / scale;
-}
+//    return 0.25 * abs(_p.y) / scale;
+//}
 
 
 struct JuliaSet
@@ -329,13 +362,35 @@ struct JuliaSet
     //return dist;
 
 
-    float s = 3.0f;
 
-    float d1 = map(x / s) * s;
-    float d2 = sdBox(x, make_float3(1.0f));
-    float d3 = sdSphere(x, 1.0f);
 
-    return d1;
+      float3 p = x;
+    float d1 = map(p);
+
+    p = pMod(p, 0.2) - make_float3(sin(global_t / 16.0) * 0.1f);
+
+//    float d1 = sdBox(p, make_float3(1.0f));
+
+    float d = sdBox(p, make_float3(0.1f));
+
+//    float s = 1.0f;
+//    for(int i = 0; i < 3; i++)
+//    {
+//        float3 a = myfmod(p * s, 2.0) - 1.0;
+//        s *= 3.0;
+
+//        float3 r = 1.0f - 3.0 * myfabs(a);
+
+//        float c = sdCross(r) / s;
+//        d = max(d, -c);
+//    }
+
+    return d;
+
+//    float d1 = sdBox(p, make_float3(1.0f) );
+//    float d2 = sdBox(p - make_float3(0.6f), make_float3(1.1f) );
+
+//    return max(-d1, d2) / 9.0;
 
     //return julia_dist;
     //return fminf( julia_dist, part_dist - 0.2f );  // this "renders" the particle as well
@@ -350,7 +405,7 @@ RT_PROGRAM void intersect(int primIdx)
   normal = make_float3(0,0,0);
 
   float tmin, tmax;
-  if( intersectBoundingSphere(ray.origin - center, ray.direction, tmin, tmax) )
+  if( intersectBoundingSphere(ray.origin, ray.direction, tmin, tmax) )
   {
     JuliaSet distance( max_iterations );
     //distance.m_max_iterations = 64;
@@ -360,21 +415,22 @@ RT_PROGRAM void intersect(int primIdx)
     // XXX inline the sphere tracing procedure here because nvcc isn't
     //     generating the right code i guess
 
-    float3 ray_direction = ray.direction;    
+    float3 ray_direction = ray.direction;
     float3 x = (ray.origin ) + tmin * ray_direction;
 
     float dist_from_origin = tmin;
 
     // Compute epsilon using equation (16) of [1].
     //float epsilon = max(0.000001f, alpha * powf(dist_from_origin, delta));
-    const float epsilon = 1e-3f;
+    //const float epsilon = 1e-3f;
+    const float epsilon = 0.001;
 
+
+    // float t = tmin;//0.0;
+    // const int maxSteps = 128;
     float dist = 0;
 
-    int step = 0;
-    const int maxSteps = 800;
-
-    for( step = 0; step < maxSteps; ++step )
+    for( unsigned int i = 0; i < 800; ++i )
     {
       dist = distance( x );
 
@@ -384,17 +440,18 @@ RT_PROGRAM void intersect(int primIdx)
 
       // Check if we're close enough or too far.
       if( dist < epsilon || dist_from_origin > tmax  )
-         break;
+      {
+          break;
+      }
     }
 
     // Found intersection?
     if( dist < epsilon )
     {
-      if( rtPotentialIntersection(dist_from_origin) )
+      if( rtPotentialIntersection( dist_from_origin)  )
       {
         // color HACK
         distance.m_max_iterations = 14;  // more iterations for normal estimate, to fake some more detail
-        distance.m_max_iterations = 6;
         normal = estimate_normal(distance, x, DEL);
         rtReportIntersection( 0 );
       }

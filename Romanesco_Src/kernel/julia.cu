@@ -103,7 +103,7 @@ static __host__ __device__ float4 square( float4 a )
 // Intersect the bounding sphere of the Julia set.
 static __host__ __device__ bool intersectBoundingSphere( float3 o, float3 d, float& tmin, float &tmax )
 {
-  const float sq_radius = 4.0f;
+  const float sq_radius = 1024.0f;
   const float b = dot( o, d );
   const float c = dot( o, o ) - sq_radius;
   const float disc = b*b - c;
@@ -155,6 +155,20 @@ float smin( float a, float b, float k )
 {
     float h = clamp( 0.5f + 0.5f *  (b - a) / k, 0.0f, 1.0f );
     return lerp( b, a, h ) - k*h*(1.0-h);
+}
+
+__device__ float3 myfmod(float3 _p, float _s)
+{
+    return make_float3(
+                    fmod(_p.x, _s),
+                    fmod(_p.y, _s),
+                    fmod(_p.z, _s)
+                );
+}
+
+__device__ float3 pMod(float3 _p, float d)
+{
+    return myfmod(_p + d, d * 2.0) - d;
 }
 
 struct JuliaSet
@@ -269,6 +283,8 @@ RT_PROGRAM void intersect(int primIdx)
 
     for( step = 0; step < maxSteps; ++step )
     {
+      x = pMod(x, 2.0);
+
       dist = distance( x );
 
       // Step along the ray and accumulate the distance from the origin.
