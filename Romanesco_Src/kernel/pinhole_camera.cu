@@ -95,6 +95,29 @@ RT_PROGRAM void pinhole_camera()
 #endif
 }
 
+RT_PROGRAM void env_camera()
+{
+  size_t2 screen = output_buffer.size();
+
+  float2 d = make_float2(launch_index) / make_float2(screen) * make_float2(2.0f * M_PIf , M_PIf) + make_float2(M_PIf, 0);
+  float3 angle = make_float3(cos(d.x) * sin(d.y), -cos(d.y), sin(d.x) * sin(d.y));
+  float3 ray_origin = eye;
+  float3 ray_direction = normalize(angle.x*normalize(U) + angle.y*normalize(V) + angle.z*normalize(W));
+
+  ray_direction = make_float3((make_float4(ray_direction, 1.0) * normalmatrix));
+  ray_direction = normalize(ray_direction);
+
+  optix::Ray ray(ray_origin, ray_direction, radiance_ray_type, scene_epsilon);
+
+  PerRayData_radiance prd;
+  prd.importance = 1.f;
+  prd.depth = 0;
+
+  rtTrace(top_object, ray, prd);
+
+  output_buffer[launch_index] = make_float4( prd.result );
+}
+
 RT_PROGRAM void exception()
 {
   const unsigned int code = rtGetExceptionCode();
