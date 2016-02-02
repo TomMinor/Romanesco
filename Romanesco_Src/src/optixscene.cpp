@@ -346,9 +346,9 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height)
     m_context->setMissProgram( 0, m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "envmap_miss" ) );
 
     const optix::float3 default_color = optix::make_float3(1.0f, 1.0f, 1.0f);
-    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/i7245143/src/optix/SDK/tutorial/data/CedarCity.hdr", default_color) );
+    //m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/tom/src/optix/SDK/tutorial/data/CedarCity.hdr", default_color) );
 //    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/tom/src/Fragmentarium/Fragmentarium-Source/Examples/Include/Ditch-River_2k.hdr", default_color) );
-    //m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/tom/Downloads/Milkyway/Milkyway_small.hdr", default_color) );
+    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/tom/Downloads/Milkyway/Milkyway_small.hdr", default_color) );
 
 
     // Setup lights
@@ -787,8 +787,8 @@ void OptixScene::createGeometry(int choose)
     unsigned int m_max_iterations;
 
     m_alpha = 0.003f;
-    m_delta = 0.1f;
-    m_DEL = 0.001f;
+    m_delta = 0.00001f;
+    m_DEL = 0.0001f;
     m_max_iterations = 32;
 
     m_context[ "c4" ]->setFloat( optix::make_float4( -0.5f, 0.1f, 0.2f, 0.3f) );
