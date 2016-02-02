@@ -103,7 +103,7 @@ static __host__ __device__ float4 square( float4 a )
 // Intersect the bounding sphere of the Julia set.
 static __host__ __device__ bool intersectBoundingSphere( float3 o, float3 d, float& tmin, float &tmax )
 {
-  const float sq_radius = 8.0f;
+  const float sq_radius = 32.0f;
   const float b = dot( o, d );
   const float c = dot( o, o ) - sq_radius;
   const float disc = b*b - c;
@@ -143,18 +143,18 @@ float udBox( float3 p, float3 b )
 
 __device__ float3 max(float3 _a, float _b)
 {
-  float a = max(_a.x, _b);
-  float b = max(_a.y, _b);
-  float c = max(_a.z, _b);
+  float a = fmaxf(_a.x, _b);
+  float b = fmaxf(_a.y, _b);
+  float c = fmaxf(_a.z, _b);
 
   return make_float3(a,b,c);
 }
 
 __device__ float3 min(float3 _a, float _b)
 {
-  float a = min(_a.x, _b);
-  float b = min(_a.y, _b);
-  float c = min(_a.z, _b);
+  float a = fminf(_a.x, _b);
+  float b = fminf(_a.y, _b);
+  float c = fminf(_a.z, _b);
 
   return make_float3(a,b,c);
 }
@@ -196,7 +196,7 @@ __device__ float maxcomp(float3 _p )
 
 
 
-#define inf 10000000.0
+#define inf 10000.0
 
 __device__ float sdCross(float3 _p)
 {
@@ -215,18 +215,19 @@ __device__ float sdCross(float3 _p)
     return min(da, min(db, dc));
 }
 
+//http://stackoverflow.com/questions/7610631/glsl-mod-vs-hlsl-fmod
 __device__ float3 myfmod(float3 _p, float _s)
 {
     return make_float3(
-                    fmod(_p.x, _s),
-                    fmod(_p.y, _s),
-                    fmod(_p.z, _s)
+                    fabs( fmod(_p.x, _s) ),
+                    fabs( fmod(_p.y, _s) ),
+                    fabs( fmod(_p.z, _s) )
                 );
 }
 
 __device__ float3 pMod(float3 _p, float d)
 {
-    return myfmod(_p + d, d * 2.0) - d;
+    return myfmod(_p, d) - (d * 0.5f);
 }
 
 
@@ -235,7 +236,7 @@ __device__ float map(float3 _p)
     float d = sdBox(_p, make_float3(1.0f));
 
     float s = 1.0;
-    for(int m=0; m<4; m++)
+    for(int m=0; m<5; m++)
     {
         float3 a = myfmod(_p * s, 2.0f) - make_float3(1.0f);
         s *= 3.0;
@@ -361,17 +362,13 @@ struct JuliaSet
 
     //return dist;
 
-
-
-
       float3 p = x;
-    float d1 = map(p);
 
-    p = pMod(p, 0.2) - make_float3(sin(global_t / 16.0) * 0.1f);
+//    p = pMod(p, 1.0);
 
 //    float d1 = sdBox(p, make_float3(1.0f));
 
-    float d = sdBox(p, make_float3(0.1f));
+//    float d = sdBox(p, make_float3(1.0f));
 
 //    float s = 1.0f;
 //    for(int i = 0; i < 3; i++)
@@ -384,6 +381,8 @@ struct JuliaSet
 //        float c = sdCross(r) / s;
 //        d = max(d, -c);
 //    }
+
+    float d = map(p);
 
     return d;
 
@@ -423,7 +422,7 @@ RT_PROGRAM void intersect(int primIdx)
     // Compute epsilon using equation (16) of [1].
     //float epsilon = max(0.000001f, alpha * powf(dist_from_origin, delta));
     //const float epsilon = 1e-3f;
-    const float epsilon = 0.001;
+    const float epsilon = 0.00001;
 
 
     // float t = tmin;//0.0;
@@ -539,7 +538,7 @@ RT_PROGRAM void julia_ch_radiance()
     c1 = blue;
     ct -= 1.0f;
   }
-  float3 result = red; //dot(p,p) > ct*3.0f ? c0 : c1;
+  float3 result = green; //dot(p,p) > ct*3.0f ? c0 : c1;
 
   // add glow close to particle
   const float part_dist = length( p-particle );
@@ -567,30 +566,30 @@ RT_PROGRAM void julia_ch_radiance()
 
   //if( prd_radiance.depth < 5 )
   //if( prd_radiance.depth < 5 )
-//  {
-//      PerRayData_radiance new_prd;
-//      new_prd.importance = prd_radiance.importance;
-//      new_prd.depth = prd_radiance.depth + 1;
-//      new_prd.result = make_float3(1,0,0);
+  {
+      PerRayData_radiance new_prd;
+      new_prd.importance = prd_radiance.importance;
+      new_prd.depth = prd_radiance.depth + 1;
+      new_prd.result = make_float3(1,0,0);
 
-//      float3 refl = make_float3(0,0,0);
-//      refl = reflect( ray.direction, normal );
-//      const optix::Ray refl_ray = optix::make_Ray( p, refl, 0, 1e-3f, RT_DEFAULT_MAX );
-//      rtTrace( top_object, refl_ray, new_prd );
+      float3 refl = make_float3(0,0,0);
+      refl = reflect( ray.direction, normal );
+      const optix::Ray refl_ray = optix::make_Ray( p, refl, 0, 1e-3f, RT_DEFAULT_MAX );
+      rtTrace( top_object, refl_ray, new_prd );
 
-//      PerRayData_radiance new_prd2;
-//      new_prd2.importance = prd_radiance.importance;
-//      new_prd2.depth = prd_radiance.depth + 1;
-//      new_prd2.result = make_float3(1,0,0);
+      PerRayData_radiance new_prd2;
+      new_prd2.importance = prd_radiance.importance;
+      new_prd2.depth = prd_radiance.depth + 1;
+      new_prd2.result = make_float3(1,0,0);
 
-//      float3 refr = make_float3(0,0,0);
-//      refract( refr, ray.direction, normal, 1.3);
-//      const optix::Ray refr_ray = optix::make_Ray( p, refr, 0, 1e-3f, RT_DEFAULT_MAX );
-//      rtTrace( top_object, refr_ray, new_prd2 );
+      float3 refr = make_float3(0,0,0);
+      refract( refr, ray.direction, normal, 1.3);
+      const optix::Ray refr_ray = optix::make_Ray( p, refr, 0, 1e-3f, RT_DEFAULT_MAX );
+      rtTrace( top_object, refr_ray, new_prd2 );
 
-//      //result = (red * occlusion) + new_prd.result;
-//      //result =  lerp(new_prd.result + new_prd2.result, result, 0.05);//lerp( new_prd.result * occlusion, result, 0 );
-//  }
+//      result = (result * occlusion) + new_prd.result;
+      result = lerp(new_prd.result + new_prd2.result, result, 0.9);//lerp( new_prd.result * occlusion, result, 0 );
+  }
 
   prd_radiance.result = result;
   prd_radiance.result_nrm = normal;//normalize( rtTransformNormal(RT_OBJECT_TO_WORLD, normal) )*0.5f + 0.5f;
