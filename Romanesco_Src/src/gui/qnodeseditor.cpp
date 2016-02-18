@@ -86,6 +86,7 @@ bool QNodesEditor::eventFilter(QObject *o, QEvent *e)
                             break;
                         }
                 }
+                break;
             }
         case QEvent::GraphicsSceneMousePress:
             {
@@ -167,7 +168,7 @@ bool QNodesEditor::eventFilter(QObject *o, QEvent *e)
 void QNodesEditor::getItems(QNEBlock* _node, int _depth)
 {
     std::string indent = std::string(_depth, '\t').c_str();
-//    qDebug() << indent.c_str() << "Eval " << _node->displayName();
+    //qDebug().nospace() << indent.c_str() << "Eval " << _node->displayName();
 
     for(QNEPort* port : _node->inputPorts())
     {
@@ -176,13 +177,13 @@ void QNodesEditor::getItems(QNEBlock* _node, int _depth)
         {
             QNEConnection* connection = connections[i];
 
-            QNEPort* p1 = connection->port1();
-            QNEPort* p2 = connection->port2();
+            QNEPort* pStartConnection = connection->port1();
+            QNEPort* pEndConnection = connection->port2();
 
-            qDebug() << indent.c_str() << "Eval " << _node->displayName() << " Input " << i << " : " << p1->block()->displayName();
+            qDebug().nospace() << indent.c_str() << "Eval " << _node->displayName() << " Input " << i << ": " << pStartConnection->block()->displayName() << ":" << pStartConnection->portName();
 
             if(_depth < 5)
-                getItems(p1->block(), _depth + 1);
+                getItems(pStartConnection->block(), _depth + 1);
         }
     }
 
