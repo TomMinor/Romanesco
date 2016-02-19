@@ -25,6 +25,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
 #include "qnodeseditor.h"
 
+#include <stdexcept>
+#include <iostream>
+
 #include <QGraphicsScene>
 #include <QEvent>
 #include <QGraphicsSceneMouseEvent>
@@ -77,7 +80,49 @@ bool QNodesEditor::eventFilter(QObject *o, QEvent *e)
                 {
                     case Qt::Key_P:
                         {
-                            this->getItems(endBlock);
+                            std::vector<Backpass> backpasses;
+
+                            this->getItems(endBlock, backpasses);
+
+                            auto nodes = this->getNodeList();
+
+                            int i = 0;
+                            qDebug() << "Node Table";
+                            for(auto node: nodes)
+                            {
+                                qDebug() << i++ << " : " << node->displayName();
+                            }
+                            qDebug() << "\n";
+
+                            std::reverse(backpasses.begin(), backpasses.end());
+                            for(auto pass: backpasses)
+                            {
+                                std::string indent = "";// std::string(nodeCtr, '\t').c_str();
+
+                                auto currentNode = std::find(nodes.begin(), nodes.end(), pass.currentNodePtr);
+                                if ( currentNode == nodes.end())
+                                {
+                                    continue;
+                                }
+
+                                qDebug().nospace() << indent.c_str() << "Node Name: " << qPrintable(pass.currentNodePtr->displayName()) << " (" << std::distance(nodes.begin(), currentNode) << ")";
+                                qDebug().nospace() << indent.c_str() << "Depth: " << pass.nodeCtr;
+
+                                int i = 0;
+                                for(auto node: pass.inputNodes)
+                                {
+                                    auto nodeTmp = std::find(nodes.begin(), nodes.end(), node);
+                                    if ( nodeTmp != nodes.end())
+                                    {
+                                        //" Input " << i << ": " << pStartConnection->block()->displayName() << ":" << pStartConnection->portName();
+//                                        qDebug().nospace() << indent.c_str() << "\t[" << i << "]:" << qPrintable(node->displayName());
+                                        qDebug().nospace() << indent.c_str() << "\t Input[" << i << "]:" << std::distance(nodes.begin(), nodeTmp);
+                                    }
+
+                                    i++;
+                                }
+                            }
+
                             break;
                         }
                     case Qt::Key_C:
@@ -165,27 +210,80 @@ bool QNodesEditor::eventFilter(QObject *o, QEvent *e)
     return QObject::eventFilter(o, e);
 }
 
-void QNodesEditor::getItems(QNEBlock* _node, int _depth)
+static const std::string example = R"DELIM(
+                                Eval "Out" Input 0: "Union_0":"Out"
+                                    Eval "Union_0" Input 0: "Union_1":"Out"
+                                        Eval "Union_1" Input 0: "Union_4":"Out"
+                                        Eval "Union_1" Input 0: "Union_3":"Out"
+                                    Eval "Union_0" Input 0: "Union_2":"Out"
+                                        Eval "Union_2" Input 0: "Union_5":"Out"
+                                )DELIM";
+
+
+
+NodeList QNodesEditor::getNodeList()
+{
+    NodeList nodes;
+
+    foreach(QGraphicsItem *item, scene->items())
+    {
+        QNEBlock* node = qgraphicsitem_cast<QNEBlock*>(item);
+        if(node)
+        {
+            nodes.emplace_back(node);
+        }
+    }
+
+    return nodes;
+}
+
+void QNodesEditor::getItems(QNEBlock* _node, std::vector<Backpass>& backpasses, int _depth)
 {
     std::string indent = std::string(_depth, '\t').c_str();
     //qDebug().nospace() << indent.c_str() << "Eval " << _node->displayName();
 
-    for(QNEPort* port : _node->inputPorts())
+    NodeList nodes = getNodeList();
+//    for(auto node: nodes)
+//    {
+//        qDebug() << node->displayName();
+//    }
+
+    Backpass pass;
+    pass.nodeCtr = _depth;
+    pass.currentNodePtr = _node;
+
+    auto ports = _node->inputPorts().toStdVector();
+
+    std::reverse(ports.begin(), ports.end());
+
+    // Iterate over all input ports on _node
+    for(QNEPort* port : ports)
     {
-        QVector<QNEConnection*>& connections = port->connections();
-        for(int i = 0; i < connections.length(); i++)
+        //@todo BUG : Left->Right connections work okay, Right->Left erroneously attach the node to it's own input (infinite loop)
+        std::vector<QNEConnection*> connections = port->connections().toStdVector();
+
+        std::reverse(connections.begin(), connections.end());
+
+        // Iterate over all connections to port (probably only one)
+        for(int i = 0; i < connections.size(); i++)
         {
-            QNEConnection* connection = connections[i];
+            const QNEConnection* connection = connections[i];
 
-            QNEPort* pStartConnection = connection->port1();
-            QNEPort* pEndConnection = connection->port2();
+            const QNEPort* pStartConnection = connection->port1();
+            const QNEPort* pEndConnection = connection->port2();
 
-            qDebug().nospace() << indent.c_str() << "Eval " << _node->displayName() << " Input " << i << ": " << pStartConnection->block()->displayName() << ":" << pStartConnection->portName();
+            pass.inputNodes.emplace_back( pStartConnection->block() );
 
-            if(_depth < 5)
-                getItems(pStartConnection->block(), _depth + 1);
+            if(_depth > 1024)
+            {
+                throw std::overflow_error("Maximum node depth exceeded");
+            }
+
+            getItems(pStartConnection->block(), backpasses, _depth + 1);
         }
     }
+
+    backpasses.push_back(pass);
 
 //    foreach(QGraphicsItem *item, scene->items())
 //    {
