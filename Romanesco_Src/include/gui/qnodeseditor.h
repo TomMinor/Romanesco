@@ -27,12 +27,22 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 #define QNODESEDITOR_H
 
 #include <QObject>
+#include <vector>
 
 class QGraphicsScene;
 class QNEConnection;
 class QGraphicsItem;
 class QPointF;
 class QNEBlock;
+
+typedef std::vector<QNEBlock*> NodeList;
+
+struct Backpass
+{
+    int nodeCtr = 0;
+    QNEBlock* currentNodePtr = nullptr;
+    std::vector<QNEBlock* > inputNodes;
+};
 
 class QNodesEditor : public QObject
 {
@@ -48,9 +58,11 @@ public:
 	void save(QDataStream &ds);
 	void load(QDataStream &ds);
 
-    void getItems(QNEBlock *_node, int _depth = 0);
+    void getItems(QNEBlock *_node, std::vector<Backpass> &backpasses, int _depth = 0);
 private:
 	QGraphicsItem *itemAt(const QPointF&);
+
+    NodeList getNodeList();
 
 private:
 	QGraphicsScene *scene;
