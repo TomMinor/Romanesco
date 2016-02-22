@@ -28,6 +28,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
 #include <QObject>
 #include <vector>
+#include <map>
+#include <unordered_map>
 
 class QGraphicsScene;
 class QNEConnection;
@@ -41,7 +43,7 @@ struct Backpass
 {
     int nodeCtr = 0;
     QNEBlock* currentNodePtr = nullptr;
-    std::vector<QNEBlock* > inputNodes;
+    std::map<unsigned int, QNEBlock* > inputNodes;
 };
 
 class QNodesEditor : public QObject
