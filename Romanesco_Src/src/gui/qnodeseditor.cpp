@@ -108,18 +108,16 @@ bool QNodesEditor::eventFilter(QObject *o, QEvent *e)
                                 qDebug().nospace() << indent.c_str() << "Node Name: " << qPrintable(pass.currentNodePtr->displayName()) << " (" << std::distance(nodes.begin(), currentNode) << ")";
                                 qDebug().nospace() << indent.c_str() << "Depth: " << pass.nodeCtr;
 
-                                int i = 0;
+//                                int i = 0;
                                 for(auto node: pass.inputNodes)
                                 {
-                                    auto nodeTmp = std::find(nodes.begin(), nodes.end(), node);
+                                    auto nodeTmp = std::find(nodes.begin(), nodes.end(), node.second );
                                     if ( nodeTmp != nodes.end())
                                     {
                                         //" Input " << i << ": " << pStartConnection->block()->displayName() << ":" << pStartConnection->portName();
 //                                        qDebug().nospace() << indent.c_str() << "\t[" << i << "]:" << qPrintable(node->displayName());
-                                        qDebug().nospace() << indent.c_str() << "\t Input[" << i << "]:" << std::distance(nodes.begin(), nodeTmp);
+                                        qDebug().nospace() << indent.c_str() << "\t Input[" << node.first << "]:" << std::distance(nodes.begin(), nodeTmp) << " (" << (*nodeTmp)->displayName() << ")";
                                     }
-
-                                    i++;
                                 }
                             }
 
@@ -254,25 +252,27 @@ void QNodesEditor::getItems(QNEBlock* _node, std::vector<Backpass>& backpasses, 
 
     auto ports = _node->inputPorts().toStdVector();
 
-    std::reverse(ports.begin(), ports.end());
+    //std::reverse(ports.begin(), ports.end());
 
+    int i = 0;
     // Iterate over all input ports on _node
     for(QNEPort* port : ports)
     {
         //@todo BUG : Left->Right connections work okay, Right->Left erroneously attach the node to it's own input (infinite loop)
         std::vector<QNEConnection*> connections = port->connections().toStdVector();
 
-        std::reverse(connections.begin(), connections.end());
+        //std::reverse(connections.begin(), connections.end());
 
         // Iterate over all connections to port (probably only one)
-        for(int i = 0; i < connections.size(); i++)
+        //for(int i = 0; i < connections.size(); i++)
+        if(connections.size() > 0)
         {
-            const QNEConnection* connection = connections[i];
+            const QNEConnection* connection = connections[0];
 
             const QNEPort* pStartConnection = connection->port1();
             const QNEPort* pEndConnection = connection->port2();
 
-            pass.inputNodes.emplace_back( pStartConnection->block() );
+            pass.inputNodes.insert( std::make_pair(i, pStartConnection->block()) );
 
             if(_depth > 1024)
             {
@@ -281,6 +281,8 @@ void QNodesEditor::getItems(QNEBlock* _node, std::vector<Backpass>& backpasses, 
 
             getItems(pStartConnection->block(), backpasses, _depth + 1);
         }
+
+        i++;
     }
 
     backpasses.push_back(pass);
