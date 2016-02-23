@@ -2,9 +2,9 @@
 #ifndef INTERSECTION_SDFOP_H 
 #define INTERSECTION_SDFOP_H 
  
-#include "Base_SDFOP.h" 
+#include "DistOpInterface_SDFOP.h"
  
-class Intersection_SDFOP : public BaseSDFOP 
+class Intersection_SDFOP : public DistOpInterface_SDFOP
 { 
 public: 
     Intersection_SDFOP(); 

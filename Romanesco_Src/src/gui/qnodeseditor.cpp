@@ -27,6 +27,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
 #include <stdexcept>
 #include <iostream>
+#include <sstream>
 
 #include <QGraphicsScene>
 #include <QEvent>
@@ -39,13 +40,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
 #include <QDebug>
 
-QNodesEditor::QNodesEditor(QObject *parent) :
+QNodeGraph::QNodeGraph(QObject *parent) :
     QObject(parent)
 {
 	conn = 0;
 }
 
-void QNodesEditor::install(QGraphicsScene *s)
+void QNodeGraph::install(QGraphicsScene *s)
 {
 	s->installEventFilter(this);
 	scene = s;
@@ -53,7 +54,7 @@ void QNodesEditor::install(QGraphicsScene *s)
     endBlock = new TerminateNode(scene, 0);
 }
 
-QGraphicsItem* QNodesEditor::itemAt(const QPointF &pos)
+QGraphicsItem* QNodeGraph::itemAt(const QPointF &pos)
 {
 	QList<QGraphicsItem*> items = scene->items(QRectF(pos - QPointF(1,1), QSize(3,3)));
 
@@ -67,7 +68,14 @@ QGraphicsItem* QNodesEditor::itemAt(const QPointF &pos)
 #include <QKeyEvent>
 #include "gui/nodes/distanceopnode.h"
 
-bool QNodesEditor::eventFilter(QObject *o, QEvent *e)
+struct ForwardPass
+{
+    unsigned int index;
+    QNEBlock* node;
+    std::map<unsigned int, QNEBlock* > inputs;
+};
+
+bool QNodeGraph::eventFilter(QObject *o, QEvent *e)
 {
 	QGraphicsSceneMouseEvent *me = (QGraphicsSceneMouseEvent*) e;
 
@@ -94,9 +102,14 @@ bool QNodesEditor::eventFilter(QObject *o, QEvent *e)
                             }
                             qDebug() << "\n";
 
-                            std::reverse(backpasses.begin(), backpasses.end());
+                            std::vector<ForwardPass> forward;
+                            //std::reverse(backpasses.begin(), backpasses.end());
+                            i = 0;
                             for(auto pass: backpasses)
                             {
+                                ForwardPass tmp;
+                                tmp.index = i++;
+
                                 std::string indent = "";// std::string(nodeCtr, '\t').c_str();
 
                                 auto currentNode = std::find(nodes.begin(), nodes.end(), pass.currentNodePtr);
@@ -105,8 +118,11 @@ bool QNodesEditor::eventFilter(QObject *o, QEvent *e)
                                     continue;
                                 }
 
-                                qDebug().nospace() << indent.c_str() << "Node Name: " << qPrintable(pass.currentNodePtr->displayName()) << " (" << std::distance(nodes.begin(), currentNode) << ")";
-                                qDebug().nospace() << indent.c_str() << "Depth: " << pass.nodeCtr;
+                                tmp.node = *currentNode;
+
+                                //qDebug().nospace() << indent.c_str() << "Node Name: " << qPrintable(pass.currentNodePtr->displayName()) << " (" << std::distance(nodes.begin(), currentNode) << ")";
+                                //qDebug().nospace() << indent.c_str() << "Depth: " << pass.nodeCtr;
+
 
 //                                int i = 0;
                                 for(auto node: pass.inputNodes)
@@ -116,9 +132,37 @@ bool QNodesEditor::eventFilter(QObject *o, QEvent *e)
                                     {
                                         //" Input " << i << ": " << pStartConnection->block()->displayName() << ":" << pStartConnection->portName();
 //                                        qDebug().nospace() << indent.c_str() << "\t[" << i << "]:" << qPrintable(node->displayName());
-                                        qDebug().nospace() << indent.c_str() << "\t Input[" << node.first << "]:" << std::distance(nodes.begin(), nodeTmp) << " (" << (*nodeTmp)->displayName() << ")";
+                                        //qDebug().nospace() << indent.c_str() << "\t Input[" << node.first << "]:" << std::distance(nodes.begin(), nodeTmp) << " (" << (*nodeTmp)->displayName() << ")";
+                                        tmp.inputs.insert( std::make_pair(node.first, nodes[std::distance(nodes.begin(), nodeTmp)] ) );
                                     }
                                 }
+
+                                forward.push_back(tmp);
+                            }
+
+                            //std::reverse(forward.begin(), forward.end());
+                            for(ForwardPass pass: forward)
+                            {
+                                //qDebug().nospace() << pass.index << " : " << pass.node->displayName() << "(";
+
+                                std::stringstream ss;
+                                int i = 0;
+                                for(auto val: pass.inputs)
+                                {
+                                  if(i != 0) {
+                                    ss << ",";
+                                  }
+                                  ss << qPrintable(val.second->displayName());
+                                  i++;
+                                }
+
+                                std::string args = ss.str();
+                                qDebug("%c = %s(%s)", pass.index + 97, qPrintable(pass.node->displayName()), args.c_str() );
+//                                for(auto input: pass.inputs)
+//                                {
+//                                    qDebug().nospace() << (input.second)->displayName() << ",";
+//                                }
+//                                qDebug().nospace() << ")";
                             }
 
                             break;
@@ -219,7 +263,7 @@ static const std::string example = R"DELIM(
 
 
 
-NodeList QNodesEditor::getNodeList()
+NodeList QNodeGraph::getNodeList()
 {
     NodeList nodes;
 
@@ -235,7 +279,7 @@ NodeList QNodesEditor::getNodeList()
     return nodes;
 }
 
-void QNodesEditor::getItems(QNEBlock* _node, std::vector<Backpass>& backpasses, int _depth)
+void QNodeGraph::getItems(QNEBlock* _node, std::vector<Backpass>& backpasses, int _depth)
 {
     std::string indent = std::string(_depth, '\t').c_str();
     //qDebug().nospace() << indent.c_str() << "Eval " << _node->displayName();
@@ -338,7 +382,7 @@ void QNodesEditor::getItems(QNEBlock* _node, std::vector<Backpass>& backpasses, 
 }
 
 
-void QNodesEditor::save(QDataStream &ds)
+void QNodeGraph::save(QDataStream &ds)
 {
 	foreach(QGraphicsItem *item, scene->items())
 		if (item->type() == QNEBlock::Type)
@@ -355,7 +399,7 @@ void QNodesEditor::save(QDataStream &ds)
 		}
 }
 
-void QNodesEditor::load(QDataStream &ds)
+void QNodeGraph::load(QDataStream &ds)
 {
 	scene->clear();
 

@@ -25,13 +25,21 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 SOURCES += src/*.cpp \
            src/gui/*.cpp \
            src/gui/nodes/*.cpp \
-           src/SDFOps/*.cpp
+           src/SDFOps/*.cpp \
+           src/SDFOps/DistDeformer/*.cpp \
+           src/SDFOps/DistOp/*.cpp \
+           src/SDFOps/DomainOp/*.cpp \
+           src/SDFOps/Primitive/*.cpp
 
  
 HEADERS += include/*.h \
            include/gui/*.h \
            include/gui/nodes/*.h \
-           include/SDFOps/*.h
+           include/SDFOps/*.h \
+           include/SDFOps/DistDeformer/*.h \
+           include/SDFOps/DistOp/*.h \
+           include/SDFOps/DomainOp/*.h \
+           include/SDFOps/Primitive/*.h
 
 OTHER_FILES += shaders/*
 
