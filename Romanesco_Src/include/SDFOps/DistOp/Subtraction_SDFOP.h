@@ -2,9 +2,9 @@
 #ifndef SUBTRACTION_SDFOP_H 
 #define SUBTRACTION_SDFOP_H 
  
-#include "Base_SDFOP.h" 
+#include "DistOpInterface_SDFOP.h"
  
-class Subtraction_SDFOP : public BaseSDFOP 
+class Subtraction_SDFOP : public DistOpInterface_SDFOP
 { 
 public: 
     Subtraction_SDFOP(); 

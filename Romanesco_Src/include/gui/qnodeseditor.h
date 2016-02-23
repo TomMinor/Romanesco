@@ -39,6 +39,9 @@ class QNEBlock;
 
 typedef std::vector<QNEBlock*> NodeList;
 
+////
+/// \brief The Backpass struct stores node data in the context of parsing the nodegraph backwards
+///
 struct Backpass
 {
     int nodeCtr = 0;
@@ -46,11 +49,11 @@ struct Backpass
     std::map<unsigned int, QNEBlock* > inputNodes;
 };
 
-class QNodesEditor : public QObject
+class QNodeGraph : public QObject
 {
 	Q_OBJECT
 public:
-	explicit QNodesEditor(QObject *parent = 0);
+    explicit QNodeGraph(QObject *parent = 0);
 
 	void install(QGraphicsScene *scene);
 

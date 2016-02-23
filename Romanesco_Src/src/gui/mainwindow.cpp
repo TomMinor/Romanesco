@@ -96,7 +96,7 @@ MainWindow::MainWindow(QWidget *parent) :
     addDockWidget(Qt::LeftDockWidgetArea, dockGL);
 
 
-    nodesEditor = new QNodesEditor(this);
+    nodesEditor = new QNodeGraph(this);
     nodesEditor->install(scene);
 
     //DistanceOpNode *c = new DistanceOpNode("Union", scene, 0);

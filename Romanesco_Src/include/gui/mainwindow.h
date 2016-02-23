@@ -31,7 +31,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
 #include "testglwidget.h"
 
-class QNodesEditor;
+class QNodeGraph;
 
 class MainWindow : public QMainWindow
 {
@@ -49,7 +49,7 @@ private slots:
 	void addBlock();
 
 private:
-	QNodesEditor *nodesEditor;
+	QNodeGraph *nodesEditor;
     QMenu *fileMenu;
     QGraphicsView *view;
     QGraphicsScene *scene;

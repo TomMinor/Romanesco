@@ -16,6 +16,8 @@ public:
 
     virtual std::string getSource();
 
+    virtual std::string getDefaultArg(unsigned int index);
+
     static std::set<std::string> m_headers;
 
 protected:
