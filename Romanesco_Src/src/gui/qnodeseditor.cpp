@@ -140,10 +140,17 @@ bool QNodeGraph::eventFilter(QObject *o, QEvent *e)
                                 forward.push_back(tmp);
                             }
 
+                            std::unordered_map<std::string, std::string> varMap;
+
+
                             //std::reverse(forward.begin(), forward.end());
                             for(ForwardPass pass: forward)
                             {
                                 //qDebug().nospace() << pass.index << " : " << pass.node->displayName() << "(";
+                                std::string nodeName = qPrintable(pass.node->displayName());
+                                std::string varName(1,  (char)pass.index + 97);
+
+                                varMap.insert( std::pair<std::string, std::string>(nodeName, varName) );
 
                                 std::stringstream ss;
                                 int i = 0;
@@ -152,12 +159,14 @@ bool QNodeGraph::eventFilter(QObject *o, QEvent *e)
                                   if(i != 0) {
                                     ss << ",";
                                   }
-                                  ss << qPrintable(val.second->displayName());
+                                  std::string currentNodeName = qPrintable(val.second->displayName());
+                                  ss << varMap[currentNodeName];
                                   i++;
                                 }
 
+
                                 std::string args = ss.str();
-                                qDebug("%c = %s(%s)", pass.index + 97, qPrintable(pass.node->displayName()), args.c_str() );
+                                qDebug("%s = %s(%s)", varName.c_str(), nodeName.c_str(), args.c_str() );
 //                                for(auto input: pass.inputs)
 //                                {
 //                                    qDebug().nospace() << (input.second)->displayName() << ",";

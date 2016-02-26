@@ -568,9 +568,10 @@ bool hookPtxFunction( const std::string& _ptxPath,
     return true;
 }
 
+
 #include "Base_SDFOP.h"
-#include "Sphere_SDFOP.h"
-#include "Transform_SDFOP.h"
+#include "Primitive/Sphere_SDFOP.h"
+#include "DomainOp/Transform_SDFOP.h"
 #include <glm/gtc/matrix_transform.hpp>
 
 #define SHOWSTUFF
