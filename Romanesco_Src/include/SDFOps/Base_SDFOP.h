@@ -8,14 +8,20 @@
 
 typedef std::map<std::string, std::string> OperatorParams;
 
+struct Argument
+{
+    std::string name;
+    std::string type;
+};
+
 class BaseSDFOP
 {
 public:
     BaseSDFOP();
     ~BaseSDFOP();
 
+    virtual std::string getFunctionName();
     virtual std::string getSource();
-
     virtual std::string getDefaultArg(unsigned int index);
 
     static std::set<std::string> m_headers;

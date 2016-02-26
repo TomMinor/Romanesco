@@ -46,6 +46,10 @@ OTHER_FILES += shaders/*
 INCLUDEPATH += ./include
 INCLUDEPATH += ./include/gui
 INCLUDEPATH += ./include/SDFOps
+INCLUDEPATH += ./include/SDFOps/DistDeformer
+INCLUDEPATH += ./include/SDFOps/DistOp
+INCLUDEPATH += ./include/SDFOps/DomainOp
+INCLUDEPATH += ./include/SDFOps/Primitive
 
 INCLUDEPATH += /opt/local/include
 DESTDIR=./

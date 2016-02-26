@@ -18,6 +18,11 @@ std::string BaseSDFOP::getSource()
     return "assert(\"UNUSED\")";
 }
 
+std::string BaseSDFOP::getFunctionName()
+{
+    return "undefined";
+}
+
 std::string BaseSDFOP::getDefaultArg(unsigned int index)
 {
     static const std::vector<std::string> args = { "default" };

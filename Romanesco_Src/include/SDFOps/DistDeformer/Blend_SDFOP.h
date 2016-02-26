@@ -9,6 +9,10 @@ class Blend_SDFOP : public BaseSDFOP
 public: 
     Blend_SDFOP();
     ~Blend_SDFOP(); 
+
+    virtual std::string getFunctionName() override;
+    virtual std::string getSource() override;
+    virtual std::string getDefaultArg(unsigned int index) override;
 }; 
  
 #endif // BLEND_SDFOP_H 
