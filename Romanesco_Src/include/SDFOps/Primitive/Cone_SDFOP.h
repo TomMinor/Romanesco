@@ -8,7 +8,11 @@ class Cone_SDFOP : public BaseSDFOP
 { 
 public: 
     Cone_SDFOP(); 
-    ~Cone_SDFOP(); 
+    ~Cone_SDFOP();
+
+    virtual std::string getFunctionName() override;
+    virtual std::string getSource() override;
+    virtual Argument getArgument(unsigned int index) override;
 }; 
  
 #endif // CONE_SDFOP_H 

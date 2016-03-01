@@ -7,8 +7,12 @@
 class Intersection_SDFOP : public DistOpInterface_SDFOP
 { 
 public: 
-    Intersection_SDFOP(); 
+    Intersection_SDFOP();
     ~Intersection_SDFOP(); 
+
+    virtual std::string getFunctionName() override;
+    virtual std::string getSource() override;
+    virtual Argument getArgument(unsigned int index) override;
 }; 
  
 #endif // INTERSECTION_SDFOP_H 

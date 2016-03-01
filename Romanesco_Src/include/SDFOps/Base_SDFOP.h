@@ -8,11 +8,22 @@
 
 typedef std::map<std::string, std::string> OperatorParams;
 
+enum class ReturnType
+{
+    Void,
+    Float,
+    Int,
+    Vec3,
+    Mat4
+};
+
 struct Argument
 {
     std::string name;
-    std::string type;
+    ReturnType type;
+    std::string defaultValue;
 };
+
 
 class BaseSDFOP
 {
@@ -22,9 +33,11 @@ public:
 
     virtual std::string getFunctionName();
     virtual std::string getSource();
-    virtual std::string getDefaultArg(unsigned int index);
+    virtual Argument getArgument(unsigned int index);
+    virtual unsigned int argumentSize();
 
     static std::set<std::string> m_headers;
+
 
 protected:
     ///

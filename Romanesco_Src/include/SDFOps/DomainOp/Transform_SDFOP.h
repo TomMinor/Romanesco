@@ -11,7 +11,9 @@ public:
     Transform_SDFOP(const glm::vec3 &_m);
     ~Transform_SDFOP();
 
-    virtual std::string getSource();
+    virtual std::string getFunctionName() override;
+    virtual std::string getSource() override;
+    virtual Argument getArgument(unsigned int index) override;
 
 private:
     glm::vec3 m_transform;

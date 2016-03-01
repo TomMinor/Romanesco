@@ -8,7 +8,11 @@ class Bend_SDFOP : public BaseSDFOP
 { 
 public: 
     Bend_SDFOP(); 
-    ~Bend_SDFOP(); 
+    ~Bend_SDFOP();
+
+    virtual std::string getFunctionName() override;
+    virtual std::string getSource() override;
+    virtual Argument getArgument(unsigned int index) override;
 }; 
  
 #endif // BEND_SDFOP_H 

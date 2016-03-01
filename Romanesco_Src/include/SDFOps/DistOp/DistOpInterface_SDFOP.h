@@ -8,6 +8,10 @@ class DistOpInterface_SDFOP : public BaseSDFOP
 public:
     DistOpInterface_SDFOP();
     ~DistOpInterface_SDFOP();
+
+    virtual std::string getFunctionName() override;
+    virtual std::string getSource() override;
+    virtual Argument getArgument(unsigned int index) override;
 };
 
 #endif // DISTOPINTERFACE_SDFOPH_H

@@ -10,7 +10,9 @@ public:
     Sphere_SDFOP(float _radius);
     ~Sphere_SDFOP(); 
 
-    virtual std::string getSource();
+    virtual std::string getFunctionName() override;
+    virtual std::string getSource() override;
+    virtual Argument getArgument(unsigned int index) override;
 
 private:
     float m_radius;

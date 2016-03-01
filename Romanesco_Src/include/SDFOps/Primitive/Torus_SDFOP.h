@@ -9,6 +9,10 @@ class Torus_SDFOP : public BaseSDFOP
 public: 
     Torus_SDFOP(); 
     ~Torus_SDFOP(); 
+
+    virtual std::string getFunctionName() override;
+    virtual std::string getSource() override;
+    virtual Argument getArgument(unsigned int index) override;
 }; 
  
 #endif // TORUS_SDFOP_H 

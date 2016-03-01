@@ -1,5 +1,10 @@
 #include "DistDeformer/Blend_SDFOP.h"
  
+static const std::vector<Argument> args = {
+    {"a", ReturnType::Float, "0.0f"},
+    {"b", ReturnType::Float, "0.0f"}
+};
+
 Blend_SDFOP::Blend_SDFOP() 
 { 
 } 
@@ -18,12 +23,7 @@ std::string Blend_SDFOP::getSource()
 
 }
 
-std::string Blend_SDFOP::getDefaultArg(unsigned int index)
+Argument Blend_SDFOP::getArgument(unsigned int index)
 {
-    // Base implementation does error checking, we discard any result
-    BaseSDFOP::getDefaultArg(index);
-
-    static const std::vector<std::string> args = { "a", "b" };
-
-    return args[index];
+    return args.at(index);
 }
