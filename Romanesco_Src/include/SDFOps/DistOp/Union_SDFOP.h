@@ -10,7 +10,9 @@ public:
     Union_SDFOP(); 
     ~Union_SDFOP();
 
-    virtual std::string getDefaultArg(unsigned int index);
+    virtual std::string getFunctionName() override;
+    virtual std::string getSource() override;
+    virtual Argument getArgument(unsigned int index) override;
 }; 
  
 #endif // UNION_SDFOP_H 

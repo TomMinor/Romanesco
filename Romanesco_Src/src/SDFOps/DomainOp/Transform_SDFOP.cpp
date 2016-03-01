@@ -1,6 +1,11 @@
 #include <sstream>
 #include "Transform_SDFOP.h" 
- 
+
+static const std::vector<Argument> args = {
+    {"a", ReturnType::Float, "0.0f"},
+    {"b", ReturnType::Mat4, "0.0f"}
+};
+
 Transform_SDFOP::Transform_SDFOP(const glm::vec3 &_m)
     : m_transform(_m)
 {
@@ -22,3 +27,14 @@ std::string Transform_SDFOP::getSource()
 }
 
 
+
+std::string Transform_SDFOP::getFunctionName()
+{
+    return "transform";
+}
+
+
+Argument Transform_SDFOP::getArgument(unsigned int index)
+{
+    return args.at(index);
+}

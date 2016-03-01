@@ -2,6 +2,10 @@
 
 std::set<std::string> BaseSDFOP::m_headers;
 
+static const std::vector<Argument> args = {
+        {"default", ReturnType::Float, "0.0f"}
+};
+
 BaseSDFOP::BaseSDFOP()
 {
     // Everything will probably need this
@@ -11,6 +15,11 @@ BaseSDFOP::BaseSDFOP()
 BaseSDFOP::~BaseSDFOP()
 {
 
+}
+
+unsigned int BaseSDFOP::argumentSize()
+{
+    return args.size();
 }
 
 std::string BaseSDFOP::getSource()
@@ -23,14 +32,7 @@ std::string BaseSDFOP::getFunctionName()
     return "undefined";
 }
 
-std::string BaseSDFOP::getDefaultArg(unsigned int index)
+Argument BaseSDFOP::getArgument(unsigned int index)
 {
-    static const std::vector<std::string> args = { "default" };
-
-    if(index > (args.size() - 1) )
-    {
-        throw std::out_of_range("Default argument index out of range");
-    }
-
-    return args[index];
+    return args.at(index);
 }

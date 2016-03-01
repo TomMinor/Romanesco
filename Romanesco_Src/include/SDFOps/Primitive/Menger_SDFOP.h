@@ -8,6 +8,10 @@ class MengerSDFOp : public BaseSDFOP
 public:
     MengerSDFOp();
     ~MengerSDFOp();
+
+    virtual std::string getFunctionName() override;
+    virtual std::string getSource() override;
+    virtual Argument getArgument(unsigned int index) override;
 };
 
 #endif // MENGERSDFOP_H
