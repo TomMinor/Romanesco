@@ -153,18 +153,15 @@ bool QNodeGraph::eventFilter(QObject *o, QEvent *e)
 
                                 varMap.insert( std::pair<std::string, std::string>(nodeName, varName) );
 
+                                DistanceOpNode* thisNode = pass.node;
+
                                 BaseSDFOP* nodeSDFOP = pass.node->getOperatorInfo();
-
-                                unsigned int totalInputs = 0;
-
-                                // awful hack to determine if we're the terminating node atm
+                                unsigned int totalInputs;
                                 if(nodeSDFOP)
                                 {
-                                     totalInputs = nodeSDFOP->argumentSize();
-                                }
-                                else
-                                {
-                                     totalInputs = pass.inputs.size();
+                                    totalInputs = nodeSDFOP->argumentSize();
+                                } else {
+                                    totalInputs = pass.inputs.size();
                                 }
 
                                 std::stringstream ss;
@@ -174,14 +171,12 @@ bool QNodeGraph::eventFilter(QObject *o, QEvent *e)
                                       ss << ",";
                                     }
 
-                                    auto input = pass.inputs.find( i );
+                                    auto inputMap = pass.inputs.find( i );
 
                                     // Get variable input value if there is one
-                                    if(input != pass.inputs.end())
+                                    if(inputMap != pass.inputs.end())
                                     {
-                                        DistanceOpNode* node = input->second;
-//                                        BaseSDFOP* currentNodeSDFOP = node->getOperatorInfo();
-//                                        Argument arg = currentNodeSDFOP->getArgument(i);
+                                        DistanceOpNode* node = inputMap->second;
                                         std::string currentNodeName = qPrintable( node->displayName() );
                                         ss << varMap[currentNodeName];
                                     }
@@ -194,10 +189,10 @@ bool QNodeGraph::eventFilter(QObject *o, QEvent *e)
 
                                 std::string args = ss.str();
 
-                                // Are we the terminating node or not
-                                if(pass.node->getOperatorInfo())
+                                if( nodeSDFOP )
                                 {
-                                    qDebug("%s %s = %s(%s);", pass.node->getOperatorInfo()->getTypeString().c_str(), varName.c_str(), nodeName.c_str(), args.c_str() );
+                                    BaseSDFOP* arg = pass.node->getOperatorInfo();
+                                    qDebug("%s %s = %s(%s);", arg->getTypeString().c_str(), varName.c_str(), arg->getFunctionName().c_str(), args.c_str() );
                                 }
                                 else
                                 {
@@ -206,6 +201,7 @@ bool QNodeGraph::eventFilter(QObject *o, QEvent *e)
                                     }
                                     qDebug("return %s;", args.c_str() );
                                 }
+
 //                                for(auto input: pass.inputs)
 //                                {
 //                                    qDebug().nospace() << (input.second)->displayName() << ",";

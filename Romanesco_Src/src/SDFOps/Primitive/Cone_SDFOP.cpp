@@ -29,3 +29,8 @@ Argument Cone_SDFOP::getArgument(unsigned int index)
 {
     return args.at(index);
 }
+
+unsigned int Cone_SDFOP::argumentSize()
+{
+    return args.size();
+}

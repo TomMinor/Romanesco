@@ -38,3 +38,8 @@ Argument Transform_SDFOP::getArgument(unsigned int index)
 {
     return args.at(index);
 }
+
+unsigned int Transform_SDFOP::argumentSize()
+{
+    return args.size();
+}

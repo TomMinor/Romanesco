@@ -30,3 +30,8 @@ Argument Scale_SDFOP::getArgument(unsigned int index)
 {
     return args.at(index);
 }
+
+unsigned int Scale_SDFOP::argumentSize()
+{
+    return args.size();
+}

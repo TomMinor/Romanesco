@@ -28,3 +28,8 @@ Argument DistOpInterface_SDFOP::getArgument(unsigned int index)
 {
     return args.at(index);
 }
+
+unsigned int DistOpInterface_SDFOP::argumentSize()
+{
+    return args.size();
+}

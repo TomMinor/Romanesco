@@ -27,3 +27,8 @@ Argument Blend_SDFOP::getArgument(unsigned int index)
 {
     return args.at(index);
 }
+
+unsigned int Blend_SDFOP::argumentSize()
+{
+    return args.size();
+}

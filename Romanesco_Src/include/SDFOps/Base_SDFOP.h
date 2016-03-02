@@ -34,8 +34,8 @@ public:
     virtual std::string getFunctionName();
     virtual std::string getSource();
     std::string getTypeString();
-    virtual Argument getArgument(unsigned int index);
-    virtual unsigned int argumentSize();
+    virtual Argument getArgument(unsigned int index) = 0;
+    virtual unsigned int argumentSize() = 0;
 
     static std::set<std::string> m_headers;
 

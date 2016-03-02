@@ -30,3 +30,8 @@ Argument Twist_SDFOP::getArgument(unsigned int index)
 {
     return args.at(index);
 }
+
+unsigned int Twist_SDFOP::argumentSize()
+{
+    return args.size();
+}

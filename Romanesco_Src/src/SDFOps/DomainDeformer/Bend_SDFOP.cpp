@@ -32,3 +32,7 @@ Argument Bend_SDFOP::getArgument(unsigned int index)
 }
 
 
+unsigned int Bend_SDFOP::argumentSize()
+{
+    return args.size();
+}

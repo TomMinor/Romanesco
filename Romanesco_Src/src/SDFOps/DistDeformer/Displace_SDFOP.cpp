@@ -33,3 +33,8 @@ Argument Displace_SDFOP::getArgument(unsigned int index)
 {
     return args.at(index);
 }
+
+unsigned int Displace_SDFOP::argumentSize()
+{
+    return args.size();
+}
