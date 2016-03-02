@@ -13,6 +13,7 @@ public:
     virtual std::string getFunctionName() override;
     virtual std::string getSource() override;
     virtual Argument getArgument(unsigned int index) override;
+    virtual unsigned int argumentSize() override;
 }; 
  
 #endif // CAPSULE_SDFOP_H 

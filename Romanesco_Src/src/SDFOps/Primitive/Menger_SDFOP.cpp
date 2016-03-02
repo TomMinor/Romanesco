@@ -29,3 +29,8 @@ Argument MengerSDFOp::getArgument(unsigned int index)
 {
     return args.at(index);
 }
+
+unsigned int MengerSDFOp::argumentSize()
+{
+    return args.size();
+}

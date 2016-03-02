@@ -29,3 +29,8 @@ Argument Intersection_SDFOP::getArgument(unsigned int index)
 {
     return args.at(index);
 }
+
+unsigned int Intersection_SDFOP::argumentSize()
+{
+    return args.size();
+}

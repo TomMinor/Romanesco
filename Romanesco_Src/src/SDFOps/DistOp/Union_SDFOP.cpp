@@ -30,3 +30,8 @@ Argument Union_SDFOP::getArgument(unsigned int index)
 {
     return args.at(index);
 }
+
+unsigned int Union_SDFOP::argumentSize()
+{
+    return args.size();
+}

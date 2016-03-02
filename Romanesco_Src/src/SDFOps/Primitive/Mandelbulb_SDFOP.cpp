@@ -29,3 +29,8 @@ Argument Mandelbulb_SDFOP::getArgument(unsigned int index)
 {
     return args.at(index);
 }
+
+unsigned int Mandelbulb_SDFOP::argumentSize()
+{
+    return args.size();
+}

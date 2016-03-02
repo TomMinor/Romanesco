@@ -30,3 +30,7 @@ Argument Subtraction_SDFOP::getArgument(unsigned int index)
     return args.at(index);
 }
 
+unsigned int Subtraction_SDFOP::argumentSize()
+{
+    return args.size();
+}

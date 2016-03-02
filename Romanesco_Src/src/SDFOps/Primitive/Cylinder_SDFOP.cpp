@@ -29,3 +29,8 @@ Argument Cylinder_SDFOP::getArgument(unsigned int index)
 {
     return args.at(index);
 }
+
+unsigned int Cylinder_SDFOP::argumentSize()
+{
+    return args.size();
+}

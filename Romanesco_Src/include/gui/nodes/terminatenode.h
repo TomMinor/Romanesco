@@ -1,7 +1,7 @@
 #ifndef TERMINATENODE_H
 #define TERMINATENODE_H
 
-#include "qneblock.h"
+#include "distanceopnode.h"
 
 
 class TerminateNode : public QNEBlock

@@ -7,7 +7,7 @@ static const std::vector<Argument> args = {
 Sphere_SDFOP::Sphere_SDFOP(float _radius)
     : m_radius(_radius)
 {
-m_returnType = ReturnType::Float;
+    m_returnType = ReturnType::Float;
 } 
  
 Sphere_SDFOP::~Sphere_SDFOP() 
@@ -32,4 +32,9 @@ std::string Sphere_SDFOP::getSource()
 Argument Sphere_SDFOP::getArgument(unsigned int index)
 {
     return args.at(index);
+}
+
+unsigned int Sphere_SDFOP::argumentSize()
+{
+    return 0;
 }

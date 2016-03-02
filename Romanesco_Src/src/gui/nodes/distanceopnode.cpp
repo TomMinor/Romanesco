@@ -11,12 +11,19 @@ DistanceOpNode::DistanceOpNode(BaseSDFOP* _op, QGraphicsScene* _scene, QGraphics
     addPort(name, 0, QNEPort::NamePort);
     addPort("Distance", 0, QNEPort::TypePort);
 
-    auto a =  m_op->argumentSize();
-
-    for(unsigned int i = 0; i <= m_op->argumentSize(); i++)
+    for(unsigned int i = 0; i < m_op->argumentSize(); i++)
     {
-        Argument arg = _op->getArgument(i);
-        addInputPort( arg.name.c_str() );
+        try
+        {
+            Argument arg = _op->getArgument(i);
+            addInputPort( arg.name.c_str() );
+        }
+        catch ( const std::out_of_range e )
+        {
+            qWarning("Invalid argument accessed at index %d, ignoring", i);
+            continue;
+        }
+
     }
 
 //    addInputPort("A");

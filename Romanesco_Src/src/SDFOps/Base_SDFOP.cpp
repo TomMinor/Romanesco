@@ -42,11 +42,6 @@ std::string BaseSDFOP::getTypeString()
     }
 }
 
-unsigned int BaseSDFOP::argumentSize()
-{
-    return args.size() - 1;
-}
-
 std::string BaseSDFOP::getSource()
 {
     return "assert(\"UNUSED\")";
@@ -57,7 +52,4 @@ std::string BaseSDFOP::getFunctionName()
     return "undefined";
 }
 
-Argument BaseSDFOP::getArgument(unsigned int index)
-{
-    return args.at(index);
-}
+

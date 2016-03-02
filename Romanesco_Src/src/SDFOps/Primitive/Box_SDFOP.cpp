@@ -29,3 +29,8 @@ Argument Box_SDFOP::getArgument(unsigned int index)
 {
     return args.at(index);
 }
+
+unsigned int Box_SDFOP::argumentSize()
+{
+    return args.size();
+}
