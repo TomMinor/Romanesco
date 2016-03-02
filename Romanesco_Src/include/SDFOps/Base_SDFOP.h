@@ -33,6 +33,7 @@ public:
 
     virtual std::string getFunctionName();
     virtual std::string getSource();
+    std::string getTypeString();
     virtual Argument getArgument(unsigned int index);
     virtual unsigned int argumentSize();
 
@@ -45,9 +46,7 @@ protected:
     ///
     std::string m_displayName = "Base Operator";
 
-
-
-    OperatorParams m_params;
+    ReturnType m_returnType;
 };
 
 #endif // BASEDISTANCEFIELDOPERATOR_H

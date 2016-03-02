@@ -7,7 +7,7 @@ static const std::vector<Argument> args = {
 
 MengerSDFOp::MengerSDFOp()
 {
-
+m_returnType = ReturnType::Float;
 }
 
 MengerSDFOp::~MengerSDFOp()

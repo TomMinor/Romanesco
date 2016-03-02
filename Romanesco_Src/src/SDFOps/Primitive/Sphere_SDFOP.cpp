@@ -2,14 +2,12 @@
 #include "Sphere_SDFOP.h" 
 
 static const std::vector<Argument> args = {
-    {"a", ReturnType::Float, "0.0f"},
-    {"b", ReturnType::Float, "0.0f"}
 };
 
 Sphere_SDFOP::Sphere_SDFOP(float _radius)
     : m_radius(_radius)
 {
-
+m_returnType = ReturnType::Float;
 } 
  
 Sphere_SDFOP::~Sphere_SDFOP() 

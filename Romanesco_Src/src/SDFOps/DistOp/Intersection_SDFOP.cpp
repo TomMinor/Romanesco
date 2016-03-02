@@ -8,6 +8,7 @@ static const std::vector<Argument> args = {
  
 Intersection_SDFOP::Intersection_SDFOP() 
 { 
+    m_returnType = ReturnType::Float;
 } 
  
 Intersection_SDFOP::~Intersection_SDFOP() 

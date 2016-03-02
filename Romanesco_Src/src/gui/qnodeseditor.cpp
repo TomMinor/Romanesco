@@ -71,8 +71,9 @@ QGraphicsItem* QNodeGraph::itemAt(const QPointF &pos)
 struct ForwardPass
 {
     unsigned int index;
-    QNEBlock* node;
-    std::map<unsigned int, QNEBlock* > inputs;
+    DistanceOpNode* node;
+    std::map<unsigned int, DistanceOpNode* > inputs;
+    unsigned int expectedInputs;
 };
 
 bool QNodeGraph::eventFilter(QObject *o, QEvent *e)
@@ -147,26 +148,64 @@ bool QNodeGraph::eventFilter(QObject *o, QEvent *e)
                             for(ForwardPass pass: forward)
                             {
                                 //qDebug().nospace() << pass.index << " : " << pass.node->displayName() << "(";
-                                std::string nodeName = qPrintable(pass.node->displayName());
+                                std::string nodeName = qPrintable( pass.node->displayName() );
                                 std::string varName(1,  (char)pass.index + 97);
 
                                 varMap.insert( std::pair<std::string, std::string>(nodeName, varName) );
 
-                                std::stringstream ss;
-                                int i = 0;
-                                for(auto val: pass.inputs)
+                                BaseSDFOP* nodeSDFOP = pass.node->getOperatorInfo();
+
+                                unsigned int totalInputs = 0;
+
+                                // awful hack to determine if we're the terminating node atm
+                                if(nodeSDFOP)
                                 {
-                                  if(i != 0) {
-                                    ss << ",";
-                                  }
-                                  std::string currentNodeName = qPrintable(val.second->displayName());
-                                  ss << varMap[currentNodeName];
-                                  i++;
+                                     totalInputs = nodeSDFOP->argumentSize();
+                                }
+                                else
+                                {
+                                     totalInputs = pass.inputs.size();
                                 }
 
+                                std::stringstream ss;
+                                for(unsigned int i = 0; i < totalInputs; i++)
+                                {
+                                    if(i != 0) {
+                                      ss << ",";
+                                    }
+
+                                    auto input = pass.inputs.find( i );
+
+                                    // Get variable input value if there is one
+                                    if(input != pass.inputs.end())
+                                    {
+                                        DistanceOpNode* node = input->second;
+//                                        BaseSDFOP* currentNodeSDFOP = node->getOperatorInfo();
+//                                        Argument arg = currentNodeSDFOP->getArgument(i);
+                                        std::string currentNodeName = qPrintable( node->displayName() );
+                                        ss << varMap[currentNodeName];
+                                    }
+                                    else // otherwise get the default value for this argument
+                                    {
+                                        Argument arg = nodeSDFOP->getArgument(i);
+                                        ss << arg.defaultValue;
+                                    }
+                                }
 
                                 std::string args = ss.str();
-                                qDebug("%s = %s(%s)", varName.c_str(), nodeName.c_str(), args.c_str() );
+
+                                // Are we the terminating node or not
+                                if(pass.node->getOperatorInfo())
+                                {
+                                    qDebug("%s %s = %s(%s);", pass.node->getOperatorInfo()->getTypeString().c_str(), varName.c_str(), nodeName.c_str(), args.c_str() );
+                                }
+                                else
+                                {
+                                    if(totalInputs == 0) {
+                                        args = "0";
+                                    }
+                                    qDebug("return %s;", args.c_str() );
+                                }
 //                                for(auto input: pass.inputs)
 //                                {
 //                                    qDebug().nospace() << (input.second)->displayName() << ",";
@@ -178,7 +217,14 @@ bool QNodeGraph::eventFilter(QObject *o, QEvent *e)
                         }
                     case Qt::Key_C:
                         {
-                            DistanceOpNode *c = new DistanceOpNode("Union", scene, 0);
+                            BaseSDFOP* op = new Union_SDFOP();
+                            DistanceOpNode *c = new DistanceOpNode(op, scene, 0);
+                            break;
+                        }
+                    case Qt::Key_V:
+                        {
+                            BaseSDFOP* op = new Sphere_SDFOP(1.0f);
+                            DistanceOpNode *c = new DistanceOpNode(op, scene, 0);
                             break;
                         }
                 }
@@ -278,7 +324,7 @@ NodeList QNodeGraph::getNodeList()
 
     foreach(QGraphicsItem *item, scene->items())
     {
-        QNEBlock* node = qgraphicsitem_cast<QNEBlock*>(item);
+        DistanceOpNode* node = qgraphicsitem_cast<DistanceOpNode*>(item);
         if(node)
         {
             nodes.emplace_back(node);

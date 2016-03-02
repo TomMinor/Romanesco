@@ -7,7 +7,8 @@ static const std::vector<Argument> args = {
 };
 
 Capsule_SDFOP::Capsule_SDFOP() 
-{ 
+{
+    m_returnType = ReturnType::Float;
 } 
  
 Capsule_SDFOP::~Capsule_SDFOP() 
