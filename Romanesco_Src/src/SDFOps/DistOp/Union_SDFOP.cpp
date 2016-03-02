@@ -7,8 +7,9 @@ static const std::vector<Argument> args = {
 };
  
 Union_SDFOP::Union_SDFOP() 
-{ 
-} 
+{
+    m_returnType = ReturnType::Float;
+}
  
 Union_SDFOP::~Union_SDFOP() 
 {

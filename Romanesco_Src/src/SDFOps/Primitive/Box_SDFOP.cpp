@@ -7,7 +7,8 @@ static const std::vector<Argument> args = {
 };
 
 Box_SDFOP::Box_SDFOP() 
-{ 
+{
+    m_returnType = ReturnType::Float;
 } 
  
 Box_SDFOP::~Box_SDFOP() 

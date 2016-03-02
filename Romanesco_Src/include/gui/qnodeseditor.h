@@ -36,8 +36,9 @@ class QNEConnection;
 class QGraphicsItem;
 class QPointF;
 class QNEBlock;
+class DistanceOpNode;
 
-typedef std::vector<QNEBlock*> NodeList;
+typedef std::vector<DistanceOpNode*> NodeList;
 
 ////
 /// \brief The Backpass struct stores node data in the context of parsing the nodegraph backwards

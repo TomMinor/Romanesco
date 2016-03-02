@@ -7,7 +7,8 @@ static const std::vector<Argument> args = {
 };
  
 Subtraction_SDFOP::Subtraction_SDFOP() 
-{ 
+{
+    m_returnType = ReturnType::Float;
 } 
  
 Subtraction_SDFOP::~Subtraction_SDFOP() 

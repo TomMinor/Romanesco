@@ -7,7 +7,8 @@ static const std::vector<Argument> args = {
 };
 
 Cone_SDFOP::Cone_SDFOP() 
-{ 
+{
+    m_returnType = ReturnType::Float;
 } 
  
 Cone_SDFOP::~Cone_SDFOP() 

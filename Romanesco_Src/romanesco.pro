@@ -29,6 +29,7 @@ SOURCES += src/*.cpp \
            src/SDFOps/DistDeformer/*.cpp \
            src/SDFOps/DistOp/*.cpp \
            src/SDFOps/DomainOp/*.cpp \
+           src/SDFOps/DomainDeformer/*.cpp \
            src/SDFOps/Primitive/*.cpp
 
  
@@ -39,6 +40,7 @@ HEADERS += include/*.h \
            include/SDFOps/DistDeformer/*.h \
            include/SDFOps/DistOp/*.h \
            include/SDFOps/DomainOp/*.h \
+           include/SDFOps/DomainDeformer/*.h \
            include/SDFOps/Primitive/*.h
 
 OTHER_FILES += shaders/*
@@ -47,6 +49,7 @@ INCLUDEPATH += ./include
 INCLUDEPATH += ./include/gui
 INCLUDEPATH += ./include/SDFOps
 INCLUDEPATH += ./include/SDFOps/DistDeformer
+INCLUDEPATH += ./include/SDFOps/DomainDeformer
 INCLUDEPATH += ./include/SDFOps/DistOp
 INCLUDEPATH += ./include/SDFOps/DomainOp
 INCLUDEPATH += ./include/SDFOps/Primitive

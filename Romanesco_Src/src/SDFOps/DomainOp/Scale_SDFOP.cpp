@@ -7,7 +7,8 @@ static const std::vector<Argument> args = {
 };
 
 Scale_SDFOP::Scale_SDFOP() 
-{ 
+{
+    m_returnType = ReturnType::Float;
 } 
  
 Scale_SDFOP::~Scale_SDFOP() 

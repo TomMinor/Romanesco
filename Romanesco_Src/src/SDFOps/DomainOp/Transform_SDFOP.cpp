@@ -9,7 +9,7 @@ static const std::vector<Argument> args = {
 Transform_SDFOP::Transform_SDFOP(const glm::vec3 &_m)
     : m_transform(_m)
 {
-
+    m_returnType = ReturnType::Float;
 } 
  
 Transform_SDFOP::~Transform_SDFOP() 

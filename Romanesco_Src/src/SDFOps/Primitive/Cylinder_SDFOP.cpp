@@ -7,7 +7,8 @@ static const std::vector<Argument> args = {
 };
 
 Cylinder_SDFOP::Cylinder_SDFOP() 
-{ 
+{
+    m_returnType = ReturnType::Float;
 } 
  
 Cylinder_SDFOP::~Cylinder_SDFOP() 

@@ -8,6 +8,7 @@ static const std::vector<Argument> args = {
 
 Torus_SDFOP::Torus_SDFOP() 
 { 
+    m_returnType = ReturnType::Float;
 } 
  
 Torus_SDFOP::~Torus_SDFOP() 

@@ -7,7 +7,8 @@ static const std::vector<Argument> args = {
 };
 
 Repetition_SDFOP::Repetition_SDFOP() 
-{ 
+{
+    m_returnType = ReturnType::Float;
 } 
  
 Repetition_SDFOP::~Repetition_SDFOP() 
