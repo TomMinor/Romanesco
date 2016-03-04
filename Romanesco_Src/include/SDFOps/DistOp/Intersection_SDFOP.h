@@ -4,7 +4,7 @@
  
 #include "DistOpInterface_SDFOP.h"
  
-class Intersection_SDFOP : public DistOpInterface_SDFOP
+class Intersection_SDFOP : public BaseSDFOP
 { 
 public: 
     Intersection_SDFOP();

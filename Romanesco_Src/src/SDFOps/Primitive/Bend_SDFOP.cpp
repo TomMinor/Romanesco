@@ -6,28 +6,28 @@ static const std::vector<Argument> args = {
     {"b", ReturnType::Float, "0.0f"}
 };
  
-Bend_SDFOP::Bend_SDFOP() 
-{ 
-} 
+//Bend_SDFOP::Bend_SDFOP()
+//{
+//}
  
-Bend_SDFOP::~Bend_SDFOP() 
-{ 
-}
+//Bend_SDFOP::~Bend_SDFOP()
+//{
+//}
 
 
-std::string Bend_SDFOP::getFunctionName()
-{
-    return "bend";
-}
+//std::string Bend_SDFOP::getFunctionName()
+//{
+//    return "bend";
+//}
 
-std::string Bend_SDFOP::getSource()
-{
+//std::string Bend_SDFOP::getSource()
+//{
 
-}
+//}
 
-Argument Bend_SDFOP::getArgument(unsigned int index)
-{
-    return args.at(index);
-}
+//Argument Bend_SDFOP::getArgument(unsigned int index)
+//{
+//    return args.at(index);
+//}
 
 

@@ -5,8 +5,10 @@ static const std::vector<Argument> args = {
     {"b", ReturnType::Float, "0.0f"}
 };
 
-Blend_SDFOP::Blend_SDFOP() 
-{ 
+Blend_SDFOP::Blend_SDFOP() :
+    BaseSDFOP::BaseSDFOP()
+{
+
 } 
  
 Blend_SDFOP::~Blend_SDFOP() 

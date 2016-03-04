@@ -4,8 +4,8 @@
 static const std::vector<Argument> args = {
 };
 
-Sphere_SDFOP::Sphere_SDFOP(float _radius)
-    : m_radius(_radius)
+Sphere_SDFOP::Sphere_SDFOP(float _radius) :
+    BaseSDFOP::BaseSDFOP(),  m_radius(_radius)
 {
     m_returnType = ReturnType::Float;
 } 
@@ -24,7 +24,7 @@ std::string Sphere_SDFOP::getFunctionName()
 std::string Sphere_SDFOP::getSource()
 {
     std::ostringstream sourceStream;
-    sourceStream<< "return length(_p) - (" << m_radius << ");\n";
+    sourceStream<< "\treturn length(P) - (" << m_radius << ");\n";
 
     return sourceStream.str();
 }

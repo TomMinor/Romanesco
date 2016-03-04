@@ -574,7 +574,7 @@ bool hookPtxFunction( const std::string& _ptxPath,
 #include "DomainOp/Transform_SDFOP.h"
 #include <glm/gtc/matrix_transform.hpp>
 
-#define SHOWSTUFF
+//#define SHOWSTUFF
 
 void OptixScene::createGeometry(int choose)
 {
@@ -608,52 +608,53 @@ void OptixScene::createGeometry(int choose)
 
 
     std::string mandelbulb_hit_src =
-            "#include \"cutil_math.h\" \n"
+            R"("
+            #include "cutil_math.h"
 
-            "extern \"C\" {\n "
-            "__device__ float distancehit_hook("
-                    "float3 x, float _t, float _max_iterations"
-                    ")\n"
-            "{"
-                "float3 zn  = x;//make_float3( x, 0 );\n"
-                "float4 fp_n = make_float4( 1, 0, 0, 0 );  // start derivative at real 1 (see [2]).\n"
-"\n"
-                "const float sq_threshold = 2.0f;   // divergence threshold\n"
- "\n"
-                "float oscillatingTime = sin(_t / 256.0f );\n"
-                "float p = (5.0f * abs(oscillatingTime)) + 3.0f; //8;\n"
-                "float rad = 0.0f;\n"
-                "float dist = 0.0f;\n"
-                "float d = 1.0;\n"
-"\n"
-                "// Iterate to compute f_n and fp_n for the distance estimator.\n"
-                "int i = _max_iterations;\n"
-                "while( i-- )\n"
-                "{\n"
-                  "rad = length(zn);\n"
-            "\n"
-                  "if( rad > sq_threshold )\n"
-                  "{\n"
-                    "dist = 0.5f * rad * logf( rad ) / d;\n"
-                  "}\n"
-                  "else\n"
-                  "{\n"
-                    "float th = atan2( length( make_float3(zn.x, zn.y, 0.0f) ), zn.z );\n"
-                    "float phi = atan2( zn.y, zn.x );\n"
-                    "float rado = pow(rad, p);\n"
-                    "d = pow(rad, p - 1) * (p-1) * d + 1.0;\n"
-"\n"
-                    "float sint = sin(th * p);\n"
-                    "zn.x = rado * sint * cos(phi * p);\n"
-                    "zn.y = rado * sint * sin(phi * p);\n"
-                    "zn.z = rado * cos(th * p);\n"
-                    "zn += x;\n"
-                  "}\n"
-                "}\n"
-            "\n"
-                "return dist;\n"
-            "}\n"
-            "}\n";
+            extern \"C\" {
+            __device__ float distancehit_hook(
+                    float3 x, float _t, float _max_iterations
+                    )
+            {
+                float3 zn  = x;//make_float3( x, 0 );
+                float4 fp_n = make_float4( 1, 0, 0, 0 );  // start derivative at real 1 (see [2]).
+
+                const float sq_threshold = 2.0f;   // divergence threshold
+
+                float oscillatingTime = sin(_t / 256.0f );
+                float p = (5.0f * abs(oscillatingTime)) + 3.0f; //8;
+                float rad = 0.0f;
+                float dist = 0.0f;
+                float d = 1.0;
+
+                // Iterate to compute f_n and fp_n for the distance estimator.
+                int i = _max_iterations;
+                while( i-- )
+                {
+                  rad = length(zn);
+
+                  if( rad > sq_threshold )
+                  {
+                    dist = 0.5f * rad * logf( rad ) / d;
+                  }
+                  else
+                  {
+                    float th = atan2( length( make_float3(zn.x, zn.y, 0.0f) ), zn.z );
+                    float phi = atan2( zn.y, zn.x );
+                    float rado = pow(rad, p);
+                    d = pow(rad, p - 1) * (p-1) * d + 1.0;
+
+                    float sint = sin(th * p);
+                    zn.x = rado * sint * cos(phi * p);
+                    zn.y = rado * sint * sin(phi * p);
+                    zn.z = rado * cos(th * p);
+                    zn += x;
+                  }
+                }
+
+                return dist;
+            }
+            })";
 
     std::string sphere_hit_src =
             "#include \"cutil_math.h\" \n"

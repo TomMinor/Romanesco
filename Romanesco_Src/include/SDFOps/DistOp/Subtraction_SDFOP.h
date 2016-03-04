@@ -4,7 +4,7 @@
  
 #include "DistOpInterface_SDFOP.h"
  
-class Subtraction_SDFOP : public DistOpInterface_SDFOP
+class Subtraction_SDFOP : public BaseSDFOP
 { 
 public: 
     Subtraction_SDFOP(); 
