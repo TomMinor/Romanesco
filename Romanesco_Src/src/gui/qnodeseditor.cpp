@@ -95,11 +95,62 @@ bool QNodeGraph::eventFilter(QObject *o, QEvent *e)
 
                             auto nodes = this->getNodeList();
 
+                            std::map<std::string, bool> prototypeMap;
+
+                            for(const auto& header: BaseSDFOP::m_headers)
+                            {
+                                qDebug("#include \"%s\"", header.c_str());
+                            }
+//                            qDebug() << "\n";
+
+                            std::string hit_globals = R"(
+// Input Globals
+float3 P;
+float T;
+float MaxIterations;
+)";
+
+                            std::string hit_src = R"(extern \"C\" {
+__device__ float distancehit_hook(float3 x, float _t, float _max_iterations)
+{
+   P = x;
+   T = _t;
+   MaxIterations = _max_iterations;
+)";
+
+
+                            qDebug() << hit_globals.c_str();
+
                             int i = 0;
-                            qDebug() << "Node Table";
+//                            qDebug() << "Node Table";
                             for(auto node: nodes)
                             {
-                                qDebug() << i++ << " : " << node->displayName();
+                                //qDebug() << i++ << " : " << node->displayName();
+
+                                BaseSDFOP* nodeSDFOP = node->getOperatorInfo();
+                                unsigned int totalInputs;
+
+                                std::string args = "";
+
+                                if(nodeSDFOP && !prototypeMap.count(nodeSDFOP->getFunctionName()) > 0 )
+                                {
+                                    std::stringstream ss;
+                                    for(unsigned int i = 0; i < nodeSDFOP->argumentSize(); i++)
+                                    {
+                                        if(i != 0) {
+                                          ss << ",";
+                                        }
+                                            Argument arg = nodeSDFOP->getArgument(i);
+                                            ss << ReturnLookup[ (int)arg.type ] << " " << arg.name;
+                                    }
+
+                                    args = ss.str();
+
+                                    qDebug("%s %s(%s)", nodeSDFOP->getTypeString().c_str(), nodeSDFOP->getFunctionName().c_str(), args.c_str());
+                                    qDebug("{\n%s\n}", nodeSDFOP->getSource().c_str());
+
+                                    prototypeMap.insert( std::pair<std::string, bool>(nodeSDFOP->getFunctionName(), true ) );
+                                }
                             }
                             qDebug() << "\n";
 
@@ -143,6 +194,7 @@ bool QNodeGraph::eventFilter(QObject *o, QEvent *e)
 
                             std::unordered_map<std::string, std::string> varMap;
 
+                            qDebug() << hit_src.c_str();
 
                             //std::reverse(forward.begin(), forward.end());
                             for(ForwardPass pass: forward)
@@ -192,14 +244,14 @@ bool QNodeGraph::eventFilter(QObject *o, QEvent *e)
                                 if( nodeSDFOP )
                                 {
                                     BaseSDFOP* arg = pass.node->getOperatorInfo();
-                                    qDebug("%s %s = %s(%s);", arg->getTypeString().c_str(), varName.c_str(), arg->getFunctionName().c_str(), args.c_str() );
+                                    qDebug("   %s %s = %s(%s);", arg->getTypeString().c_str(), varName.c_str(), arg->getFunctionName().c_str(), args.c_str() );
                                 }
                                 else
                                 {
                                     if(totalInputs == 0) {
                                         args = "0";
                                     }
-                                    qDebug("return %s;", args.c_str() );
+                                    qDebug("   return %s;", args.c_str() );
                                 }
 
 //                                for(auto input: pass.inputs)
@@ -208,6 +260,8 @@ bool QNodeGraph::eventFilter(QObject *o, QEvent *e)
 //                                }
 //                                qDebug().nospace() << ")";
                             }
+
+                            qDebug() << "}";
 
                             break;
                         }

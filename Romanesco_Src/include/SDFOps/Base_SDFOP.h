@@ -17,6 +17,14 @@ enum class ReturnType
     Mat4
 };
 
+static const std::string ReturnLookup[] = {
+    std::string("void"),
+    std::string("float"),
+    std::string("int"),
+    std::string("vec3"),
+    std::string("mat4")
+};
+
 struct Argument
 {
     std::string name;

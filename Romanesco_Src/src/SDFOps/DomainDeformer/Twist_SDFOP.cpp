@@ -6,7 +6,8 @@ static const std::vector<Argument> args = {
     {"b", ReturnType::Float, "0.0f"}
 };
 
-Twist_SDFOP::Twist_SDFOP() 
+Twist_SDFOP::Twist_SDFOP()  :
+    BaseSDFOP::BaseSDFOP()
 {
     m_returnType = ReturnType::Float;
 } 

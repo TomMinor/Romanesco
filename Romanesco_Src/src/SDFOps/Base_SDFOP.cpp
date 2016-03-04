@@ -31,7 +31,7 @@ std::string BaseSDFOP::getTypeString()
     case ReturnType::Int:
         return "int";
         break;
-    case ReturnType::Vec3:
+        case ReturnType::Vec3:
         return "vec3";
         break;
     case ReturnType::Mat4:

@@ -6,7 +6,8 @@ static const std::vector<Argument> args = {
     {"b", ReturnType::Float, "0.0f"}
 };
  
-Union_SDFOP::Union_SDFOP() 
+Union_SDFOP::Union_SDFOP()  :
+    BaseSDFOP::BaseSDFOP()
 {
     m_returnType = ReturnType::Float;
 }
@@ -23,7 +24,9 @@ std::string Union_SDFOP::getFunctionName()
 
 std::string Union_SDFOP::getSource()
 {
-
+    return R"(
+            return min(a,b);
+)";
 }
 
 Argument Union_SDFOP::getArgument(unsigned int index)

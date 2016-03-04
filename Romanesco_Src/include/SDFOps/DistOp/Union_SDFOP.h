@@ -4,7 +4,7 @@
  
 #include "DistOpInterface_SDFOP.h"
  
-class Union_SDFOP : public DistOpInterface_SDFOP
+class Union_SDFOP : public BaseSDFOP
 { 
 public: 
     Union_SDFOP(); 

@@ -6,7 +6,8 @@ static const std::vector<Argument> args = {
     {"b", ReturnType::Float, "0.0f"}
 };
 
-Torus_SDFOP::Torus_SDFOP() 
+Torus_SDFOP::Torus_SDFOP()  :
+    BaseSDFOP::BaseSDFOP()
 { 
     m_returnType = ReturnType::Float;
 } 

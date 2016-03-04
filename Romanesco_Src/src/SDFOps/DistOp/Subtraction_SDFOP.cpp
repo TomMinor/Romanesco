@@ -6,12 +6,13 @@ static const std::vector<Argument> args = {
     {"b", ReturnType::Float, "0.0f"}
 };
  
-Subtraction_SDFOP::Subtraction_SDFOP() 
+Subtraction_SDFOP::Subtraction_SDFOP()  :
+    BaseSDFOP::BaseSDFOP()
 {
     m_returnType = ReturnType::Float;
 } 
  
-Subtraction_SDFOP::~Subtraction_SDFOP() 
+Subtraction_SDFOP::~Subtraction_SDFOP()
 { 
 }
 
