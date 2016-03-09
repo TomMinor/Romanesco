@@ -91,12 +91,18 @@ bool QNodeGraph::eventFilter(QObject *o, QEvent *e)
                         {
                             BaseSDFOP* op = new Union_SDFOP();
                             DistanceOpNode *c = new DistanceOpNode(op, scene, 0);
+
+                            emit graphChanged();
+
                             break;
                         }
                     case Qt::Key_V:
                         {
                             BaseSDFOP* op = new Sphere_SDFOP(1.0f);
                             DistanceOpNode *c = new DistanceOpNode(op, scene, 0);
+
+                            emit graphChanged();
+
                             break;
                         }
                 }
@@ -118,12 +124,16 @@ bool QNodeGraph::eventFilter(QObject *o, QEvent *e)
                                 conn->setPos2(me->scenePos());
                                 conn->updatePath();
 
+//                                emit graphChanged();
+
                                 return true;
                             } else if (item && item->type() == QNEBlock::Type)
                             {
                                 /* if (selBlock)
                     selBlock->setSelected(); */
                                 // selBlock = (QNEBlock*) item;
+
+
                             }
                             break;
                         }
@@ -131,7 +141,10 @@ bool QNodeGraph::eventFilter(QObject *o, QEvent *e)
                         {
                             QGraphicsItem *item = itemAt(me->scenePos());
                             if (item && (item->type() == QNEConnection::Type || item->type() == QNEBlock::Type))
+                            {
                                 delete item;
+                                emit graphChanged();
+                            }
                             // if (selBlock == (QNEBlock*) item)
                             // selBlock = 0;
 
@@ -151,6 +164,7 @@ bool QNodeGraph::eventFilter(QObject *o, QEvent *e)
             }
         case QEvent::GraphicsSceneMouseRelease:
             {
+        emit graphChanged();
                 if (conn && me->button() == Qt::LeftButton)
                 {
                     QGraphicsItem *item = itemAt(me->scenePos());
@@ -165,6 +179,9 @@ bool QNodeGraph::eventFilter(QObject *o, QEvent *e)
                             conn->setPort2(port2);
                             conn->updatePath();
                             conn = 0;
+
+                            emit graphChanged();
+
                             return true;
                         }
                     }
@@ -210,18 +227,19 @@ std::string QNodeGraph::parseGraph()
 {
     static const std::string hit_globals = R"(
 // Input Globals
-float3 P;
-float T;
-float MaxIterations;
+//__device__ float3 P;
+//__device__ float T;
+//__device__ float MaxIterations;
 )";
 
-    std::string hit_src = R"(extern \"C\" {
+    std::string hit_src = R"(
+extern "C" {
 __device__ float distancehit_hook(float3 x, float _t, float _max_iterations)
 {
             // Initialise globals
-            P = x;
-            T = _t;
-            MaxIterations = _max_iterations;
+//            P = x;
+//            T = _t;
+//            MaxIterations = _max_iterations;
 )";
 
     std::ostringstream resultStream;
@@ -247,7 +265,7 @@ __device__ float distancehit_hook(float3 x, float _t, float _max_iterations)
 
     // Generate the global variables
     //qDebug() << hit_globals.c_str();
-    resultStream << hit_globals << "\n";
+    //resultStream << hit_globals << "\n";
 
     int i = 0;
     for(auto node: nodes)
@@ -311,7 +329,7 @@ __device__ float distancehit_hook(float3 x, float _t, float _max_iterations)
             continue;
         }
 
-        tmp.node = *currentNode;
+        tmp.currentNodePtr = *currentNode;
 
         for(auto node: pass.inputNodes)
         {
@@ -337,14 +355,14 @@ __device__ float distancehit_hook(float3 x, float _t, float _max_iterations)
     //std::reverse(forward.begin(), forward.end());
     for(ForwardPass pass: forward)
     {
-        std::string nodeName = qPrintable( pass.node->displayName() );
+        std::string nodeName = qPrintable( pass.currentNodePtr->displayName() );
 
         // Generate a unique variable name to assign, right now it just uses alphabetical ascii names
         std::string varName(1,  (char)pass.index + 97);
 
         variableMap.insert( std::pair<std::string, std::string>(nodeName, varName) );
 
-        BaseSDFOP* nodeSDFOP = pass.node->getSDFOP();
+        BaseSDFOP* nodeSDFOP = pass.currentNodePtr->getSDFOP();
         unsigned int totalInputs;
         // Determine if we're the 'end' node or not by checking if the SDFOP is null
         ////@todo Make this more robust, but it works for now
@@ -392,7 +410,7 @@ __device__ float distancehit_hook(float3 x, float _t, float _max_iterations)
         if( nodeSDFOP )
         {
             // Call the SDF function (with the appropriate arguments) and store the result in it's variable
-            BaseSDFOP* arg = pass.node->getSDFOP();
+            BaseSDFOP* arg = pass.currentNodePtr->getSDFOP();
             const std::string variableType = arg->getTypeString();
             const std::string variableName = varName;
             const std::string functionName = arg->getFunctionName();
@@ -415,7 +433,7 @@ __device__ float distancehit_hook(float3 x, float _t, float _max_iterations)
     }
 
     //qDebug() << "}";
-    resultStream << "}";
+    resultStream << "}\n}\n";
 
     return resultStream.str();
 }

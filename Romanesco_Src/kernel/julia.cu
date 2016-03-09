@@ -54,7 +54,6 @@ rtDeclareVariable(float3, normal, attribute normal, );
 rtDeclareVariable(float3, shading_normal, attribute shading_normal, ); 
 rtDeclareVariable(float3, shading_normal2, attribute shading_normal2, ); 
 
-
 struct PerRayData_radiance
 {
   float3 result;
