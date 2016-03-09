@@ -77,7 +77,7 @@ struct ForwardPass
     ///
     /// \brief node
     ///
-    DistanceOpNode* node;
+    DistanceOpNode* currentNodePtr;
 
     ///
     /// \brief inputs Map the index of an input to the connected node,
@@ -85,11 +85,6 @@ struct ForwardPass
     /// the default value for the respective argument in the SDFOP of the node
     ///
     std::map<unsigned int, DistanceOpNode*> inputs;
-
-    ///
-    /// \brief expectedInputs
-    ///
-    unsigned int expectedInputs;
 };
 
 }
@@ -104,16 +99,21 @@ public:
 
 	bool eventFilter(QObject *, QEvent *);
 
-
 	void save(QDataStream &ds);
 	void load(QDataStream &ds);
 
-
+    ///
+    /// \brief parseGraph Parses the node graph and generates a string of compilable code from the SDF operations
+    /// \return
+    ///
     std::string parseGraph();
 
-    void backwardsParse(QNEBlock *_node, std::vector<BackwardPass> &backpasses, int _depth = 0);
+signals:
+    void graphChanged();
+
 private:
 	QGraphicsItem *itemAt(const QPointF&);
+    void backwardsParse(QNEBlock *_node, std::vector<BackwardPass> &backpasses, int _depth = 0);
 
     std::vector<DistanceOpNode*> getNodeList();
 

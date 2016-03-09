@@ -47,9 +47,10 @@ private slots:
 	void saveFile();
 	void loadFile();
 	void addBlock();
+    void graphUpdated();
 
 private:
-	QNodeGraph *nodesEditor;
+    QNodeGraph *nodeEditor;
     QMenu *fileMenu;
     QGraphicsView *view;
     QGraphicsScene *scene;

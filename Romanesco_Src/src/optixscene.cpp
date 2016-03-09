@@ -565,6 +565,8 @@ bool hookPtxFunction( const std::string& _ptxPath,
     // Return the string result
     _result = concatptx;
 
+    qDebug() << _result.c_str();
+
     return true;
 }
 
@@ -574,15 +576,12 @@ bool hookPtxFunction( const std::string& _ptxPath,
 #include "DomainOp/Transform_SDFOP.h"
 #include <glm/gtc/matrix_transform.hpp>
 
-#define SHOWSTUFF
+//#define SHOWSTUFF
 
-void OptixScene::createGeometry(int choose)
+void OptixScene::createGeometry(std::string _hit_src)
 {
 #ifndef SHOWSTUFF
-    std::vector<BaseSDFOP*> ops;
 
-    ops.push_back( new Transform_SDFOP(glm::vec3(choose * 0.25f, 0.0f, 0.0f)) );
-    ops.push_back( new Sphere_SDFOP(1.0f) );
 
 //    std::string shade_hook_src_A = ""
 //    "#include \"cutil_math.h\" \n"
@@ -667,31 +666,31 @@ void OptixScene::createGeometry(int choose)
             "}\n"
             "}\n";
 
-    //std::string hit_src = (choose == 0) ? mandelbulb_hit_src : sphere_hit_src;
+    std::string hit_src = (_hit_src == "") ? sphere_hit_src : _hit_src;
 
-    std::stringstream hit_src;
+//    std::stringstream hit_src;
 
     //@todo This is kinda terribly implemented right now
-    for(std::string header : BaseSDFOP::m_headers)
-    {
-        hit_src << "#include \"" << header << "\" \n";
-    }
+//    for(std::string header : BaseSDFOP::m_headers)
+//    {
+//        hit_src << "#include \"" << header << "\" \n";
+//    }
 
-    // Define generic structure for hit function
-    hit_src << "extern \"C\" {\n";
-    hit_src << "__device__ float distancehit_hook(";
-    hit_src <<      "float3 _p, float _t, float _max_iterations";
-    hit_src << ")\n";
-    hit_src << "{\n";
+//    // Define generic structure for hit function
+//    hit_src << "extern \"C\" {\n";
+//    hit_src << "__device__ float distancehit_hook(";
+//    hit_src <<      "float3 _p, float _t, float _max_iterations";
+//    hit_src << ")\n";
+//    hit_src << "{\n";
 
-    // Generate main block
-    for(BaseSDFOP* op : ops)
-    {
-        hit_src << op->getSource();
-    }
+//    // Generate main block
+//    for(BaseSDFOP* op : ops)
+//    {
+//        hit_src << op->getSource();
+//    }
 
-    hit_src << "}\n";
-    hit_src << "}\n";
+//    hit_src << "}\n";
+//    hit_src << "}\n";
 
     std::string ptx;
     //hookPtxFunction("ptx/raymarch.cu.ptx", "shade_hook", shade_hook_src, ptx);
@@ -699,7 +698,7 @@ void OptixScene::createGeometry(int choose)
 //    qDebug() << mandelbulb_hit_src.c_str();
 //    qDebug() << hit_src.str().c_str();
 
-    hookPtxFunction("ptx/raymarch.cu.ptx", "distancehit_hook", hit_src.str(), ptx);
+    hookPtxFunction("ptx/raymarch.cu.ptx", "distancehit_hook", hit_src, ptx);
 #endif
 
     ///@todo Optix error checking

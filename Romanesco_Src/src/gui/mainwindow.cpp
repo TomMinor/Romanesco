@@ -96,8 +96,10 @@ MainWindow::MainWindow(QWidget *parent) :
     addDockWidget(Qt::LeftDockWidgetArea, dockGL);
 
 
-    nodesEditor = new QNodeGraph(this);
-    nodesEditor->install(scene);
+    nodeEditor = new QNodeGraph(this);
+    nodeEditor->install(scene);
+
+    connect(nodeEditor, SIGNAL(graphChanged()), this, SLOT(graphUpdated()) );
 
     //DistanceOpNode *c = new DistanceOpNode("Union", scene, 0);
 
@@ -120,6 +122,12 @@ void MainWindow::timerEvent(QTimerEvent *_event)
     }
 }
 
+void MainWindow::graphUpdated()
+{
+    qDebug() << nodeEditor->parseGraph().c_str();
+    glwidget->m_optixScene->createGeometry( nodeEditor->parseGraph() );
+}
+
 MainWindow::~MainWindow()
 {
     killTimer(m_drawTimer);
@@ -135,7 +143,7 @@ void MainWindow::saveFile()
 	QFile f(fname);
 	f.open(QFile::WriteOnly);
 	QDataStream ds(&f);
-	nodesEditor->save(ds);
+    nodeEditor->save(ds);
 }
 
 void MainWindow::loadFile()
@@ -147,7 +155,7 @@ void MainWindow::loadFile()
 	QFile f(fname);
 	f.open(QFile::ReadOnly);
 	QDataStream ds(&f);
-	nodesEditor->load(ds);
+    nodeEditor->load(ds);
 }
 
 void MainWindow::addBlock()

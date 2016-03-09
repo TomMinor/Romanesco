@@ -49,6 +49,10 @@ extern __device__ __attribute__ ((noinline)) float distancehit_hook(
 }
 
 
+__device__ float3 P;
+__device__ float T;
+__device__ float MaxIterations;
+
 // References:
 // [1] Hart, J. C., Sandin, D. J., and Kauffman, L. H. 1989. Ray tracing deterministic 3D fractals
 // [2] http://www.devmaster.net/forums/showthread.php?t=4448
