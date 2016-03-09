@@ -38,17 +38,61 @@ class QPointF;
 class QNEBlock;
 class DistanceOpNode;
 
-typedef std::vector<DistanceOpNode*> NodeList;
 
-////
+#include "gui/nodes/distanceopnode.h"
+
+namespace {
+
+///
 /// \brief The Backpass struct stores node data in the context of parsing the nodegraph backwards
 ///
-struct Backpass
+struct BackwardPass
 {
+    ///
+    /// \brief nodeCtr
+    ///
     int nodeCtr = 0;
+
+    ///
+    /// \brief currentNodePtr
+    ///
     QNEBlock* currentNodePtr = nullptr;
+
+    ///
+    /// \brief inputNodes
+    ///
     std::map<unsigned int, QNEBlock* > inputNodes;
 };
+
+///
+/// \brief The ForwardPass struct
+///
+struct ForwardPass
+{
+    ///
+    /// \brief index A unique index, used to map variable names to node return values
+    ///
+    unsigned int index;
+
+    ///
+    /// \brief node
+    ///
+    DistanceOpNode* node;
+
+    ///
+    /// \brief inputs Map the index of an input to the connected node,
+    /// it is possible to have 'empty' inputs, missing inputs will look up
+    /// the default value for the respective argument in the SDFOP of the node
+    ///
+    std::map<unsigned int, DistanceOpNode*> inputs;
+
+    ///
+    /// \brief expectedInputs
+    ///
+    unsigned int expectedInputs;
+};
+
+}
 
 class QNodeGraph : public QObject
 {
@@ -64,11 +108,14 @@ public:
 	void save(QDataStream &ds);
 	void load(QDataStream &ds);
 
-    void getItems(QNEBlock *_node, std::vector<Backpass> &backpasses, int _depth = 0);
+
+    void parseGraph();
+
+    void backwardsParse(QNEBlock *_node, std::vector<BackwardPass> &backpasses, int _depth = 0);
 private:
 	QGraphicsItem *itemAt(const QPointF&);
 
-    NodeList getNodeList();
+    std::vector<DistanceOpNode*> getNodeList();
 
 private:
 	QGraphicsScene *scene;

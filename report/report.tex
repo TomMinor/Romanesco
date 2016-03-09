@@ -52,83 +52,121 @@
 \noNumberChapter{1}{Initial Research}
 \section{Trying out existing stuff}
 
-Mandelbulb in Houdini
 
-\lstset{language=C++, 
-		keywordstyle=\color{blue}}
-\begin{lstlisting}
-int iter = chi("iterations");
-int n = chi("n");
-float limit = chf("limit");
+\subsection{Fractals in FX Software}
 
-vector Z = ptransform("space:current", "space:object", @P);
+Looked at developing fractals in Houdini, may not need to develop a custom tool to visualise
 
-for(int i = 0; i < iter; i += 1)
-{
-    /// Convert to spherical coords ///
+Volumetric mandelbulb
 
-    // Precompute component squares
-    float xpow = Z.x * Z.x;
-    float ypow = Z.y * Z.y;
-    float zpow = Z.z * Z.z;
-    
-    // Spherical coords = (r, theta, phi)
-    float r = sqrt(xpow + ypow + zpow);
-    float theta = atan2(sqrt(xpow + ypow), Z.z);
-    float phi = atan2(Z.y, Z.x);
-    
-    /// Exponentiation term (raise {x,y,z} to nth power) ///
-    // 
-    /* -> simplified form
-       {x,y,z}^n = r^n { sin(theta*n) * cos(phi*n), 
-                         sin(theta*n) * sin(phi*n), 
-                         cos(theta*n) }
-                         
-       -> expanded form
-       {x,y,z}^n = { r^n * sin(theta*n) * cos(phi*n), 
-                     r^n * sin(theta*n) * sin(phi*n), 
-                     r^n * cos(theta*n) }
-    */
-    float tmpPow = pow(r, n);
-    float tmp = tmpPow * sin(theta * n);
-    
-    vector newZ = set(  
-        tmp * cos(phi * n),
-        tmp * sin(phi * n),
-        tmpPow * cos(theta * n)
-    );
-   
-    
-   
-    Z += newZ;
-}
+Voxel Based
 
-if( length(Z) < limit) {
-    @density = 1.0;
-} else {
-    @density = 0.0;
-}
-\end{lstlisting}
+Slow to compute
+
+%\lstset{language=C++, 
+%		keywordstyle=\color{blue}}
+%\begin{lstlisting}
+%int iter = chi("iterations");
+%int n = chi("n");
+%float limit = chf("limit");
+%
+%vector Z = ptransform("space:current", "space:object", @P);
+%
+%for(int i = 0; i < iter; i += 1)
+%{
+%    /// Convert to spherical coords ///
+%
+%    // Precompute component squares
+%    float xpow = Z.x * Z.x;
+%    float ypow = Z.y * Z.y;
+%    float zpow = Z.z * Z.z;
+%    
+%    // Spherical coords = (r, theta, phi)
+%    float r = sqrt(xpow + ypow + zpow);
+%    float theta = atan2(sqrt(xpow + ypow), Z.z);
+%    float phi = atan2(Z.y, Z.x);
+%    
+%    /// Exponentiation term (raise {x,y,z} to nth power) ///
+%    // 
+%    /* -> simplified form
+%       {x,y,z}^n = r^n { sin(theta*n) * cos(phi*n), 
+%                         sin(theta*n) * sin(phi*n), 
+%                         cos(theta*n) }
+%                         
+%       -> expanded form
+%       {x,y,z}^n = { r^n * sin(theta*n) * cos(phi*n), 
+%                     r^n * sin(theta*n) * sin(phi*n), 
+%                     r^n * cos(theta*n) }
+%    */
+%    float tmpPow = pow(r, n);
+%    float tmp = tmpPow * sin(theta * n);
+%    
+%    vector newZ = set(  
+%        tmp * cos(phi * n),
+%        tmp * sin(phi * n),
+%        tmpPow * cos(theta * n)
+%    );
+%   
+%    
+%   
+%    Z += newZ;
+%}
+%
+%if( length(Z) < limit) {
+%    @density = 1.0;
+%} else {
+%    @density = 0.0;
+%}
+%\end{lstlisting}
 
 \begin{center}
 \includegraphics[scale=0.2]{"images/houdini_mandelbulb"}
 \end{center}
 
+Disney used houdini on BH6, but it's much too slow for our needs.
 
-\section{Render Tests}
+Need a custom tool
+
+Houdini is still good for creature effects though, example noise shader goes here
+
+
 
 \section{Reading the documentation and tutorials}
 
-Superquads \cite{superquad}
+\noNumberChapter{2}{Pipeline}
 
-\noNumberChapter{2}{Production}
-\section{Initial Tests}
+\begin{itemize}
+	\item Dropbox isn't enough
+	\item Need to version
+	\item More effort at beginning of the project, having backups of every asset could save our asses in the end
+	\item use perforce
+	\item Other scripts can be added to the main pipeline suite
+	\item Referencing pipeline required custom hooks that modify all referenced paths to be relative to \$CONTACTROOT, automated, idiot proof
+	\item Referencing in 10 files and manually clicking student popup is tedious, on save and submit remove student/education flags
+	\item Forces the team to think in a collaborative way, they literally cannot work on the same asset at the same time
+	\item Took some getting used to, but now the artists are used to version control and it's benefits even if it's tedious at times
+	\item Main development time spent on PySide Qt GUI stuff, after the initial time spent learning the P4 API and commands
+	\item Technically cross application, the P4 and GUI side of things will work whereever pyside is available. Needs a few app specific tweaks such as file saving commands etc to work properly but wouldn't take long to port
+	\item Various wizards to automate asset/shot/lookdev file structure generation because kyran made the layout super complex
+	\item 
+\end{itemize}
 
-\section{Results}
+\noNumberChapter{3}{Renderer}
 
-\section{Unforeseen Problems}
+\begin{itemize}
+	\item How best to make this artist friendly (Nodegraph)
+	\item What technique (ray marching)
+	\item Use Optix because it's faster than what i can do
+	\item Nodegraph needs runtime compilation, at least for geo
+	\item Does require a little hacking to get runtime code generation
+	\item Use NVRTC to compile code at runtime and plug into preexisting functions in the optix code
+	\item Use hacky system commands to call nvcc directly if using CUDA 6.5 or less, aka, the uni systems
+	\item Initial dev time for node graph, runtime compilation etc is long, but in theory will allow for rapid iteration once it works
+	\item Everything is based on demo scene stuff, can use shadertoy as reference for loads of effects
+\end{itemize}
 
-\noNumberChapter{3}{Conclusion}
+
+\noNumberChapter{4}{Conclusion}
 
 \nocite{*}
 
