@@ -109,7 +109,7 @@ public:
 	void load(QDataStream &ds);
 
 
-    void parseGraph();
+    std::string parseGraph();
 
     void backwardsParse(QNEBlock *_node, std::vector<BackwardPass> &backpasses, int _depth = 0);
 private:

@@ -206,7 +206,7 @@ std::vector<DistanceOpNode *> QNodeGraph::getNodeList()
     return nodes;
 }
 
-void QNodeGraph::parseGraph()
+std::string QNodeGraph::parseGraph()
 {
     static const std::string hit_globals = R"(
 // Input Globals
@@ -218,13 +218,13 @@ float MaxIterations;
     std::string hit_src = R"(extern \"C\" {
 __device__ float distancehit_hook(float3 x, float _t, float _max_iterations)
 {
-    // Initialise globals
-    P = x;
-    T = _t;
-    MaxIterations = _max_iterations;
+            // Initialise globals
+            P = x;
+            T = _t;
+            MaxIterations = _max_iterations;
 )";
 
-
+    std::ostringstream resultStream;
 
     /* Parse node graph backwards first */
     std::vector<BackwardPass> backpasses;
@@ -241,11 +241,13 @@ __device__ float distancehit_hook(float3 x, float _t, float _max_iterations)
     // Generate all the includes
     for(const auto& header: BaseSDFOP::m_headers)
     {
-        qDebug("#include \"%s\"", header.c_str());
+//        qDebug( "#include \"%s\"", header.c_str() );
+        resultStream << "#include \"" << header << "\"\n";
     }
 
     // Generate the global variables
-    qDebug() << hit_globals.c_str();
+    //qDebug() << hit_globals.c_str();
+    resultStream << hit_globals << "\n";
 
     int i = 0;
     for(auto node: nodes)
@@ -256,27 +258,42 @@ __device__ float distancehit_hook(float3 x, float _t, float _max_iterations)
 
         std::string args = "";
 
-        if(nodeSDFOP && !(functionDefinitionMap.count(nodeSDFOP->getFunctionName()) > 0) )
+        if(nodeSDFOP)
         {
-            std::stringstream ss;
-            for(unsigned int i = 0; i < nodeSDFOP->argumentSize(); i++)
+            const std::string nodeFunctionName = nodeSDFOP->getFunctionName();
+            bool isFunctionDeclared = functionDefinitionMap.count(nodeFunctionName) > 0;
+
+            // Only write out the function declaration if we haven't already
+            if(!isFunctionDeclared)
             {
-                if(i != 0) {
-                  ss << ",";
-                }
+                // Join the argument string
+                std::stringstream ss;
+                for(unsigned int i = 0; i < nodeSDFOP->argumentSize(); i++)
+                {
+                    if(i != 0) {
+                      ss << ",";
+                    }
+
                     Argument arg = nodeSDFOP->getArgument(i);
                     ss << ReturnLookup[ (int)arg.type ] << " " << arg.name;
+                }
+
+                args = ss.str();
+
+                resultStream << "\n";
+                resultStream << nodeSDFOP->getTypeString() << " " << nodeSDFOP->getFunctionName() << "(" << args << ")\n";
+                resultStream << "{\n" << nodeSDFOP->getSource() << "\n}\n";
+
+//                qDebug("%s %s(%s)", nodeSDFOP->getTypeString().c_str(), nodeSDFOP->getFunctionName().c_str(), args.c_str());
+//                qDebug("{\n%s\n}", nodeSDFOP->getSource().c_str());
+
+                // Mark the function as being declared (not the best data structure to use for this I think but it works)
+                functionDefinitionMap.insert( std::pair<std::string, bool>(nodeSDFOP->getFunctionName(), true ) );
             }
-
-            args = ss.str();
-
-            qDebug("%s %s(%s)", nodeSDFOP->getTypeString().c_str(), nodeSDFOP->getFunctionName().c_str(), args.c_str());
-            qDebug("{\n%s\n}", nodeSDFOP->getSource().c_str());
-
-            functionDefinitionMap.insert( std::pair<std::string, bool>(nodeSDFOP->getFunctionName(), true ) );
         }
     }
-    qDebug() << "\n";
+    //qDebug() << "\n";
+    resultStream << "\n";
 
     std::vector<ForwardPass> forward;
     //std::reverse(backpasses.begin(), backpasses.end());
@@ -296,7 +313,6 @@ __device__ float distancehit_hook(float3 x, float _t, float _max_iterations)
 
         tmp.node = *currentNode;
 
-//                                int i = 0;
         for(auto node: pass.inputNodes)
         {
             auto nodeTmp = std::find(nodes.begin(), nodes.end(), node.second );
@@ -315,7 +331,8 @@ __device__ float distancehit_hook(float3 x, float _t, float _max_iterations)
     // Lookup the code variable based on the node's name (which is unique for now)
     std::unordered_map<std::string, std::string> variableMap;
 
-    qDebug() << hit_src.c_str();
+    //qDebug() << hit_src.c_str();
+    resultStream << hit_src;
 
     //std::reverse(forward.begin(), forward.end());
     for(ForwardPass pass: forward)
@@ -380,7 +397,9 @@ __device__ float distancehit_hook(float3 x, float _t, float _max_iterations)
             const std::string variableName = varName;
             const std::string functionName = arg->getFunctionName();
 
-            qDebug("   %s %s = %s(%s);", variableType.c_str(), variableName.c_str(), functionName.c_str(), args.c_str() );
+//            qDebug("   %s %s = %s(%s);", variableType.c_str(), variableName.c_str(), functionName.c_str(), args.c_str() );
+
+            resultStream << "\t" << variableType << " " << variableName << " = " << functionName << "(" << args << ");\n";
         }
         else // Assume we're a terminate node, so return the final result we calculated
         {
@@ -390,11 +409,15 @@ __device__ float distancehit_hook(float3 x, float _t, float _max_iterations)
                 args = "0";
             }
 
-            qDebug("   return %s;", args.c_str() );
+//            qDebug("   return %s;", args.c_str() );
+            resultStream << "\t" << "return " << args << ";\n";
         }
     }
 
-    qDebug() << "}";
+    //qDebug() << "}";
+    resultStream << "}";
+
+    return resultStream.str();
 }
 
 void QNodeGraph::backwardsParse(QNEBlock* _node, std::vector<BackwardPass>& backpasses, int _depth)
