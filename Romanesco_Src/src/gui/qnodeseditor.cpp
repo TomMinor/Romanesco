@@ -66,15 +66,9 @@ QGraphicsItem* QNodeGraph::itemAt(const QPointF &pos)
 }
 
 #include <QKeyEvent>
-#include "gui/nodes/distanceopnode.h"
 
-struct ForwardPass
-{
-    unsigned int index;
-    DistanceOpNode* node;
-    std::map<unsigned int, DistanceOpNode* > inputs;
-    unsigned int expectedInputs;
-};
+
+
 
 bool QNodeGraph::eventFilter(QObject *o, QEvent *e)
 {
@@ -89,179 +83,7 @@ bool QNodeGraph::eventFilter(QObject *o, QEvent *e)
                 {
                     case Qt::Key_P:
                         {
-                            std::vector<Backpass> backpasses;
-
-                            this->getItems(endBlock, backpasses);
-
-                            auto nodes = this->getNodeList();
-
-                            std::map<std::string, bool> prototypeMap;
-
-                            for(const auto& header: BaseSDFOP::m_headers)
-                            {
-                                qDebug("#include \"%s\"", header.c_str());
-                            }
-//                            qDebug() << "\n";
-
-                            std::string hit_globals = R"(
-// Input Globals
-float3 P;
-float T;
-float MaxIterations;
-)";
-
-                            std::string hit_src = R"(extern \"C\" {
-__device__ float distancehit_hook(float3 x, float _t, float _max_iterations)
-{
-   P = x;
-   T = _t;
-   MaxIterations = _max_iterations;
-)";
-
-
-                            qDebug() << hit_globals.c_str();
-
-                            int i = 0;
-//                            qDebug() << "Node Table";
-                            for(auto node: nodes)
-                            {
-                                //qDebug() << i++ << " : " << node->displayName();
-
-                                BaseSDFOP* nodeSDFOP = node->getOperatorInfo();
-                                unsigned int totalInputs;
-
-                                std::string args = "";
-
-                                if(nodeSDFOP && !prototypeMap.count(nodeSDFOP->getFunctionName()) > 0 )
-                                {
-                                    std::stringstream ss;
-                                    for(unsigned int i = 0; i < nodeSDFOP->argumentSize(); i++)
-                                    {
-                                        if(i != 0) {
-                                          ss << ",";
-                                        }
-                                            Argument arg = nodeSDFOP->getArgument(i);
-                                            ss << ReturnLookup[ (int)arg.type ] << " " << arg.name;
-                                    }
-
-                                    args = ss.str();
-
-                                    qDebug("%s %s(%s)", nodeSDFOP->getTypeString().c_str(), nodeSDFOP->getFunctionName().c_str(), args.c_str());
-                                    qDebug("{\n%s\n}", nodeSDFOP->getSource().c_str());
-
-                                    prototypeMap.insert( std::pair<std::string, bool>(nodeSDFOP->getFunctionName(), true ) );
-                                }
-                            }
-                            qDebug() << "\n";
-
-                            std::vector<ForwardPass> forward;
-                            //std::reverse(backpasses.begin(), backpasses.end());
-                            i = 0;
-                            for(auto pass: backpasses)
-                            {
-                                ForwardPass tmp;
-                                tmp.index = i++;
-
-                                std::string indent = "";// std::string(nodeCtr, '\t').c_str();
-
-                                auto currentNode = std::find(nodes.begin(), nodes.end(), pass.currentNodePtr);
-                                if ( currentNode == nodes.end())
-                                {
-                                    continue;
-                                }
-
-                                tmp.node = *currentNode;
-
-                                //qDebug().nospace() << indent.c_str() << "Node Name: " << qPrintable(pass.currentNodePtr->displayName()) << " (" << std::distance(nodes.begin(), currentNode) << ")";
-                                //qDebug().nospace() << indent.c_str() << "Depth: " << pass.nodeCtr;
-
-
-//                                int i = 0;
-                                for(auto node: pass.inputNodes)
-                                {
-                                    auto nodeTmp = std::find(nodes.begin(), nodes.end(), node.second );
-                                    if ( nodeTmp != nodes.end())
-                                    {
-                                        //" Input " << i << ": " << pStartConnection->block()->displayName() << ":" << pStartConnection->portName();
-//                                        qDebug().nospace() << indent.c_str() << "\t[" << i << "]:" << qPrintable(node->displayName());
-                                        //qDebug().nospace() << indent.c_str() << "\t Input[" << node.first << "]:" << std::distance(nodes.begin(), nodeTmp) << " (" << (*nodeTmp)->displayName() << ")";
-                                        tmp.inputs.insert( std::make_pair(node.first, nodes[std::distance(nodes.begin(), nodeTmp)] ) );
-                                    }
-                                }
-
-                                forward.push_back(tmp);
-                            }
-
-                            std::unordered_map<std::string, std::string> varMap;
-
-                            qDebug() << hit_src.c_str();
-
-                            //std::reverse(forward.begin(), forward.end());
-                            for(ForwardPass pass: forward)
-                            {
-                                //qDebug().nospace() << pass.index << " : " << pass.node->displayName() << "(";
-                                std::string nodeName = qPrintable( pass.node->displayName() );
-                                std::string varName(1,  (char)pass.index + 97);
-
-                                varMap.insert( std::pair<std::string, std::string>(nodeName, varName) );
-
-                                DistanceOpNode* thisNode = pass.node;
-
-                                BaseSDFOP* nodeSDFOP = pass.node->getOperatorInfo();
-                                unsigned int totalInputs;
-                                if(nodeSDFOP)
-                                {
-                                    totalInputs = nodeSDFOP->argumentSize();
-                                } else {
-                                    totalInputs = pass.inputs.size();
-                                }
-
-                                std::stringstream ss;
-                                for(unsigned int i = 0; i < totalInputs; i++)
-                                {
-                                    if(i != 0) {
-                                      ss << ",";
-                                    }
-
-                                    auto inputMap = pass.inputs.find( i );
-
-                                    // Get variable input value if there is one
-                                    if(inputMap != pass.inputs.end())
-                                    {
-                                        DistanceOpNode* node = inputMap->second;
-                                        std::string currentNodeName = qPrintable( node->displayName() );
-                                        ss << varMap[currentNodeName];
-                                    }
-                                    else // otherwise get the default value for this argument
-                                    {
-                                        Argument arg = nodeSDFOP->getArgument(i);
-                                        ss << arg.defaultValue;
-                                    }
-                                }
-
-                                std::string args = ss.str();
-
-                                if( nodeSDFOP )
-                                {
-                                    BaseSDFOP* arg = pass.node->getOperatorInfo();
-                                    qDebug("   %s %s = %s(%s);", arg->getTypeString().c_str(), varName.c_str(), arg->getFunctionName().c_str(), args.c_str() );
-                                }
-                                else
-                                {
-                                    if(totalInputs == 0) {
-                                        args = "0";
-                                    }
-                                    qDebug("   return %s;", args.c_str() );
-                                }
-
-//                                for(auto input: pass.inputs)
-//                                {
-//                                    qDebug().nospace() << (input.second)->displayName() << ",";
-//                                }
-//                                qDebug().nospace() << ")";
-                            }
-
-                            qDebug() << "}";
+                            parseGraph();
 
                             break;
                         }
@@ -368,9 +190,9 @@ static const std::string example = R"DELIM(
 
 
 
-NodeList QNodeGraph::getNodeList()
+std::vector<DistanceOpNode *> QNodeGraph::getNodeList()
 {
-    NodeList nodes;
+    std::vector<DistanceOpNode*> nodes;
 
     foreach(QGraphicsItem *item, scene->items())
     {
@@ -384,42 +206,222 @@ NodeList QNodeGraph::getNodeList()
     return nodes;
 }
 
-void QNodeGraph::getItems(QNEBlock* _node, std::vector<Backpass>& backpasses, int _depth)
+void QNodeGraph::parseGraph()
+{
+    static const std::string hit_globals = R"(
+// Input Globals
+float3 P;
+float T;
+float MaxIterations;
+)";
+
+    std::string hit_src = R"(extern \"C\" {
+__device__ float distancehit_hook(float3 x, float _t, float _max_iterations)
+{
+    // Initialise globals
+    P = x;
+    T = _t;
+    MaxIterations = _max_iterations;
+)";
+
+
+
+    /* Parse node graph backwards first */
+    std::vector<BackwardPass> backpasses;
+
+    // Recursively parse backwards from the endblock and fill up the backpass array
+    this->backwardsParse(endBlock, backpasses);
+
+    std::vector<DistanceOpNode*> nodes = this->getNodeList();
+
+    // We need to define all the functions we're using just once, so store them
+    // in the map
+    std::map<std::string, bool> functionDefinitionMap;
+
+    // Generate all the includes
+    for(const auto& header: BaseSDFOP::m_headers)
+    {
+        qDebug("#include \"%s\"", header.c_str());
+    }
+
+    // Generate the global variables
+    qDebug() << hit_globals.c_str();
+
+    int i = 0;
+    for(auto node: nodes)
+    {
+        //qDebug() << i++ << " : " << node->displayName();
+
+        BaseSDFOP* nodeSDFOP = node->getSDFOP();
+
+        std::string args = "";
+
+        if(nodeSDFOP && !(functionDefinitionMap.count(nodeSDFOP->getFunctionName()) > 0) )
+        {
+            std::stringstream ss;
+            for(unsigned int i = 0; i < nodeSDFOP->argumentSize(); i++)
+            {
+                if(i != 0) {
+                  ss << ",";
+                }
+                    Argument arg = nodeSDFOP->getArgument(i);
+                    ss << ReturnLookup[ (int)arg.type ] << " " << arg.name;
+            }
+
+            args = ss.str();
+
+            qDebug("%s %s(%s)", nodeSDFOP->getTypeString().c_str(), nodeSDFOP->getFunctionName().c_str(), args.c_str());
+            qDebug("{\n%s\n}", nodeSDFOP->getSource().c_str());
+
+            functionDefinitionMap.insert( std::pair<std::string, bool>(nodeSDFOP->getFunctionName(), true ) );
+        }
+    }
+    qDebug() << "\n";
+
+    std::vector<ForwardPass> forward;
+    //std::reverse(backpasses.begin(), backpasses.end());
+    i = 0;
+    for(auto pass: backpasses)
+    {
+        ForwardPass tmp;
+        tmp.index = i++;
+
+        std::string indent = "";// std::string(nodeCtr, '\t').c_str();
+
+        auto currentNode = std::find(nodes.begin(), nodes.end(), pass.currentNodePtr);
+        if ( currentNode == nodes.end())
+        {
+            continue;
+        }
+
+        tmp.node = *currentNode;
+
+//                                int i = 0;
+        for(auto node: pass.inputNodes)
+        {
+            auto nodeTmp = std::find(nodes.begin(), nodes.end(), node.second );
+            if ( nodeTmp != nodes.end())
+            {
+                //" Input " << i << ": " << pStartConnection->block()->displayName() << ":" << pStartConnection->portName();
+//                                        qDebug().nospace() << indent.c_str() << "\t[" << i << "]:" << qPrintable(node->displayName());
+                //qDebug().nospace() << indent.c_str() << "\t Input[" << node.first << "]:" << std::distance(nodes.begin(), nodeTmp) << " (" << (*nodeTmp)->displayName() << ")";
+                tmp.inputs.insert( std::make_pair(node.first, nodes[std::distance(nodes.begin(), nodeTmp)] ) );
+            }
+        }
+
+        forward.push_back(tmp);
+    }
+
+    // Lookup the code variable based on the node's name (which is unique for now)
+    std::unordered_map<std::string, std::string> variableMap;
+
+    qDebug() << hit_src.c_str();
+
+    //std::reverse(forward.begin(), forward.end());
+    for(ForwardPass pass: forward)
+    {
+        std::string nodeName = qPrintable( pass.node->displayName() );
+
+        // Generate a unique variable name to assign, right now it just uses alphabetical ascii names
+        std::string varName(1,  (char)pass.index + 97);
+
+        variableMap.insert( std::pair<std::string, std::string>(nodeName, varName) );
+
+        BaseSDFOP* nodeSDFOP = pass.node->getSDFOP();
+        unsigned int totalInputs;
+        // Determine if we're the 'end' node or not by checking if the SDFOP is null
+        ////@todo Make this more robust, but it works for now
+        if(nodeSDFOP)
+        {
+            // Take into account default arguments if we are a valid SDFOP
+            totalInputs = nodeSDFOP->argumentSize();
+        } else {
+            // Otherwise use the actual inputs (for the return node this should only be 1, and all other nodes ~should~ be SDFOPS)
+            totalInputs = pass.inputs.size();
+        }
+
+        std::string args;
+
+        {
+            std::stringstream ss;
+            for(unsigned int i = 0; i < totalInputs; i++)
+            {
+                if(i != 0) {
+                    ss << ",";
+                }
+
+                // Inputs are mapped from int->node, as it is possible to have no connection
+                // and we need to know which inputs are 'empty' so we can fill in the default argument
+                auto inputMap = pass.inputs.find( i );
+
+                // Get connected input value if there is one
+                if(inputMap != pass.inputs.end())
+                {
+                    DistanceOpNode* node = inputMap->second;
+                    std::string currentNodeName = qPrintable( node->displayName() );
+                    ss << variableMap[currentNodeName];
+                }
+                else // otherwise get the default value for this argument
+                {
+                    Argument arg = nodeSDFOP->getArgument(i);
+                    ss << arg.defaultValue;
+                }
+            }
+
+            args = ss.str();
+        }
+
+        // check if we are an SDFOP or a terminate node
+        if( nodeSDFOP )
+        {
+            // Call the SDF function (with the appropriate arguments) and store the result in it's variable
+            BaseSDFOP* arg = pass.node->getSDFOP();
+            const std::string variableType = arg->getTypeString();
+            const std::string variableName = varName;
+            const std::string functionName = arg->getFunctionName();
+
+            qDebug("   %s %s = %s(%s);", variableType.c_str(), variableName.c_str(), functionName.c_str(), args.c_str() );
+        }
+        else // Assume we're a terminate node, so return the final result we calculated
+        {
+            if(totalInputs == 0)
+            {
+                // Special case to return nothing if no nodes are connected up yet
+                args = "0";
+            }
+
+            qDebug("   return %s;", args.c_str() );
+        }
+    }
+
+    qDebug() << "}";
+}
+
+void QNodeGraph::backwardsParse(QNEBlock* _node, std::vector<BackwardPass>& backpasses, int _depth)
 {
     std::string indent = std::string(_depth, '\t').c_str();
     //qDebug().nospace() << indent.c_str() << "Eval " << _node->displayName();
 
-    NodeList nodes = getNodeList();
-//    for(auto node: nodes)
-//    {
-//        qDebug() << node->displayName();
-//    }
-
-    Backpass pass;
+    BackwardPass pass;
     pass.nodeCtr = _depth;
     pass.currentNodePtr = _node;
 
-    auto ports = _node->inputPorts().toStdVector();
-
-    //std::reverse(ports.begin(), ports.end());
+    std::vector<QNEPort*> ports = _node->inputPorts().toStdVector();
 
     int i = 0;
-    // Iterate over all input ports on _node
+    // Iterate over all input ports on _node and fill up the inputNodes of the current pass
     for(QNEPort* port : ports)
     {
         //@todo BUG : Left->Right connections work okay, Right->Left erroneously attach the node to it's own input (infinite loop)
         std::vector<QNEConnection*> connections = port->connections().toStdVector();
 
-        //std::reverse(connections.begin(), connections.end());
-
-        // Iterate over all connections to port (probably only one)
-        //for(int i = 0; i < connections.size(); i++)
         if(connections.size() > 0)
         {
+            // We only care about the first connected node
             const QNEConnection* connection = connections[0];
 
             const QNEPort* pStartConnection = connection->port1();
-            const QNEPort* pEndConnection = connection->port2();
+//            const QNEPort* pEndConnection = connection->port2();
 
             pass.inputNodes.insert( std::make_pair(i, pStartConnection->block()) );
 
@@ -428,62 +430,14 @@ void QNodeGraph::getItems(QNEBlock* _node, std::vector<Backpass>& backpasses, in
                 throw std::overflow_error("Maximum node depth exceeded");
             }
 
-            getItems(pStartConnection->block(), backpasses, _depth + 1);
+            // Recursively check the connected node with the same process
+            backwardsParse(pStartConnection->block(), backpasses, _depth + 1);
         }
 
         i++;
     }
 
     backpasses.push_back(pass);
-
-//    foreach(QGraphicsItem *item, scene->items())
-//    {
-//        QNEBlock* node = qgraphicsitem_cast<QNEBlock*>(item);
-//        if(node)
-//        {
-//            qDebug() << node->displayName();
-//            for(auto port : node->ports())
-//            {
-//                QVector<QNEConnection*>& connections = port->connections();
-//                for(QNEConnection* connection : connections)
-//                {
-//                    QNEPort* p1 = connection->port1();
-//                    QNEPort* p2 = connection->port2();
-
-//                    qDebug() << "\t" << p1->block()->displayName() << "->" << p2->block()->displayName();
-//                }
-//            }
-//        }
-//    }
-
-//    foreach(QGraphicsItem *item, scene->items())
-//    {
-//        QNEBlock* node = qgraphicsitem_cast<QNEBlock*>(item);
-//        if(node)
-//        {
-//            qDebug() << node->displayName();
-//            for(auto port : node->ports())
-//            {
-//                QVector<QNEConnection*>& connections = port->connections();
-//                for(QNEConnection* connection : connections)
-//                {
-//                    QNEPort* p1 = connection->port1();
-//                    QNEPort* p2 = connection->port2();
-
-//                    qDebug() << "\t" << p1->block()->displayName() << "->" << p2->block()->displayName();
-//                }
-//            }
-//        }
-//    }
-
-//    foreach(QGraphicsItem *item, scene->items())
-//    {
-//        if (item->type() == QNEConnection::Type)
-//        {
-//            qDebug() << item->type() - QGraphicsItem::UserType;
-////                ((QNEConnection*) item)->save(ds);
-//        }
-//    }
 }
 
 

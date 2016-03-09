@@ -574,7 +574,7 @@ bool hookPtxFunction( const std::string& _ptxPath,
 #include "DomainOp/Transform_SDFOP.h"
 #include <glm/gtc/matrix_transform.hpp>
 
-//#define SHOWSTUFF
+#define SHOWSTUFF
 
 void OptixScene::createGeometry(int choose)
 {

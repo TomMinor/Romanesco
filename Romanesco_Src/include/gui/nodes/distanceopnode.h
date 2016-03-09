@@ -35,7 +35,7 @@ public:
     DistanceOpNode(BaseSDFOP* _op, QGraphicsScene* _scene, QGraphicsItem *parent = 0);
     ~DistanceOpNode();
 
-    BaseSDFOP* getOperatorInfo() { return m_op; }
+    BaseSDFOP* getSDFOP() { return m_op; }
 
 private:
     BaseSDFOP* m_op;
