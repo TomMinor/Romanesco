@@ -10,16 +10,46 @@ def fileToStringList(file):
 	with open(file, 'r') as f:
 		return f.read()
 
-def findFunction(filename, funcname):
+def findFunction(lines, funcname):
 	startLine = -1
 	endLine = -1
 
-	with open(filename, "r") as f:
-		for i, line in enumerate(f):
-			if ".func" in line and funcname in line:
-				startLine = i
+	extern = False
 
-findFunction("/home/tom/hook.cu.ptx", "cudaOccupancyMaxActiveBlocksPerMultiprocessorWithFlags")
+	for i, line in enumerate(lines):
+		if ".func" in line and funcname in line:
+			if ".extern" in line:
+				extern  = True
+			startLine = i
+			break
+
+	for i, line in enumerate( lines[startLine:] ):
+		if extern:
+			if ";" in line:
+				endLine = i + 1
+				break
+		else:
+			if "}" in line:
+				endLine = i + 1
+				break
+
+	return startLine, endLine + startLine
+
+# lines = []
+# with open("/home/tom/hook.cu.ptx", "r") as f:
+# 	lines = f.readlines()
+
+# start, end = findFunction(lines, "cudaOccupancyMaxActiveBlocksPerMultiprocessorWithFlags")
+
+lines = []
+with open("/home/tom/src/Romanesco/Romanesco_Src/ptx/raymarchtest.cu.ptx", "r") as f:
+	lines = f.readlines()
+start, end = findFunction(lines, "distancehit_hook")
+
+print start, end
+
+for line in lines[start:end]:
+ 	print line,
 
 def patchptx(file, hook, ptxfile):
 	hookString = ".visible .func  (.param .b32 func_retval0){0}".format(hook)
