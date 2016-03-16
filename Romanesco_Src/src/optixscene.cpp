@@ -493,10 +493,26 @@ std::vector<std::string> StringToVector(const std::string& _str)
     return result;
 }
 
-bool findFunction(const std::vector<std::string>& _lines,
+bool findString(std::vector<std::string>& _lines,
+                const std::string& _searchString,
+                std::vector<std::string>::iterator* o_result)
+{
+    for(auto line = _lines.begin(); line != _lines.end(); ++line)
+    {
+        if ( line->find(_searchString) != std::string::npos)
+        {
+            *o_result = line + 1;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool findFunction(std::vector<std::string>& _lines,
                   const std::string& _funcName,
-                  std::vector<std::string>::const_iterator o_start,
-                  std::vector<std::string>::const_iterator o_end )
+                  std::vector<std::string>::iterator* o_start,
+                  std::vector<std::string>::iterator* o_end )
 {
     bool isExtern = false;
     bool found = false;
@@ -510,7 +526,7 @@ bool findFunction(const std::vector<std::string>& _lines,
                 if ( line->find(".extern") != std::string::npos) { isExtern = true; }
 
                 found = true;
-                o_start = line;
+                *o_start = line;
                 break;
             }
         }
@@ -518,12 +534,12 @@ bool findFunction(const std::vector<std::string>& _lines,
 
     if(found)
     {
-        for(auto line = o_start; line != _lines.end(); ++line)
+        for(auto line = *o_start; line != _lines.end(); ++line)
         {
             if( (isExtern && (line->find(";") != std::string::npos)) ||
                (!isExtern && (line->find("}") != std::string::npos)) )
             {
-                        o_end = line;
+                        *o_end = line + 1;
                         return true;
             }
         }
@@ -540,85 +556,66 @@ bool hookPtxFunction( const std::string& _ptxPath,
                       const std::string& _functionSource,
                       std::string& _result)
 {
-    std::vector<std::string> ptx = FileToVector(_ptxPath);
-
+    // Compile function source to ptx
     RuntimeCompiler program(_functionName, _functionSource);
-
-    qDebug() << program.getResult();
-
-    // Convert the function ptx to a vector of lines
+//    qDebug() << program.getResult();
+    // Convert the runtime compiled ptx to a vector of strings
     std::vector<std::string> hit_ptx = StringToVector( program.getResult() );
 
+    // Convert the optix ptx to a vector of strings
+    std::vector<std::string> ptx = FileToVector(_ptxPath);
 
-    int pos = find(src_ptx.begin(), src_ptx.end(), ".visible .func  (.param .b32 func_retval0) " + _functionName + "(") - src_ptx.begin();
 
-    //// Remove the compiler comments/version info
-    // Remove everything except the function body
-    // @todo Make this more robust
-    src_ptx.erase(src_ptx.begin(), src_ptx.begin() + pos);
+    /* Process ptx code to be patched into the optix ptx */
 
-    // Convert the ptx code to a vector of lines
-    std::vector<std::string> ptx_lines;
-    // The start/end lines of the extern function block (@todo: these should be iterators)
-    unsigned int startExtern = -1;
-    unsigned int endExtern = -1;
+
+    // This particular function (seems to be related to the CUDA runtime API) always seems to be the last of the API stuff,
+    // so we can (hopefully) safely ignore anything prior to it and only copy the functions defined after it.
     {
-        std::istringstream ptx_stream(ptx);
-        std::string line;
-
-        bool foundExtern = false;
-        bool foundExternEnd = false;
-        unsigned int lineNum = 0;
-        // Convert the ptx to a vector of lines and
-        // check for the start/end of the extern block
-        // of the function we're replacing
-        while (std::getline(ptx_stream, line))
+        std::vector<std::string>::iterator CUDAAPI_StartIterator;
+        std::vector<std::string>::iterator CUDAAPI_EndIterator;
+        if( !findFunction( hit_ptx, "cudaOccupancyMaxActiveBlocksPerMultiprocessorWithFlags", &CUDAAPI_StartIterator, &CUDAAPI_EndIterator) )
         {
-            if( !foundExtern )
-            {
-                size_t externPos = line.find(".extern");
-                size_t shade_hookPos = line.find(_functionName);
+            qWarning("Unable to find CUDA API function definitions, copying every function definition");
 
-                if( externPos != std::string::npos && shade_hookPos != std::string::npos)
-                {
-                    foundExtern = true;
-                    startExtern = lineNum;
-                }
-            }
-            else if( !foundExternEnd )
+            // If no cuda runtime functions were found, remove the compiler info and copy over every function definition anyway
+            if(!findString(hit_ptx, ".address_size 64", &CUDAAPI_EndIterator))
             {
-                size_t semicolonPos = line.find(";");
-                if( semicolonPos != std::string::npos )
-                {
-                    endExtern = lineNum;
-                    foundExternEnd = true;
-                }
+                throw std::runtime_error("Can't find .address_size, ptx string must be invalid");
+                return false;
             }
-
-            ptx_lines.push_back(line);
-            lineNum++;
         }
+
+        // Remove the unnecessary lines, leaving just the code we need for the patch function
+        hit_ptx.erase(hit_ptx.begin(), CUDAAPI_EndIterator);
     }
 
-    // Remove old extern block
-    ptx_lines.erase(ptx_lines.begin() + startExtern, ptx_lines.begin() + endExtern + 1);
-//    for(auto ptx : src_ptx)
-//    {
-//        std::cout << ptx.c_str() << "\n";
-//    }
+
+    std::vector<std::string>::iterator ptxInsertionIterator;
+    /* Process the optix ptx ready for patching, search for the function we're patching and delete it so the new code can be copied over */
+    {
+        std::vector<std::string>::iterator hookFunction_StartIterator;
+        std::vector<std::string>::iterator hookFunction_EndIterator;
+        if( !findFunction( ptx, _functionName, &hookFunction_StartIterator, &hookFunction_EndIterator) )
+        {
+            qWarning("Unable to find function to patch");
+            return false;
+        }
+
+        // Remove the current function definition so we can replace it with the new one
+        ptxInsertionIterator = ptx.erase(hookFunction_StartIterator, hookFunction_EndIterator);
+    }
 
     // Replace with our actual function ptx
-    ptx_lines.insert(ptx_lines.begin() + startExtern, src_ptx.begin(), src_ptx.end());
-
-//    for(auto ptx : ptx_lines) { std::cout << ptx.c_str() << "\n"; }
+    ptx.insert(ptxInsertionIterator, hit_ptx.begin(), hit_ptx.end());
 
     // Join the list into a string
-    std::string concatptx = boost::algorithm::join(ptx_lines, "\n");
+    std::string concatptx = boost::algorithm::join(ptx, "\n");
 
     // Return the string result
     _result = concatptx;
 
-//    qDebug() << _result.c_str();
+    qDebug() << _result.c_str();
 
     return true;
 }
@@ -629,7 +626,7 @@ bool hookPtxFunction( const std::string& _ptxPath,
 #include "DomainOp/Transform_SDFOP.h"
 #include <glm/gtc/matrix_transform.hpp>
 
-#define SHOWSTUFF
+//#define SHOWSTUFF
 
 void OptixScene::createGeometry(std::string _hit_src)
 {
@@ -746,7 +743,7 @@ void OptixScene::createGeometry(std::string _hit_src)
 //    hit_src << "}\n";
 
     std::string ptx;
-    //hookPtxFunction("ptx/raymarch.cu.ptx", "shade_hook", shade_hook_src, ptx);
+//    hookPtxFunction("ptx/raymarch.cu.ptx", "shade_hook", _hit_src, ptx);
 
 //    qDebug() << mandelbulb_hit_src.c_str();
     qDebug() << hit_src.c_str();
