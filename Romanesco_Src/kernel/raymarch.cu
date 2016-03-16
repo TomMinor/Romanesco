@@ -24,7 +24,9 @@
 #include <optixu/optixu_math_namespace.h>
 #include <optixu/optixu_matrix_namespace.h>
 #include <optixu/optixu_aabb_namespace.h>
+
 #include "distance_field.h"
+#include "globals.h"
 
 
 using namespace optix;
@@ -42,16 +44,11 @@ __device__ __attribute__ ((noinline)) float3 shade_hook(
 extern "C"
 {
 
-extern __device__ __attribute__ ((noinline)) float distancehit_hook(
-        float3 x, float _t, float _max_iterations
+ extern  __device__ float distancehit_hook(
+        float3 p, float _t, float _max_iterations
         );
 
 }
-
-
-__device__ float3 P;
-__device__ float T;
-__device__ float MaxIterations;
 
 // References:
 // [1] Hart, J. C., Sandin, D. J., and Kauffman, L. H. 1989. Ray tracing deterministic 3D fractals

@@ -19,7 +19,7 @@ Union_SDFOP::~Union_SDFOP()
 
 std::string Union_SDFOP::getFunctionName()
 {
-    return "union";
+    return "SDF_union";
 }
 
 std::string Union_SDFOP::getSource()

@@ -8,6 +8,7 @@ isEqual(QT_MAJOR_VERSION, 5) {
         DEFINES +=QT5BUILD
 }
 
+
 UI_DIR=ui
 MOC_DIR=moc
 
@@ -45,6 +46,7 @@ HEADERS += include/*.h \
 
 OTHER_FILES += shaders/*
 
+
 INCLUDEPATH += ./include
 INCLUDEPATH += ./include/gui
 INCLUDEPATH += ./include/SDFOps
@@ -67,6 +69,7 @@ unix:LIBS += -L/usr/local/lib
 
 
 CUDA_SOURCES += kernel/*.cu
+OTHER_FILES += kernel/*.h
 
 # Setup CUDA paths
 linux:CUDA_DIR = $$system( dirname $(dirname $(which nvcc)) )
@@ -100,6 +103,8 @@ NVCCFLAGS = --compiler-options -fno-strict-aliasing -use_fast_math --ptxas-optio
 
 # join the includes in a line
 CUDA_INC = $$join(INCLUDEPATH,' -I','-I',' ')
+
+warning($$CUDA_INC)
 
 lessThan(CUDA_VERSION, 7.0) {
     warning( "CUDA version is $$CUDA_VERSION, at least 7.0 is required for libnvrtc. Using system nvcc for runtime compilation." )
