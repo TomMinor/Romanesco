@@ -1,9 +1,7 @@
-
+#include <sstream>
 #include "Box_SDFOP.h" 
 
 static const std::vector<Argument> args = {
-    {"a", ReturnType::Float, "0.0f"},
-    {"b", ReturnType::Float, "0.0f"}
 };
 
 Box_SDFOP::Box_SDFOP()  :
@@ -23,7 +21,10 @@ std::string Box_SDFOP::getFunctionName()
 
 std::string Box_SDFOP::getSource()
 {
+    std::ostringstream sourceStream;
+    sourceStream<< "\treturn length( make_float3( max(vars.P.x - 1.0f, 0.0f), max(vars.P.y - 1.0f, 0.0f), max(vars.P.z - 1.0f, 0.0f)  ) );";
 
+    return sourceStream.str();
 }
 
 Argument Box_SDFOP::getArgument(unsigned int index)
@@ -33,5 +34,5 @@ Argument Box_SDFOP::getArgument(unsigned int index)
 
 unsigned int Box_SDFOP::argumentSize()
 {
-    return args.size();
+    return 0;
 }

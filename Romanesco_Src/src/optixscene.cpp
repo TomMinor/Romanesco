@@ -485,6 +485,8 @@ bool hookPtxFunction( const std::string& _ptxPath,
 
     RuntimeCompiler program(_functionName, _functionSource);
 
+    qDebug() << program.getResult();
+
     // Convert the function ptx to a vector of lines
     std::vector<std::string> src_ptx;
     {
@@ -495,6 +497,8 @@ bool hookPtxFunction( const std::string& _ptxPath,
             src_ptx.push_back(line);
         }
     }
+
+
 
 
     int pos = find(src_ptx.begin(), src_ptx.end(), ".visible .func  (.param .b32 func_retval0) " + _functionName + "(") - src_ptx.begin();
@@ -565,7 +569,7 @@ bool hookPtxFunction( const std::string& _ptxPath,
     // Return the string result
     _result = concatptx;
 
-    qDebug() << _result.c_str();
+//    qDebug() << _result.c_str();
 
     return true;
 }
@@ -576,7 +580,7 @@ bool hookPtxFunction( const std::string& _ptxPath,
 #include "DomainOp/Transform_SDFOP.h"
 #include <glm/gtc/matrix_transform.hpp>
 
-//#define SHOWSTUFF
+#define SHOWSTUFF
 
 void OptixScene::createGeometry(std::string _hit_src)
 {
@@ -696,7 +700,7 @@ void OptixScene::createGeometry(std::string _hit_src)
     //hookPtxFunction("ptx/raymarch.cu.ptx", "shade_hook", shade_hook_src, ptx);
 
 //    qDebug() << mandelbulb_hit_src.c_str();
-//    qDebug() << hit_src.str().c_str();
+    qDebug() << hit_src.c_str();
 
     hookPtxFunction("ptx/raymarch.cu.ptx", "distancehit_hook", hit_src, ptx);
 #endif
@@ -705,12 +709,14 @@ void OptixScene::createGeometry(std::string _hit_src)
     optix::Geometry julia = m_context->createGeometry();
     julia->setPrimitiveCount( 1u );
 
+#define PTXTESTFILE "ptx/raymarchtest.cu.ptx"
+
 #ifndef SHOWSTUFF
     julia->setBoundingBoxProgram( m_context->createProgramFromPTXString( ptx, "bounds" ) );
     julia->setIntersectionProgram( m_context->createProgramFromPTXString( ptx, "intersect" ) );
 #else
-    julia->setBoundingBoxProgram( m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "bounds" ) );
-    julia->setIntersectionProgram( m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "intersect" ) );
+    julia->setBoundingBoxProgram( m_context->createProgramFromPTXFile( PTXTESTFILE, "bounds" ) );
+    julia->setIntersectionProgram( m_context->createProgramFromPTXFile( PTXTESTFILE, "intersect" ) );
 #endif
 
     // Sphere
@@ -724,8 +730,8 @@ void OptixScene::createGeometry(std::string _hit_src)
     optix::Program julia_ch = m_context->createProgramFromPTXString( ptx, "julia_ch_radiance" );
     optix::Program julia_ah = m_context->createProgramFromPTXString( ptx, "julia_ah_shadow" );
 #else
-    optix::Program julia_ch = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "julia_ch_radiance" );
-    optix::Program julia_ah = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "julia_ah_shadow" );
+    optix::Program julia_ch = m_context->createProgramFromPTXFile( PTXTESTFILE, "julia_ch_radiance" );
+    optix::Program julia_ah = m_context->createProgramFromPTXFile( PTXTESTFILE, "julia_ah_shadow" );
 #endif
 //    optix::Program chrome_ch = m_context->createProgramFromPTXString( ptx, "chrome_ch_radiance" );
 //    optix::Program chrome_ah = m_context->createProgramFromPTXString( ptx, "chrome_ah_shadow" );

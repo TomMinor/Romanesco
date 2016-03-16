@@ -87,6 +87,15 @@ bool QNodeGraph::eventFilter(QObject *o, QEvent *e)
 
                             break;
                         }
+                    case Qt::Key_X:
+                        {
+                            BaseSDFOP* op = new Box_SDFOP();
+                            DistanceOpNode *c = new DistanceOpNode(op, scene, 0);
+
+                            emit graphChanged();
+
+                            break;
+                        }
                     case Qt::Key_C:
                         {
                             BaseSDFOP* op = new Union_SDFOP();
@@ -225,21 +234,15 @@ std::vector<DistanceOpNode *> QNodeGraph::getNodeList()
 
 std::string QNodeGraph::parseGraph()
 {
-    static const std::string hit_globals = R"(
-// Input Globals
-//__device__ float3 P;
-//__device__ float T;
-//__device__ float MaxIterations;
-)";
-
     std::string hit_src = R"(
 extern "C" {
 __device__ float distancehit_hook(float3 x, float _t, float _max_iterations)
 {
+            Globals vars;
             // Initialise globals
-//            P = x;
-//            T = _t;
-//            MaxIterations = _max_iterations;
+            vars.P = p;
+            vars.T = _t;
+
 )";
 
     std::ostringstream resultStream;
@@ -265,7 +268,7 @@ __device__ float distancehit_hook(float3 x, float _t, float _max_iterations)
 
     // Generate the global variables
     //qDebug() << hit_globals.c_str();
-    //resultStream << hit_globals << "\n";
+//    resultStream << hit_globals << "\n";
 
     int i = 0;
     for(auto node: nodes)
@@ -286,9 +289,13 @@ __device__ float distancehit_hook(float3 x, float _t, float _max_iterations)
             {
                 // Join the argument string
                 std::stringstream ss;
+
+                ss << "Globals vars";
+
                 for(unsigned int i = 0; i < nodeSDFOP->argumentSize(); i++)
                 {
-                    if(i != 0) {
+                    //if(i != 0)
+                    {
                       ss << ",";
                     }
 
@@ -299,7 +306,7 @@ __device__ float distancehit_hook(float3 x, float _t, float _max_iterations)
                 args = ss.str();
 
                 resultStream << "\n";
-                resultStream << nodeSDFOP->getTypeString() << " " << nodeSDFOP->getFunctionName() << "(" << args << ")\n";
+                resultStream << "__device__ " << nodeSDFOP->getTypeString() << " " << nodeSDFOP->getFunctionName() << "(" << args << ")\n";
                 resultStream << "{\n" << nodeSDFOP->getSource() << "\n}\n";
 
 //                qDebug("%s %s(%s)", nodeSDFOP->getTypeString().c_str(), nodeSDFOP->getFunctionName().c_str(), args.c_str());
@@ -379,6 +386,7 @@ __device__ float distancehit_hook(float3 x, float _t, float _max_iterations)
 
         {
             std::stringstream ss;
+
             for(unsigned int i = 0; i < totalInputs; i++)
             {
                 if(i != 0) {
@@ -417,7 +425,7 @@ __device__ float distancehit_hook(float3 x, float _t, float _max_iterations)
 
 //            qDebug("   %s %s = %s(%s);", variableType.c_str(), variableName.c_str(), functionName.c_str(), args.c_str() );
 
-            resultStream << "\t" << variableType << " " << variableName << " = " << functionName << "(" << args << ");\n";
+            resultStream << "\t" << variableType << " " << variableName << " = " << functionName << "(" << qPrintable((totalInputs > 0) ? "vars," : "vars") << args << ");\n";
         }
         else // Assume we're a terminate node, so return the final result we calculated
         {
