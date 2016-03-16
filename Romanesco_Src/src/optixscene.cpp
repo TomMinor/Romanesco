@@ -457,20 +457,79 @@ void OptixScene::updateBufferSize(unsigned int _width, unsigned int _height)
     }
 }
 
-std::string get_file_contents(const std::string& _filename)
+
+std::vector<std::string> FileToVector(const std::string& _filename)
 {
-  std::ifstream in(_filename.c_str(), std::ios::in | std::ios::binary);
-  if (in)
-  {
-    std::string contents;
-    in.seekg(0, std::ios::end);
-    contents.resize(in.tellg());
-    in.seekg(0, std::ios::beg);
-    in.read(&contents[0], contents.size());
-    in.close();
-    return(contents);
-  }
-  throw(errno);
+    std::vector<std::string> result;
+    std::ifstream file(_filename);
+
+    if(!file)
+    {
+        qDebug("Can't open file %s", qPrintable(_filename.c_str()) );
+        throw std::runtime_error("Can't open file");
+    }
+
+    std::string line;
+    while (std::getline(file, line))
+    {
+        result.push_back(line);
+    }
+
+    return result;
+}
+
+std::vector<std::string> StringToVector(const std::string& _str)
+{
+    std::vector<std::string> result;
+    {
+        std::istringstream src_stream( _str );
+        std::string line;
+        while(std::getline(src_stream, line))
+        {
+            result.push_back(line);
+        }
+    }
+
+    return result;
+}
+
+bool findFunction(const std::vector<std::string>& _lines,
+                  const std::string& _funcName,
+                  std::vector<std::string>::const_iterator o_start,
+                  std::vector<std::string>::const_iterator o_end )
+{
+    bool isExtern = false;
+    bool found = false;
+
+    for(auto line = _lines.begin(); line != _lines.end(); ++line)
+    {
+        if ( line->find(".func") != std::string::npos)
+        {
+            if ( line->find(_funcName) != std::string::npos)
+            {
+                if ( line->find(".extern") != std::string::npos) { isExtern = true; }
+
+                found = true;
+                o_start = line;
+                break;
+            }
+        }
+    }
+
+    if(found)
+    {
+        for(auto line = o_start; line != _lines.end(); ++line)
+        {
+            if( (isExtern && (line->find(";") != std::string::npos)) ||
+               (!isExtern && (line->find("}") != std::string::npos)) )
+            {
+                        o_end = line;
+                        return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 #include <sstream>
@@ -481,24 +540,14 @@ bool hookPtxFunction( const std::string& _ptxPath,
                       const std::string& _functionSource,
                       std::string& _result)
 {
-    std::string ptx = get_file_contents(_ptxPath);
+    std::vector<std::string> ptx = FileToVector(_ptxPath);
 
     RuntimeCompiler program(_functionName, _functionSource);
 
     qDebug() << program.getResult();
 
     // Convert the function ptx to a vector of lines
-    std::vector<std::string> src_ptx;
-    {
-        std::istringstream src_stream( program.getResult() );
-        std::string line;
-        while(std::getline(src_stream, line))
-        {
-            src_ptx.push_back(line);
-        }
-    }
-
-
+    std::vector<std::string> hit_ptx = StringToVector( program.getResult() );
 
 
     int pos = find(src_ptx.begin(), src_ptx.end(), ".visible .func  (.param .b32 func_retval0) " + _functionName + "(") - src_ptx.begin();
