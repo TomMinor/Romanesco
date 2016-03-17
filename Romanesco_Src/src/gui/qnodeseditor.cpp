@@ -92,8 +92,6 @@ bool QNodeGraph::eventFilter(QObject *o, QEvent *e)
                             BaseSDFOP* op = new Box_SDFOP();
                             DistanceOpNode *c = new DistanceOpNode(op, scene, 0);
 
-                            emit graphChanged();
-
                             break;
                         }
                     case Qt::Key_C:
@@ -101,16 +99,12 @@ bool QNodeGraph::eventFilter(QObject *o, QEvent *e)
                             BaseSDFOP* op = new Union_SDFOP();
                             DistanceOpNode *c = new DistanceOpNode(op, scene, 0);
 
-                            emit graphChanged();
-
                             break;
                         }
                     case Qt::Key_V:
                         {
                             BaseSDFOP* op = new Sphere_SDFOP(1.0f);
                             DistanceOpNode *c = new DistanceOpNode(op, scene, 0);
-
-                            emit graphChanged();
 
                             break;
                         }
@@ -173,7 +167,6 @@ bool QNodeGraph::eventFilter(QObject *o, QEvent *e)
             }
         case QEvent::GraphicsSceneMouseRelease:
             {
-        emit graphChanged();
                 if (conn && me->button() == Qt::LeftButton)
                 {
                     QGraphicsItem *item = itemAt(me->scenePos());
@@ -236,7 +229,7 @@ std::string QNodeGraph::parseGraph()
 {
     std::string hit_src = R"(
 extern "C" {
-__device__ float distancehit_hook(float3 x, float _t, float _max_iterations)
+__device__ float distancehit_hook(float3 p, float _t, float _max_iterations)
 {
             Globals vars;
             // Initialise globals
@@ -258,6 +251,9 @@ __device__ float distancehit_hook(float3 x, float _t, float _max_iterations)
     // We need to define all the functions we're using just once, so store them
     // in the map
     std::map<std::string, bool> functionDefinitionMap;
+
+    // Quick fix
+    BaseSDFOP::m_headers.insert("globals.h");
 
     // Generate all the includes
     for(const auto& header: BaseSDFOP::m_headers)

@@ -615,7 +615,7 @@ bool hookPtxFunction( const std::string& _ptxPath,
     // Return the string result
     _result = concatptx;
 
-    qDebug() << _result.c_str();
+//    qDebug() << _result.c_str();
 
     return true;
 }
@@ -653,57 +653,9 @@ void OptixScene::createGeometry(std::string _hit_src)
 //"        return p;\n"
 //    "}\n } \n";
 
-//    std::string shade_hook_src = shade_hook_src_B;//(choose == 0) ? shade_hook_src_A : shade_hook_src_B;
+//    std::string shade_hook_src = shade_hook_src_B;//(choose == 0) ? shade_hook_src_A : shade_hook_src_B
 
 
-    std::string mandelbulb_hit_src =
-            R"("
-            #include "cutil_math.h"
-
-            extern \"C\" {
-            __device__ float distancehit_hook(
-                    float3 x, float _t, float _max_iterations
-                    )
-            {
-                float3 zn  = x;//make_float3( x, 0 );
-                float4 fp_n = make_float4( 1, 0, 0, 0 );  // start derivative at real 1 (see [2]).
-
-                const float sq_threshold = 2.0f;   // divergence threshold
-
-                float oscillatingTime = sin(_t / 256.0f );
-                float p = (5.0f * abs(oscillatingTime)) + 3.0f; //8;
-                float rad = 0.0f;
-                float dist = 0.0f;
-                float d = 1.0;
-
-                // Iterate to compute f_n and fp_n for the distance estimator.
-                int i = _max_iterations;
-                while( i-- )
-                {
-                  rad = length(zn);
-
-                  if( rad > sq_threshold )
-                  {
-                    dist = 0.5f * rad * logf( rad ) / d;
-                  }
-                  else
-                  {
-                    float th = atan2( length( make_float3(zn.x, zn.y, 0.0f) ), zn.z );
-                    float phi = atan2( zn.y, zn.x );
-                    float rado = pow(rad, p);
-                    d = pow(rad, p - 1) * (p-1) * d + 1.0;
-
-                    float sint = sin(th * p);
-                    zn.x = rado * sint * cos(phi * p);
-                    zn.y = rado * sint * sin(phi * p);
-                    zn.z = rado * cos(th * p);
-                    zn += x;
-                  }
-                }
-
-                return dist;
-            }
-            })";
 
     std::string sphere_hit_src =
             "#include \"cutil_math.h\" \n"
@@ -746,9 +698,13 @@ void OptixScene::createGeometry(std::string _hit_src)
 //    hookPtxFunction("ptx/raymarch.cu.ptx", "shade_hook", _hit_src, ptx);
 
 //    qDebug() << mandelbulb_hit_src.c_str();
-    qDebug() << hit_src.c_str();
+//    qDebug() << hit_src.c_str();
 
-    hookPtxFunction("ptx/raymarch.cu.ptx", "distancehit_hook", hit_src, ptx);
+    if(!hookPtxFunction("ptx/raymarch.cu.ptx", "distancehit_hook", hit_src, ptx))
+    {
+        qWarning("Patching failed");
+        return;
+    }
 #endif
 
     ///@todo Optix error checking
