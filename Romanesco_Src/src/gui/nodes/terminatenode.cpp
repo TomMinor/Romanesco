@@ -1,5 +1,5 @@
 #include "include/gui/nodes/terminatenode.h"
-#include "qneport.h"
+#include "nodegraph/qneport.h"
 
 TerminateNode::TerminateNode(QGraphicsScene* _scene, QGraphicsItem *parent)
     : QNEBlock(_scene, parent)

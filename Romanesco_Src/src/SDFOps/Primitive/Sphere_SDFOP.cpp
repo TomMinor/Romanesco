@@ -24,7 +24,7 @@ std::string Sphere_SDFOP::getFunctionName()
 std::string Sphere_SDFOP::getSource()
 {
     std::ostringstream sourceStream;
-    sourceStream<< "\treturn length(vars.P) - (" << m_radius << ");\n";
+    sourceStream<< "\treturn length(vars.P) - (" << 1.0 << ");\n";
 
     return sourceStream.str();
 }

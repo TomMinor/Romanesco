@@ -343,12 +343,12 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height)
     //m_context->setMissProgram( 0, m_context->createProgramFromPTXFile( "ptx/constantbg.cu.ptx", "miss" ) );
     m_context["bg_color"]->setFloat( optix::make_float3(108.0f/255.0f, 166.0f/255.0f, 205.0f/255.0f) * 0.5f );
 
-    m_context->setMissProgram( 0, m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "envmap_miss" ) );
+    m_context->setMissProgram( 0, m_context->createProgramFromPTXFile( "ptx/raymarch.cu.ptx", "envmap_miss" ) );
 
     const optix::float3 default_color = optix::make_float3(1.0f, 1.0f, 1.0f);
-    //m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/tom/src/optix/SDK/tutorial/data/CedarCity.hdr", default_color) );
+    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/i7245143/src/optix/SDK/tutorial/data/CedarCity.hdr", default_color) );
 //    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/tom/src/Fragmentarium/Fragmentarium-Source/Examples/Include/Ditch-River_2k.hdr", default_color) );
-    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/tom/Downloads/Milkyway/Milkyway_small.hdr", default_color) );
+    //m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/tom/Downloads/Milkyway/Milkyway_small.hdr", default_color) );
 
 
     // Setup lights
@@ -551,7 +551,8 @@ bool findFunction(std::vector<std::string>& _lines,
 #include <sstream>
 #include <algorithm>
 
-bool hookPtxFunction( const std::string& _ptxPath,
+bool
+hookPtxFunction( const std::string& _ptxPath,
                       const std::string& _functionName,
                       const std::string& _functionSource,
                       std::string& _result)
@@ -626,73 +627,21 @@ bool hookPtxFunction( const std::string& _ptxPath,
 #include "DomainOp/Transform_SDFOP.h"
 #include <glm/gtc/matrix_transform.hpp>
 
-//#define SHOWSTUFF
 
 void OptixScene::createGeometry(std::string _hit_src)
 {
-#ifndef SHOWSTUFF
-
-
-//    std::string shade_hook_src_A = ""
-//    "#include \"cutil_math.h\" \n"
-//    "extern \"C\" { \n"
-//    "__device__ float3 shade_hook("
-//            "float3 p, float3 nrm, float iteration"
-//            ")"
-//    "{\n"
-//"        return nrm;\n"
-//    "}\n } \n";
-
-//    std::string shade_hook_src_B = ""
-//    "#include \"cutil_math.h\" \n"
-//    "extern \"C\" { \n"
-//    "__device__ float3 shade_hook("
-//            "float3 p, float3 nrm, float iteration"
-//            ")"
-//    "{\n"
-//"        return p;\n"
-//    "}\n } \n";
-
-//    std::string shade_hook_src = shade_hook_src_B;//(choose == 0) ? shade_hook_src_A : shade_hook_src_B
-
-
-
     std::string sphere_hit_src =
             "#include \"cutil_math.h\" \n"
             "extern \"C\" {\n "
             "__device__ float distancehit_hook("
-                    "float3 x, float _t, float _max_iterations"
+                    "float3 x"
                     ")\n"
             "{"
-                "return length(x) - (sin(_t / 60.0f) + 1.0f);\n"
+                "return length(x) - 1.0f;\n"
             "}\n"
             "}\n";
 
     std::string hit_src = (_hit_src == "") ? sphere_hit_src : _hit_src;
-
-//    std::stringstream hit_src;
-
-    //@todo This is kinda terribly implemented right now
-//    for(std::string header : BaseSDFOP::m_headers)
-//    {
-//        hit_src << "#include \"" << header << "\" \n";
-//    }
-
-//    // Define generic structure for hit function
-//    hit_src << "extern \"C\" {\n";
-//    hit_src << "__device__ float distancehit_hook(";
-//    hit_src <<      "float3 _p, float _t, float _max_iterations";
-//    hit_src << ")\n";
-//    hit_src << "{\n";
-
-//    // Generate main block
-//    for(BaseSDFOP* op : ops)
-//    {
-//        hit_src << op->getSource();
-//    }
-
-//    hit_src << "}\n";
-//    hit_src << "}\n";
 
     std::string ptx;
 //    hookPtxFunction("ptx/raymarch.cu.ptx", "shade_hook", _hit_src, ptx);
@@ -705,73 +654,27 @@ void OptixScene::createGeometry(std::string _hit_src)
         qWarning("Patching failed");
         return;
     }
-#endif
 
     ///@todo Optix error checking
     optix::Geometry julia = m_context->createGeometry();
     julia->setPrimitiveCount( 1u );
 
-#define PTXTESTFILE "ptx/raymarchtest.cu.ptx"
-
-#ifndef SHOWSTUFF
     julia->setBoundingBoxProgram( m_context->createProgramFromPTXString( ptx, "bounds" ) );
     julia->setIntersectionProgram( m_context->createProgramFromPTXString( ptx, "intersect" ) );
-#else
-    julia->setBoundingBoxProgram( m_context->createProgramFromPTXFile( PTXTESTFILE, "bounds" ) );
-    julia->setIntersectionProgram( m_context->createProgramFromPTXFile( PTXTESTFILE, "intersect" ) );
-#endif
 
-    // Sphere
-//    optix::Geometry sphere = m_context->createGeometry();
-//    sphere->setPrimitiveCount( 1 );
-//    sphere->setBoundingBoxProgram( m_context->createProgramFromPTXFile( "ptx/sphere.cu.ptx", "bounds" ) );
-//    sphere->setIntersectionProgram( m_context->createProgramFromPTXFile( "ptx/sphere.cu.ptx", "intersect" ) );
-//    m_context["sphere"]->setFloat( 1, 1, 1, 0.2f );
-
-#ifndef SHOWSTUFF
-    optix::Program julia_ch = m_context->createProgramFromPTXString( ptx, "julia_ch_radiance" );
-    optix::Program julia_ah = m_context->createProgramFromPTXString( ptx, "julia_ah_shadow" );
-#else
-    optix::Program julia_ch = m_context->createProgramFromPTXFile( PTXTESTFILE, "julia_ch_radiance" );
-    optix::Program julia_ah = m_context->createProgramFromPTXFile( PTXTESTFILE, "julia_ah_shadow" );
-#endif
-//    optix::Program chrome_ch = m_context->createProgramFromPTXString( ptx, "chrome_ch_radiance" );
-//    optix::Program chrome_ah = m_context->createProgramFromPTXString( ptx, "chrome_ah_shadow" );
-    //optix::Program floor_ch = m_context->createProgramFromPTXFile( "ptx/block_floor.cu.ptx", "block_floor_ch_radiance" );
-    //optix::Program floor_ah = m_context->createProgramFromPTXFile( "ptx/block_floor.cu.ptx", "block_floor_ah_shadow" );
-    //optix::Program normal_ch = m_context->createProgramFromPTXFile( "ptx/normal_shader.cu.ptx", "closest_hit_radiance" );
-
-
+    optix::Program julia_ch = m_context->createProgramFromPTXString( ptx, "radiance" );
+    optix::Program julia_ah = m_context->createProgramFromPTXString( ptx, "shadow" );
 
     // Julia material
     optix::Material julia_matl = m_context->createMaterial();
     julia_matl->setClosestHitProgram( 0, julia_ch );
     julia_matl->setAnyHitProgram( 1, julia_ah );
 
-    // Sphere material
-//    optix::Material sphere_matl = m_context->createMaterial();
-//    sphere_matl->setClosestHitProgram( 0, chrome_ch );
-//    sphere_matl->setAnyHitProgram( 1, chrome_ah );
-
-//    m_context["Ka"]->setFloat(0.3f,0.3f,0.3f);
-//    m_context["Kd"]->setFloat(.6f, 0.1f, 0.1f);
-//    m_context["Ks"]->setFloat(.6f, .6f, .6f);
     m_context["Ka"]->setFloat(0.5f,0.0f,0.0f);
     m_context["Kd"]->setFloat(.6f, 0.1f, 0.1f);
     m_context["Ks"]->setFloat(.6f, .2f, .1f);
     m_context["phong_exp"]->setFloat(32);
     m_context["reflectivity"]->setFloat(.4f, .4f, .4f);
-
-    // Place geometry into hierarchy
-//    std::vector<optix::GeometryInstance> gis;
-//    //gis.push_back( m_context->createGeometryInstance( sphere, &sphere_matl, &sphere_matl+1 ) );
-//    gis.push_back( m_context->createGeometryInstance( julia,  &julia_matl, &julia_matl+1 ) );
-
-//    m_geometrygroup = m_context->createGeometryGroup();
-//    m_geometrygroup->setChildCount( static_cast<unsigned int>(gis.size()) );
-//    for(size_t i = 0; i < gis.size(); ++i) {
-//      m_geometrygroup->setChild( (int)i, gis[i] );
-//    }
 
     std::vector<optix::GeometryInstance> gis;
     gis.push_back( m_context->createGeometryInstance( julia,  &julia_matl, &julia_matl+1 ) );
@@ -807,9 +710,6 @@ void OptixScene::createGeometry(std::string _hit_src)
     m_context[ "DEL" ]->setFloat( m_DEL );
     m_context[ "particle" ]->setFloat( 0.5f, 0.5f, 0.4f );
     m_context[ "global_t" ]->setFloat( m_time );
-
-    // set floor parameters
-    //m_context[ "floor_time" ]->setFloat( (float)m_floorstate.m_t );
 }
 
 OptixScene::~OptixScene()

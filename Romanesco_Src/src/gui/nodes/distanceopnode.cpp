@@ -1,5 +1,5 @@
-#include "include/gui/nodes/distanceopnode.h"
-#include "qneport.h"
+#include "nodes/distanceopnode.h"
+#include "nodegraph/qneport.h"
 
 static int ctr = 0;
 

@@ -26,6 +26,7 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 SOURCES += src/*.cpp \
            src/gui/*.cpp \
            src/gui/nodes/*.cpp \
+           src/gui/nodegraph/*.cpp \
            src/SDFOps/*.cpp \
            src/SDFOps/DistDeformer/*.cpp \
            src/SDFOps/DistOp/*.cpp \
@@ -37,6 +38,7 @@ SOURCES += src/*.cpp \
 HEADERS += include/*.h \
            include/gui/*.h \
            include/gui/nodes/*.h \
+           include/gui/nodegraph/*.h \
            include/SDFOps/*.h \
            include/SDFOps/DistDeformer/*.h \
            include/SDFOps/DistOp/*.h \

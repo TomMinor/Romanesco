@@ -25,7 +25,7 @@ std::string Union_SDFOP::getFunctionName()
 std::string Union_SDFOP::getSource()
 {
     return R"(
-            return min(a,b);
+            return max(-a,b);
 )";
 }
 
