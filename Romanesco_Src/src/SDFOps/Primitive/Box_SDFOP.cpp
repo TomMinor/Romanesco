@@ -22,7 +22,7 @@ std::string Box_SDFOP::getFunctionName()
 std::string Box_SDFOP::getSource()
 {
     std::ostringstream sourceStream;
-    sourceStream<< "\treturn length( make_float3( max(vars.P.x - 1.0f, 0.0f), max(vars.P.y - 1.0f, 0.0f), max(vars.P.z - 1.0f, 0.0f)  ) );";
+    sourceStream<< "\treturn length( make_float3( max(vars.P.x - 0.7f, 0.0f), max(vars.P.y - 0.7f, 0.0f), max(vars.P.z - 0.7f, 0.0f)  ) );";
 
     return sourceStream.str();
 }

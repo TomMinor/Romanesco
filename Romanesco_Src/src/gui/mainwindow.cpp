@@ -28,11 +28,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 #include <QOpenGLWidget>
 
 #include "mainwindow.h"
-//#include "ui_qnemainwindow.h"
 
-#include "qneblock.h"
-#include "qnodeseditor.h"
-#include "qneport.h"
+#include "nodegraph/qneblock.h"
+#include "nodegraph/qnodeseditor.h"
+#include "nodegraph/qneport.h"
 
 #include "nodes/distanceopnode.h"
 

@@ -33,19 +33,16 @@ using namespace optix;
 
 extern "C"
 {
-__device__ __attribute__ ((noinline)) float3 shade_hook(
+
+__attribute__ ((noinline)) __device__ float3 shade_hook(
         float3 p, float3 nrm, float iteration
         )
 {
-    return p;
-}
+    return make_float3(1,0,0);
 }
 
-extern "C"
-{
-
- extern  __device__ float distancehit_hook(
-        float3 p, float _t, float _max_iterations
+extern  __device__ float distancehit_hook(
+        float3 p
         );
 
 }
@@ -281,7 +278,7 @@ RT_PROGRAM void intersect(int primIdx)
     for( step = 0; step < maxSteps; ++step )
     {
       //dist = distance( x );
-      dist = distancehit_hook(x, global_t, max_iterations );
+      dist = distancehit_hook(x);
 
       // Step along the ray and accumulate the distance from the origin.
       x += dist * ray_direction;
@@ -300,7 +297,14 @@ RT_PROGRAM void intersect(int primIdx)
         // color HACK
         //distance.m_max_iterations = 14;  // more iterations for normal estimate, to fake some more detail
         distance.m_max_iterations = 6;
-//        normal = estimate_normal(distance, x, DEL);
+        //normal = estimate_normal(distance, x, DEL);
+
+        float dx = distancehit_hook(x + make_float3(DEL,    0,   0)) - distancehit_hook(x - make_float3(DEL,   0,   0));
+        float dy = distancehit_hook(x + make_float3(  0,  DEL,   0)) - distancehit_hook(x - make_float3(  0, DEL,   0));
+        float dz = distancehit_hook(x + make_float3(  0,    0, DEL)) - distancehit_hook(x - make_float3(  0,   0, DEL));
+
+        normal  = normalize(make_float3(dx, dy, dz));
+
         rtReportIntersection( 0 );
       }
     }
@@ -320,7 +324,7 @@ RT_PROGRAM void bounds (int, float result[6])
 // Julia set shader.
 //
 
-RT_PROGRAM void julia_ch_radiance()
+RT_PROGRAM void radiance()
 {
   const float3 p = ray.origin + isect_t * ray.direction;
 
@@ -333,7 +337,7 @@ RT_PROGRAM void julia_ch_radiance()
 
   for( int i=0; i<4; ++i ) {
     const float dist = delta * i;
-    occlusion -= fact * (dist - distance(p+dist*normal));
+    occlusion -= fact * (dist - distancehit_hook(p+dist*normal));
     fact *= 0.5f;
   }
 
@@ -341,16 +345,54 @@ RT_PROGRAM void julia_ch_radiance()
   occlusion *= occlusion;
   occlusion = clamp( occlusion, 0.2f, 1.0f );
 
-  float3 result = shade_hook(p, normal, prd_radiance.iter);
+  float3 red   = normal*0.5f + make_float3(0.5f);
+  float3 green = red;
+  float3 blue  = red;
 
-  prd_radiance.result = result;
-  prd_radiance.result = ray.direction;
+
+//   red/orange
+  red.x = abs(normal.x)*0.5f + 0.5f;
+  red.x = max( red.x, 0.1f );
+  red = red * make_float3( 0.8f, 0.1f+red.x, 0.1f );
+  red.y += 0.2f * red.x;
+  red.x += 0.6f;
+  red.x *= max(occlusion,0.8f);
+  red.y *= occlusion;
+  red.z *= occlusion;
+
+  // green
+  green.x = abs(normal.x)*0.5f + 0.5f;
+  green.z = -abs(normal.z)*0.5f + 0.5f;
+  green.y = green.y * 0.7f + 0.3f;
+  green = green * make_float3( 0.9f*green.y*green.y, 1.0f, 0.2f );
+  green.x += 0.2f;
+  green.x *= green.x;
+  green.x *= occlusion;
+  green.y = max(0.3f,green.y*occlusion);
+  green.z *= occlusion;
+
+  // blue
+  blue.x = abs(normal.x)*0.5f + 0.5f;
+  blue.y = abs(normal.y)*0.5f + 0.5f;
+  blue.z = -abs(normal.z)*0.5f + 0.5f;
+  blue.z = blue.z * 0.7f + 0.3f;
+  blue.x += 0.2f;
+  blue.y += 0.2f;
+  blue = blue * make_float3( 0.9f*blue.y*blue.y, 1.0f*blue.z*blue.y, 1.0f );
+  blue.z += 0.3f;
+  blue.x *= blue.z * max(0.3f,occlusion);
+  blue.y *= occlusion;
+  blue.z = blue.z * max(0.6f,occlusion);
+
+  //float3 result = shade_hook(p, normal, prd_radiance.iter);
+
+  prd_radiance.result = blue;
   prd_radiance.result_nrm = normal;//normalize( rtTransformNormal(RT_OBJECT_TO_WORLD, normal) )*0.5f + 0.5f;
   prd_radiance.result_world = p;
   prd_radiance.result_depth = length(p - eye) / 100.0;
 }
 
-RT_PROGRAM void julia_ah_shadow()
+RT_PROGRAM void shadow()
 {
   // this material is opaque, so it fully attenuates all shadow rays
   prd_shadow.attenuation = make_float3(0);

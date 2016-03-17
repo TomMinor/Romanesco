@@ -323,7 +323,7 @@ RT_PROGRAM void bounds (int, float result[6])
 // Julia set shader.
 //
 
-RT_PROGRAM void julia_ch_radiance()
+RT_PROGRAM void radiance()
 {
   const float3 p = ray.origin + isect_t * ray.direction;
 
@@ -443,13 +443,13 @@ RT_PROGRAM void julia_ch_radiance()
 //      result =  lerp(new_prd.result + new_prd2.result, result, 0.05);//lerp( new_prd.result * occlusion, result, 0 );
 //  }
 
-  prd_radiance.result = result;
+  prd_radiance.result = normal;
   prd_radiance.result_nrm = normal;//normalize( rtTransformNormal(RT_OBJECT_TO_WORLD, normal) )*0.5f + 0.5f;
   prd_radiance.result_world = p;
   prd_radiance.result_depth = length(p - eye) / 100.0;
 }
 
-RT_PROGRAM void julia_ah_shadow()
+RT_PROGRAM void shadow()
 {
   // this material is opaque, so it fully attenuates all shadow rays
   prd_shadow.attenuation = make_float3(0);

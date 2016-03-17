@@ -4,7 +4,7 @@
 //#include <SDL_haptic.h>
 
 #include <QSurfaceFormat>
-#include <shaderwindow.h>
+//#include <shaderwindow.h>
 
 #include <mainwindow.h>
 

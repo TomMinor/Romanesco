@@ -1,7 +1,7 @@
 #ifndef DISTANCEOPNODE_H
 #define DISTANCEOPNODE_H
 
-#include "qneblock.h"
+#include "nodegraph/qneblock.h"
 
 #include "Base_SDFOP.h"
 
