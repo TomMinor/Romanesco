@@ -124,8 +124,9 @@ void MainWindow::timerEvent(QTimerEvent *_event)
 
 void MainWindow::graphUpdated()
 {
-    qDebug() << nodeEditor->parseGraph().c_str();
-    glwidget->m_optixScene->createGeometry( nodeEditor->parseGraph() );
+    std::string src = nodeEditor->parseGraph().c_str();
+    qDebug() << src.c_str();
+    glwidget->m_optixScene->createGeometry( src );
 }
 
 MainWindow::~MainWindow()
