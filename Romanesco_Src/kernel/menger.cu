@@ -19,12 +19,15 @@
  * SUCH DAMAGES
  */
 
+
 #include <optix.h>
 #include <optix_device.h>
 #include <optixu/optixu_math_namespace.h>
 #include <optixu/optixu_matrix_namespace.h>
 #include <optixu/optixu_aabb_namespace.h>
 #include "distance_field.h"
+
+#include "DistanceFieldUtils.h"
 
 using namespace optix;
 
@@ -130,69 +133,20 @@ static __host__ __device__ bool intersectBoundingSphere( float3 o, float3 d, flo
   return false;
 }
 
-__host__ __device__
-float udBox( float3 p, float3 b )
-{
-  return length( make_float3( 
-                        max( fabs(p.x) - b.x, 0.0),
-                        max( fabs(p.y) - b.y, 0.0),
-                        max( fabs(p.z) - b.z, 0.0)
-                          ) );
-}
+//__host__ __device__
+//float udBox( float3 p, float3 b )
+//{
+//  return length( make_float3(
+//                        max( fabs(p.x) - b.x, 0.0),
+//                        max( fabs(p.y) - b.y, 0.0),
+//                        max( fabs(p.z) - b.z, 0.0)
+//                          ) );
+//}
 
-
-__device__ float3 max(float3 _a, float _b)
-{
-  float a = fmaxf(_a.x, _b);
-  float b = fmaxf(_a.y, _b);
-  float c = fmaxf(_a.z, _b);
-
-  return make_float3(a,b,c);
-}
-
-__device__ float3 min(float3 _a, float _b)
-{
-  float a = fminf(_a.x, _b);
-  float b = fminf(_a.y, _b);
-  float c = fminf(_a.z, _b);
-
-  return make_float3(a,b,c);
-}
-
-__device__ float3 myfabs(float3 _p)
-{
-    return make_float3( fabs(_p.x), fabs(_p.y), fabs(_p.z) );
-}
-
-__device__ float sdBox( float3 p, float3 _b )
-{
-  //vec3 d = abs(p) - b;
-  float3 d = myfabs(p) - _b;
-
-  float a = max(d.y, d.z);
-  float b = max(d.x, a);
-
-  return min(b, 0.0f) + length( max(d, 0.0f) );
-  // return min(max(d.x,max(d.y,d.z)),0.0) +
-  //        length(max(d,0.0));
-}
-
-__device__ float sdSphere( float3 p, float s )
-{
-  return length(p) - s;
-}
-
-__host__ __device__
-float smin( float a, float b, float k )
-{
-    float h = clamp( 0.5f + 0.5f *  (b - a) / k, 0.0f, 1.0f );
-    return lerp( b, a, h ) - k*h*(1.0-h);
-}
-
-__device__ float maxcomp(float3 _p )
-{
-    return max(_p.x,max(_p.y, _p.z));
-}
+//__device__ float maxcomp(float3 _p )
+//{
+//    return max(_p.x,max(_p.y, _p.z));
+//}
 
 
 
@@ -215,21 +169,6 @@ __device__ float sdCross(float3 _p)
     return min(da, min(db, dc));
 }
 
-//http://stackoverflow.com/questions/7610631/glsl-mod-vs-hlsl-fmod
-__device__ float3 myfmod(float3 _p, float _s)
-{
-    return make_float3(
-                    fabs( fmod(_p.x, _s) ),
-                    fabs( fmod(_p.y, _s) ),
-                    fabs( fmod(_p.z, _s) )
-                );
-}
-
-__device__ float3 pMod(float3 _p, float d)
-{
-    return myfmod(_p, d) - (d * 0.5f);
-}
-
 
 __device__ float map(float3 _p)
 {
@@ -238,10 +177,10 @@ __device__ float map(float3 _p)
     float s = 1.0;
     for(int m=0; m<5; m++)
     {
-        float3 a = myfmod(_p * s, 2.0f) - make_float3(1.0f);
+        float3 a = fmod(_p * s, 2.0f) - make_float3(1.0f);
         s *= 3.0;
 
-        float3 r = ( make_float3(1.0) - ( make_float3(3.0) * myfabs(a)));
+        float3 r = ( make_float3(1.0) - ( make_float3(3.0) * fabs(a)));
 
         float c = (float)sdCross(r) / (float)s;
 
@@ -250,7 +189,6 @@ __device__ float map(float3 _p)
 
     return d;
 }
-
 
 
 __device__ float fracf(float x)

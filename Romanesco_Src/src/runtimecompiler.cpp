@@ -34,6 +34,7 @@ RuntimeCompiler::RuntimeCompiler(const std::string &_name, const std::string _so
     : m_result(nullptr)
 {
     std::vector<const char*> opts;
+    opts.push_back("--define-macro=ROMANESCO_RUNTIME_COMPILE");
     opts.push_back("--gpu-architecture=compute_20");
     opts.push_back("-rdc=true");
     opts.push_back("-I./kernel");

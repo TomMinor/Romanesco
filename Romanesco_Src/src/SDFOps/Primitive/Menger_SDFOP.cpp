@@ -1,8 +1,6 @@
 #include "Menger_SDFOP.h"
 
 static const std::vector<Argument> args = {
-    {"a", ReturnType::Float, "0.0f"},
-    {"b", ReturnType::Float, "0.0f"}
 };
 
 MengerSDFOp::MengerSDFOp() :

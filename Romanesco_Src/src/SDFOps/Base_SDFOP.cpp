@@ -11,6 +11,7 @@ BaseSDFOP::BaseSDFOP()
     // Everything will probably need this
     m_headers.insert( "cutil_math.h" );
     m_headers.insert( "globals.h" );
+    m_headers.insert( "DistanceFieldUtils.h" );
     m_returnType = ReturnType::Void;
 }
 
