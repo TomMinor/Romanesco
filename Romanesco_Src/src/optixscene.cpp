@@ -559,7 +559,7 @@ hookPtxFunction( const std::string& _ptxPath,
 {
     // Compile function source to ptx
     RuntimeCompiler program(_functionName, _functionSource);
-//    qDebug() << program.getResult();
+    qDebug() << program.getResult();
     // Convert the runtime compiled ptx to a vector of strings
     std::vector<std::string> hit_ptx = StringToVector( program.getResult() );
 

@@ -89,7 +89,7 @@ bool QNodeGraph::eventFilter(QObject *o, QEvent *e)
                         }
                     case Qt::Key_X:
                         {
-                            BaseSDFOP* op = new Mandelbulb_SDFOP();
+                            BaseSDFOP* op = new MengerSDFOp();
                             DistanceOpNode *c = new DistanceOpNode(op, scene, 0);
 
                             break;
@@ -253,6 +253,7 @@ __device__ float distancehit_hook(float3 p)
 
     // Quick fix
     BaseSDFOP::m_headers.insert("globals.h");
+//    BaseSDFOP::m_headers.insert( "DistanceFieldUtils.h" );
 
     // Generate all the includes
     for(const auto& header: BaseSDFOP::m_headers)
