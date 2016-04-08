@@ -89,7 +89,7 @@ bool QNodeGraph::eventFilter(QObject *o, QEvent *e)
                         }
                     case Qt::Key_X:
                         {
-                            BaseSDFOP* op = new MengerSDFOp();
+                            BaseSDFOP* op = new Mandelbulb_SDFOP();
                             DistanceOpNode *c = new DistanceOpNode(op, scene, 0);
 
                             break;
@@ -229,8 +229,10 @@ std::string QNodeGraph::parseGraph()
 {
     std::string hit_src = R"(
 extern "C" {
-__device__ float distancehit_hook(float3 p)
+__device__ float distancehit_hook(float3 p, float3* test)
 {
+            float3 arse = test[0];
+
             Globals vars;
             // Initialise globals
             vars.P = p;

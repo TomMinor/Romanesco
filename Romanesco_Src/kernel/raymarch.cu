@@ -42,7 +42,7 @@ __attribute__ ((noinline)) __device__ float3 shade_hook(
 }
 
 extern  __device__ float distancehit_hook(
-        float3 p
+        float3 p, float3* test
         );
 
 }
@@ -71,6 +71,10 @@ rtDeclareVariable(float3, normal, attribute normal, );
 // sphere outputs this
 rtDeclareVariable(float3, shading_normal, attribute shading_normal, ); 
 rtDeclareVariable(float3, shading_normal2, attribute shading_normal2, ); 
+
+
+// @todo Add the buffers for the GUI controls so we can update in real time
+rtBuffer<float3, 1> test;
 
 
 struct PerRayData_radiance
@@ -278,7 +282,7 @@ RT_PROGRAM void intersect(int primIdx)
     for( step = 0; step < maxSteps; ++step )
     {
       //dist = distance( x );
-      dist = distancehit_hook(x);
+      dist = distancehit_hook(x, &test[0]);
 
       // Step along the ray and accumulate the distance from the origin.
       x += dist * ray_direction;
@@ -299,9 +303,9 @@ RT_PROGRAM void intersect(int primIdx)
         distance.m_max_iterations = 6;
         //normal = estimate_normal(distance, x, DEL);
 
-        float dx = distancehit_hook(x + make_float3(DEL,    0,   0)) - distancehit_hook(x - make_float3(DEL,   0,   0));
-        float dy = distancehit_hook(x + make_float3(  0,  DEL,   0)) - distancehit_hook(x - make_float3(  0, DEL,   0));
-        float dz = distancehit_hook(x + make_float3(  0,    0, DEL)) - distancehit_hook(x - make_float3(  0,   0, DEL));
+        float dx = distancehit_hook(x + make_float3(DEL,    0,   0), &test[0]) - distancehit_hook(x - make_float3(DEL,   0,   0), &test[0]);
+        float dy = distancehit_hook(x + make_float3(  0,  DEL,   0), &test[0]) - distancehit_hook(x - make_float3(  0, DEL,   0), &test[0]);
+        float dz = distancehit_hook(x + make_float3(  0,    0, DEL), &test[0]) - distancehit_hook(x - make_float3(  0,   0, DEL), &test[0]);
 
         normal  = normalize(make_float3(dx, dy, dz));
 
@@ -337,7 +341,7 @@ RT_PROGRAM void radiance()
 
   for( int i=0; i<4; ++i ) {
     const float dist = delta * i;
-    occlusion -= fact * (dist - distancehit_hook(p+dist*normal));
+    occlusion -= fact * (dist - distancehit_hook(p+dist*normal, &test[0]));
     fact *= 0.5f;
   }
 
