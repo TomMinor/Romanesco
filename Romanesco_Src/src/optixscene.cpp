@@ -331,12 +331,10 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height)
     //sprintf( path_to_ptx, "%s/%s", "ptx", "draw.cu.ptx" );
 //    std::string ptx_path_str(  );
     optix::Program ray_gen_program = m_context->createProgramFromPTXFile( "ptx/pinhole_camera.cu.ptx", "pinhole_camera" );
-//    optix::Program ray_gen_program = m_context->createProgramFromPTXFile( "ptx/pinhole_camera.cu.ptx", "env_camera" );
-    m_context->setRayGenerationProgram( 0, ray_gen_program );
-
-    // Exception
     optix::Program exception_program = m_context->createProgramFromPTXFile( "ptx/pinhole_camera.cu.ptx", "exception" );
+    m_context->setRayGenerationProgram( 0, ray_gen_program );
     m_context->setExceptionProgram( 0, exception_program );
+
     m_context["bad_color"]->setFloat( 1.0f, 1.0f, 0.0f );
 
     // Miss program
@@ -365,6 +363,19 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height)
     light_buffer->unmap();
 
     m_context["lights"]->set(light_buffer);
+
+
+    float3 test_data[] = {
+        { 1.0f, 0.0f, 0.0f },
+        { 0.0f, 1.0f, 0.0f },
+        { 0.0f, 0.0f, 1.0f }
+    };
+
+    optix::Buffer test_buffer = m_context->createBuffer(RT_BUFFER_INPUT, RT_FORMAT_FLOAT3, sizeof(test_data)/sizeof(test_data[0]) );
+    memcpy( test_buffer->map(), test_data, sizeof(test_data) );
+    test_buffer->unmap();
+
+    m_context["test"]->set(test_buffer);
 
     // Create scene geom
     createGeometry();
@@ -551,11 +562,10 @@ bool findFunction(std::vector<std::string>& _lines,
 #include <sstream>
 #include <algorithm>
 
-bool
-hookPtxFunction( const std::string& _ptxPath,
-                      const std::string& _functionName,
-                      const std::string& _functionSource,
-                      std::string& _result)
+bool hookPtxFunction(  const std::string& _ptxPath,
+                                      const std::string& _functionName,
+                                      const std::string& _functionSource,
+                                      std::string& _result)
 {
     // Compile function source to ptx
     RuntimeCompiler program(_functionName, _functionSource);
@@ -568,7 +578,6 @@ hookPtxFunction( const std::string& _ptxPath,
 
 
     /* Process ptx code to be patched into the optix ptx */
-
 
     // This particular function (seems to be related to the CUDA runtime API) always seems to be the last of the API stuff,
     // so we can (hopefully) safely ignore anything prior to it and only copy the functions defined after it.
@@ -630,16 +639,29 @@ hookPtxFunction( const std::string& _ptxPath,
 
 void OptixScene::createGeometry(std::string _hit_src)
 {
-    std::string sphere_hit_src =
-            "#include \"cutil_math.h\" \n"
-            "extern \"C\" {\n "
-            "__device__ float distancehit_hook("
-                    "float3 x"
-                    ")\n"
-            "{"
-                "return length(x) - 1.0f;\n"
-            "}\n"
-            "}\n";
+//    std::string sphere_hit_src =
+//            "#include \"cutil_math.h\" \n"
+//            "extern \"C\" {\n "
+//            "__device__ float distancehit_hook("
+//                    "float3 x, float3* test"
+//                    ")\n"
+//            "{"
+//                "return length(x) - 1.0f;\n"
+//            "}\n"
+//            "}\n";
+
+    std::string sphere_hit_src = R"(
+#include "cutil_math.h"
+extern "C" {
+__device__ float distancehit_hook(float3 p, float3* test)
+{
+            float3 arse = test[0];
+
+            return length(p) - 1.0f;
+}
+}
+)";
+
 
     std::string hit_src = (_hit_src == "") ? sphere_hit_src : _hit_src;
 

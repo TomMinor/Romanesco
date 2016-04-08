@@ -18,7 +18,7 @@ using namespace optix;
 #include "pinholecamera.h"\
 
 struct RayGenCameraData
-  {
+{
     RayGenCameraData() {}
     RayGenCameraData( const optix::float3& m_eye, const optix::float3& m_U, const optix::float3& m_V, const optix::float3& m_W )
       : eye(m_eye), U(m_U), V(m_V), W(m_W) {}
@@ -26,29 +26,29 @@ struct RayGenCameraData
     optix::float3 U;
     optix::float3 V;
     optix::float3 W;
-  };
+};
 
 struct InitialCameraData
 {
-  InitialCameraData() {}
-  InitialCameraData( optix::float3 m_eye, optix::float3 m_lookat, optix::float3 m_up, float  m_vfov )
+    InitialCameraData() {}
+    InitialCameraData( optix::float3 m_eye, optix::float3 m_lookat, optix::float3 m_up, float  m_vfov )
     : eye(m_eye), lookat(m_lookat), up(m_up), vfov(m_vfov) {}
 
-  optix::float3 eye;
-  optix::float3 lookat;
-  optix::float3 up;
-  float  vfov;
+    optix::float3 eye;
+    optix::float3 lookat;
+    optix::float3 up;
+    float  vfov;
 };
 
 class OptixScene
 {
 public:
     OptixScene(unsigned int _width, unsigned int _height);
-    ~OptixScene();
+    virtual ~OptixScene();
 
-    void updateBufferSize(unsigned int _width, unsigned int _height);
-    void drawToBuffer();
-    void createGeometry(std::string _hit_src = "");
+    virtual void updateBufferSize(unsigned int _width, unsigned int _height);
+    virtual void drawToBuffer();
+    virtual void createGeometry(std::string _hit_src = "");
 
     optix::Buffer createOutputBuffer(RTformat _format, unsigned int _width, unsigned int _height);
 
@@ -57,6 +57,7 @@ public:
     void setVar(const std::string& _name, optix::float3 _v);
     void setVar(const std::string& _name, optix::Matrix4x4 _v);
 
+    /*
     void testSceneUpdate(int count)
     {
         optix::Program julia_ch = m_context->createProgramFromPTXFile( "ptx/julia.cu.ptx", "julia_ch_radiance" );
@@ -109,6 +110,7 @@ public:
         m_context["top_object"]->set( topgroup );
         m_context["top_shadower"]->set( m_geometrygroup );
     }
+    */
 
     InitialCameraData camera_data;
     optix::GeometryGroup m_geometrygroup;

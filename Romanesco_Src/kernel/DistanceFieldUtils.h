@@ -94,16 +94,20 @@ inline float3 min(float3 _a, float _b)
   return make_float3(a,b,c);
 }
 
+#ifndef ROMANESCO_RUNTIME_COMPILE
+
 ///
 /// \brief fabs float3 overload of fabs
 /// \param _p
 /// \return
 ///
-//__device__
-//inline float3 fabs(float3 _p)
-//{
-//    return make_float3( fabs(_p.x), fabs(_p.y), fabs(_p.z) );
-//}
+__device__
+inline float3 fabs(float3 _p)
+{
+    return make_float3( fabs(_p.x), fabs(_p.y), fabs(_p.z) );
+}
+
+#endif
 
 
 /* SDF Primitives */
