@@ -68,6 +68,9 @@ LIBS += -lpthread -lIlmImf -lHalf
 
 macx:INCLUDEPATH+=/usr/local/include/
 unix:LIBS += -L/usr/local/lib
+unix:LIBS += -L/home/i7245143/local/lib
+
+LIBS += -lSeExpr -lSeExprOp
 
 
 CUDA_SOURCES += kernel/*.cu
