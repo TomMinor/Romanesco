@@ -41,6 +41,11 @@ class DistanceOpNode;
 
 #include "gui/nodes/distanceopnode.h"
 
+///@todo
+/// * Move all parsing code into a separate class
+/// * Subclass the qnodeeditor into SDFNodeEditor (potentially also MaterialNodeEditor and CameraNodeEditor)
+/// * Make a proper parser
+
 namespace {
 
 ///
@@ -109,7 +114,7 @@ public:
     std::string parseGraph();
 
 signals:
-    void graphChanged();
+    void graphChanged(); // Primarily used by mainwindow to link up graph changes to recompilation
 
 private:
 	QGraphicsItem *itemAt(const QPointF&);

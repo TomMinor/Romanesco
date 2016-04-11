@@ -36,6 +36,8 @@ public:
 private:
     //QMatrix4x4 m_projection;
 
+    bool m_updateCamera;
+
     int testctr;
 
     QOpenGLShaderProgram *m_program;

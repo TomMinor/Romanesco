@@ -35,6 +35,11 @@
 #include "runtimecompiler.h"
 
 
+///@todo
+/// * Move ALL image stuff into it's own OIIO based class
+/// * Split this into a simple base class and derive from that, OptixScene -> OptixSceneAdaptive -> OptixScenePathTracer
+/// * All camera stuff should be moved into it's own, simpler class
+
 struct Image
 {
 public:
@@ -298,17 +303,23 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height)
     /// =============================================================
 
     m_context = optix::Context::create();
-    m_context->setRayTypeCount( 2 );
+    m_context->setRayTypeCount( 3 );
     m_context->setEntryPointCount( 1 );
-    m_context->setStackSize(1280);
+    m_context->setStackSize( 1800 );
 
     m_context["max_depth"]->setInt( 5 );
-    m_context["radiance_ray_type"]->setUint( 0u );
-    m_context["shadow_ray_type"]->setUint( 1u );
+//    m_context["radiance_ray_type"]->setUint( 0u );
+//    m_context["shadow_ray_type"]->setUint( 1u );
     m_context["scene_epsilon"]->setFloat( 1.e-4f );
     m_context["color_t"]->setFloat( 0.0f );
     m_context["shadowsActive"]->setUint( 0u );
     m_context["global_t"]->setFloat( 0u );
+
+    m_context["scene_epsilon"]->setFloat( 1.e-3f );
+    m_context["pathtrace_ray_type"]->setUint(0u);
+    m_context["pathtrace_shadow_ray_type"]->setUint(1u);
+    m_context["pathtrace_bsdf_shadow_ray_type"]->setUint(2u);
+    m_context["rr_begin_depth"]->setUint(m_rr_begin_depth);
 
     updateBufferSize(_width, _height);
 
@@ -330,8 +341,9 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height)
 
     //sprintf( path_to_ptx, "%s/%s", "ptx", "draw.cu.ptx" );
 //    std::string ptx_path_str(  );
-    optix::Program ray_gen_program = m_context->createProgramFromPTXFile( "ptx/pinhole_camera.cu.ptx", "pinhole_camera" );
-    optix::Program exception_program = m_context->createProgramFromPTXFile( "ptx/pinhole_camera.cu.ptx", "exception" );
+//    optix::Program ray_gen_program = m_context->createProgramFromPTXFile( "ptx/pinhole_camera.cu.ptx", "pinhole_camera" );
+    optix::Program ray_gen_program = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "pathtrace_camera" );
+    optix::Program exception_program = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "exception" );
     m_context->setRayGenerationProgram( 0, ray_gen_program );
     m_context->setExceptionProgram( 0, exception_program );
 
@@ -347,6 +359,20 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height)
     m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/i7245143/src/optix/SDK/tutorial/data/CedarCity.hdr", default_color) );
 //    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/tom/src/Fragmentarium/Fragmentarium-Source/Examples/Include/Ditch-River_2k.hdr", default_color) );
     //m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/tom/Downloads/Milkyway/Milkyway_small.hdr", default_color) );
+
+
+    m_rr_begin_depth = 1u;
+    m_sqrt_num_samples = 1u;
+    m_camera_changed = true;
+
+
+    // Setup path tracer
+    m_context["sqrt_num_samples"]->setUint( m_sqrt_num_samples );
+    m_context["frame_number"]->setUint(1);
+
+    // Index of sampling_stategy (BSDF, light, MIS)
+    m_sampling_strategy = 2;
+    m_context["sampling_stategy"]->setInt(m_sampling_strategy);
 
 
     // Setup lights
@@ -417,6 +443,8 @@ void OptixScene::setCamera(optix::float3 _eye, /*optix::float3 _lookat, */float 
     m_context["V"]->setFloat( optix::make_float3(0, 1, 0) );
     m_context["W"]->setFloat( optix::make_float3(0, 0, 1) );
 
+    m_camera_changed = true;
+
 //    m_camera->getEyeUVW( eye, U, V, W );
 
 //    m_context["eye"]->setFloat( eye );
@@ -444,9 +472,9 @@ void OptixScene::setVar(const std::string& _name, optix::Matrix4x4 _v )
 void OptixScene::updateBufferSize(unsigned int _width, unsigned int _height)
 {
     static std::vector<std::string> bufferNames = { "output_buffer",
-                                                    "output_buffer_nrm",
+                                                    /*"output_buffer_nrm",
                                                     "output_buffer_depth",
-                                                    "output_buffer_world" };
+                                                    "output_buffer_world" */};
 
     for( auto& bufferName : bufferNames )
     {
@@ -636,9 +664,51 @@ bool hookPtxFunction(  const std::string& _ptxPath,
 #include "DomainOp/Transform_SDFOP.h"
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "path_tracer/path_tracer.h"
+
+GeometryInstance createParallelogram( optix::Context* m_context,
+                                      optix::Program* m_pgram_bounding_box,
+                                      optix::Program* m_pgram_intersection,
+                                      const float3& anchor,
+                                      const float3& offset1,
+                                      const float3& offset2)
+{
+  Geometry parallelogram = (*m_context)->createGeometry();
+  parallelogram->setPrimitiveCount( 1u );
+  parallelogram->setIntersectionProgram( *m_pgram_intersection );
+  parallelogram->setBoundingBoxProgram( *m_pgram_bounding_box );
+
+  float3 normal = normalize( cross( offset1, offset2 ) );
+  float d = dot( normal, anchor );
+  float4 plane = make_float4( normal, d );
+
+  float3 v1 = offset1 / dot( offset1, offset1 );
+  float3 v2 = offset2 / dot( offset2, offset2 );
+
+  parallelogram["plane"]->setFloat( plane );
+  parallelogram["anchor"]->setFloat( anchor );
+  parallelogram["v1"]->setFloat( v1 );
+  parallelogram["v2"]->setFloat( v2 );
+
+  GeometryInstance gi = (*m_context)->createGeometryInstance();
+  gi->setGeometry(parallelogram);
+  return gi;
+}
+
+void setMaterial( GeometryInstance& gi,
+                                   Material material,
+                                   const std::string& color_name,
+                                   const float3& color)
+{
+  gi->addMaterial(material);
+  gi[color_name]->setFloat(color);
+}
+
+#define DEMO
 
 void OptixScene::createGeometry(std::string _hit_src)
 {
+#ifndef DEMO
 //    std::string sphere_hit_src =
 //            "#include \"cutil_math.h\" \n"
 //            "extern \"C\" {\n "
@@ -676,21 +746,30 @@ __device__ float distancehit_hook(float3 p, float3* test)
         qWarning("Patching failed");
         return;
     }
+#endif
 
     ///@todo Optix error checking
     optix::Geometry julia = m_context->createGeometry();
     julia->setPrimitiveCount( 1u );
 
+#ifndef DEMO
     julia->setBoundingBoxProgram( m_context->createProgramFromPTXString( ptx, "bounds" ) );
     julia->setIntersectionProgram( m_context->createProgramFromPTXString( ptx, "intersect" ) );
 
     optix::Program julia_ch = m_context->createProgramFromPTXString( ptx, "radiance" );
     optix::Program julia_ah = m_context->createProgramFromPTXString( ptx, "shadow" );
+#else
+    julia->setBoundingBoxProgram( m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "bounds" ) );
+    julia->setIntersectionProgram( m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "intersect" ) );
+
+//    optix::Program julia_ch = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "julia_ch_radiance" );
+//    optix::Program julia_ah = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "julia_ah_shadow" );
+#endif
 
     // Julia material
-    optix::Material julia_matl = m_context->createMaterial();
-    julia_matl->setClosestHitProgram( 0, julia_ch );
-    julia_matl->setAnyHitProgram( 1, julia_ah );
+//    optix::Material julia_matl = m_context->createMaterial();
+//    julia_matl->setClosestHitProgram( 0, julia_ch );
+//    julia_matl->setAnyHitProgram( 1, julia_ah );
 
     m_context["Ka"]->setFloat(0.5f,0.0f,0.0f);
     m_context["Kd"]->setFloat(.6f, 0.1f, 0.1f);
@@ -698,22 +777,103 @@ __device__ float distancehit_hook(float3 p, float3* test)
     m_context["phong_exp"]->setFloat(32);
     m_context["reflectivity"]->setFloat(.4f, .4f, .4f);
 
-    std::vector<optix::GeometryInstance> gis;
-    gis.push_back( m_context->createGeometryInstance( julia,  &julia_matl, &julia_matl+1 ) );
+    ParallelogramLight light;
+    light.corner   = make_float3( 343.0f, 548.6f, 227.0f);
+    light.v1       = make_float3( -130.0f, 0.0f, 0.0f);
+    light.v2       = make_float3( 0.0f, 0.0f, 105.0f);
+    light.normal   = normalize( cross(light.v1, light.v2) );
+    light.emission = make_float3( 100.0f );
 
-    m_geometrygroup = m_context->createGeometryGroup();
-    m_geometrygroup->setChildCount( 1 );
-    m_geometrygroup->setChild( (int)0, m_context->createGeometryInstance( julia,  &julia_matl, &julia_matl+1 ));
+    Buffer light_buffer = m_context->createBuffer( RT_BUFFER_INPUT );
+    light_buffer->setFormat( RT_FORMAT_USER );
+    light_buffer->setElementSize( sizeof( ParallelogramLight ) );
+    light_buffer->setSize( 1u );
+    memcpy( light_buffer->map(), &light, sizeof( light ) );
+    light_buffer->unmap();
+    m_context["lights"]->setBuffer( light_buffer );
+
+    std::vector<optix::GeometryInstance> gis;
+
+    GeometryInstance gi = m_context->createGeometryInstance();
+    gi->setGeometry(julia);
+
+    std::string ptx_path = "/home/i7245143/src/optix/build/lib/ptx/path_tracer_generated_parallelogram.cu.ptx";
+    auto m_pgram_bounding_box = m_context->createProgramFromPTXFile( ptx_path, "bounds" );
+    auto m_pgram_intersection = m_context->createProgramFromPTXFile( ptx_path, "intersect" );
+
+
+    const float3 white = make_float3( 0.8f, 0.8f, 0.8f );
+    const float3 green = make_float3( 0.05f, 0.8f, 0.05f );
+    const float3 red   = make_float3( 0.8f, 0.05f, 0.05f );
+    const float3 light_em = make_float3( 15.0f, 15.0f, 5.0f );
+
+    Material diffuse = m_context->createMaterial();
+    Program diffuse_ch = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "diffuse" );
+    Program diffuse_ah = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "shadow" );
+    diffuse->setClosestHitProgram( 0, diffuse_ch );
+    diffuse->setAnyHitProgram( 1, diffuse_ah );
+
+//    m_geometrygroup = m_context->createGeometryGroup();
+//    m_geometrygroup->setChildCount( 1 );
+//    m_geometrygroup->setChild( (int)0, m_context->createGeometryInstance( julia,  &julia_matl, &julia_matl+1 ));
+//    m_geometrygroup->setAcceleration( m_context->createAcceleration("NoAccel","NoAccel") );
+
+
+    Material diffuse_light = m_context->createMaterial();
+    Program diffuse_em = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "diffuseEmitter" );
+    diffuse_light->setClosestHitProgram( 0, diffuse_em );
+
+    gis.push_back( gi );
+    setMaterial(gis.back(), diffuse, "diffuse_color", white);
+
+    // Floor
+//    gis.push_back( createParallelogram( &m_context,
+//                                        &m_pgram_bounding_box,
+//                                        &m_pgram_intersection,
+//                                        make_float3( 0.0f, 0.0f, 0.0f ),
+//                                        make_float3( 0.0f, 0.0f, 559.2f ),
+//                                        make_float3( 556.0f, 0.0f, 0.0f ) ) );
+//    setMaterial(gis.back(), diffuse, "diffuse_color", white);
+//    gis.push_back( gi );
+//    setMaterial(gis.back(), diffuse, "diffuse_color", red);
+
+
+    // Create shadow group (no light)
+    GeometryGroup shadow_group = m_context->createGeometryGroup(gis.begin(), gis.end());
+    shadow_group->setAcceleration( m_context->createAcceleration("NoAccel","NoAccel") );
+    m_context["top_shadower"]->set( shadow_group );
+
+    // Light
+    gis.push_back( createParallelogram( &m_context,
+                                        &m_pgram_bounding_box,
+                                        &m_pgram_intersection,
+                                        make_float3( -2500, 2000.0, -2500),
+                                        make_float3( 5000.0f, 0.0f, 0.0f),
+                                        make_float3( 0.0f, 0.0f, 5000.0f) ) );
+    setMaterial(gis.back(), diffuse_light, "emission_color", light_em);
+
+    GeometryGroup m_geometrygroup = m_context->createGeometryGroup();
+    m_geometrygroup->setChildCount( static_cast<unsigned int>(gis.size()) );
+    for(size_t i = 0; i < gis.size(); ++i) {
+      m_geometrygroup->setChild( (int)i, gis[i] );
+    }
     m_geometrygroup->setAcceleration( m_context->createAcceleration("NoAccel","NoAccel") );
 
+
     // Top level group
-    optix::Group topgroup = m_context->createGroup();
+    Group topgroup = m_context->createGroup();
     topgroup->setChildCount( 1 );
     topgroup->setChild( 0, m_geometrygroup );
-    topgroup->setAcceleration( m_context->createAcceleration("NoAccel","NoAccel") );
+    //topgroup->setChild( 1, floor_gg );
+    topgroup->setAcceleration( m_context->createAcceleration("Bvh","Bvh") );
 
-    m_context["top_object"]->set( topgroup );
+
+    m_context["top_object"]->set( m_geometrygroup );
     m_context["top_shadower"]->set( m_geometrygroup );
+
+
+
+
 
     float  m_alpha;
     float  m_delta;
@@ -741,6 +901,13 @@ OptixScene::~OptixScene()
 
 void OptixScene::drawToBuffer()
 {
+    if( m_camera_changed ) {
+        m_camera_changed = false;
+        m_frame = 1;
+    }
+
+    m_context["frame_number"]->setUint( m_frame++ );
+
     RTsize buffer_width, buffer_height;
     m_context["output_buffer"]->getBuffer()->getSize( buffer_width, buffer_height );
     m_context->launch( 0,
@@ -807,6 +974,10 @@ void OptixScene::drawToBuffer()
 
   //      float u = 0.5f/buffer_width;
   //      float v = 0.5f/buffer_height;
+    }
+    else
+    {
+        assert("Couldn't bind GL Buffer Object");
     }
 
     /// ===========================================================

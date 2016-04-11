@@ -10,6 +10,8 @@ TestGLWidget::TestGLWidget(QWidget *parent)
     m_desiredCamRot = m_camRot = QVector3D(-0.301546, 0.399876, 0);
 
     testctr = 0;
+
+    m_updateCamera = true;
 }
 
 TestGLWidget::~TestGLWidget()
@@ -89,16 +91,35 @@ void TestGLWidget::resizeGL(int w, int h)
 //        m_projection.setToIdentity();
 //        m_projection.perspective(60.0f, w / float(h), 0.01f, 1000.0f);
 
-    //if( m_previousHeight != height() || m_previousWidth != width() )
+//    qDebug() << m_previousHeight << height() << ", " << m_previousWidth << width() << ", " << m_updateCamera;
+
+    if( m_previousHeight != height() || m_previousWidth != width() )
     {
         m_previousHeight = height();
         m_previousWidth = width();
 
         if(m_optixScene)
         {
+            m_updateCamera = true;
             m_optixScene->updateBufferSize( width(), height() );
         }
+    } else {
+        m_updateCamera = false;
     }
+}
+
+#define EPSILON 0.01
+
+bool AreSame(double a, double b)
+{
+    return std::fabs(a - b) < EPSILON;
+}
+
+bool AreSame(QVector3D a, QVector3D b)
+{
+    return (    fabs(a.x() - b.x()) < EPSILON &&
+                fabs(a.y() - b.y()) < EPSILON &&
+                fabs(a.z() - b.z()) < EPSILON );
 }
 
 void TestGLWidget::paintGL()
@@ -166,16 +187,30 @@ void TestGLWidget::paintGL()
     m_camRot.setY( FInterpTo( m_camRot.y(), m_desiredCamRot.y(), m_frame, 0.00025) );
     m_camRot.setZ( FInterpTo( m_camRot.z(), m_desiredCamRot.z(), m_frame, 0.00025) );
 
+    qDebug() << m_updateCamera;
+
     if(m_optixScene)
     {
-        m_optixScene->setVar("global_t", m_frame);
 
-        m_optixScene->setVar("normalmatrix", normalmatrix);
-        m_optixScene->setCamera(  optix::make_float3( m_camPos.x(), m_camPos.y(), m_camPos.z() ),
-                                  90.0f,
-                                  width(), height()
-                                  );
+        if(m_updateCamera)
+        {
+            m_optixScene->setVar("global_t", m_frame);
+
+            m_optixScene->setVar("normalmatrix", normalmatrix);
+            m_optixScene->setCamera(  optix::make_float3( m_camPos.x(), m_camPos.y(), m_camPos.z() ),
+                                      90.0f,
+                                      width(), height()
+                                      );
+        }
     }
+
+    if(AreSame(m_camPos, m_desiredCamPos))
+    {
+        m_updateCamera = false;
+    } else {
+        m_updateCamera = true;
+    }
+
 
     const qreal retinaScale = devicePixelRatio();
     glViewport(0, 0, width() * retinaScale, height() * retinaScale);
