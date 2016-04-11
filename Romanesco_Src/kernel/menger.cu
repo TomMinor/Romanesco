@@ -26,6 +26,8 @@
 #include <optixu/optixu_matrix_namespace.h>
 #include <optixu/optixu_aabb_namespace.h>
 #include "distance_field.h"
+#include "path_tracer.h"
+#include "random.h"
 
 #include "DistanceFieldUtils.h"
 
@@ -56,28 +58,152 @@ rtDeclareVariable(float3, normal, attribute normal, );
 // sphere outputs this
 rtDeclareVariable(float3, shading_normal, attribute shading_normal, ); 
 rtDeclareVariable(float3, shading_normal2, attribute shading_normal2, ); 
+rtDeclareVariable(float3, geometric_normal, attribute geometric_normal, );
 
+rtBuffer<float4, 2>              output_buffer;
+rtBuffer<float4, 2>              output_buffer_nrm;
+rtBuffer<float4, 2>              output_buffer_depth;
+rtBuffer<float4, 2>              output_buffer_world;
 
-struct PerRayData_radiance
+rtDeclareVariable(uint2, launch_index, rtLaunchIndex, );
+rtDeclareVariable(uint2, launch_dim,   rtLaunchDim, );
+rtDeclareVariable(float, time_view_scale, , ) = 1e-6f;
+
+rtDeclareVariable(Matrix4x4, normalmatrix, , );
+rtDeclareVariable(float3,        U, , );
+rtDeclareVariable(float3,        V, , );
+rtDeclareVariable(float3,        W, , );
+rtDeclareVariable(float3,        bad_color, , );
+rtDeclareVariable(float,         scene_epsilon, , );
+
+rtDeclareVariable(rtObject,                         top_object, , );
+rtDeclareVariable(float, isect_t, rtIntersectionDistance, );
+//rtDeclareVariable(PerRayData_radiance, prd_radiance, rtPayload, );
+//rtDeclareVariable(PerRayData_shadow,   prd_shadow,   rtPayload, );
+
+rtDeclareVariable(unsigned int,  pathtrace_ray_type, , );
+rtDeclareVariable(unsigned int,  pathtrace_shadow_ray_type, , );
+rtDeclareVariable(unsigned int,  rr_begin_depth, , );
+
+rtDeclareVariable(unsigned int,  frame_number, , );
+rtDeclareVariable(unsigned int,  sqrt_num_samples, , );
+
+rtDeclareVariable(float,      t_hit,        rtIntersectionDistance, );
+
+//struct PerRayData_radiance
+//{
+//  float3 result;
+//  float3 result_nrm;
+//  float3 result_world;
+//  float result_depth;
+//  int depth;
+
+//  int iter;
+//};
+
+struct PerRayData_pathtrace
 {
   float3 result;
   float3 result_nrm;
   float3 result_world;
   float result_depth;
-  float  importance;
-  int iter;
   int depth;
-};
 
-struct PerRayData_shadow
-{
+  float3 origin;
+  float3 radiance;
+  float3 direction;
+  unsigned int seed;
+  int countEmitted;
+  int done;
+  int inside;
+
   float3 attenuation;
 };
 
-rtDeclareVariable(rtObject,                         top_object, , );
-rtDeclareVariable(float, isect_t, rtIntersectionDistance, );
-rtDeclareVariable(PerRayData_radiance, prd_radiance, rtPayload, );
-rtDeclareVariable(PerRayData_shadow,   prd_shadow,   rtPayload, );
+struct PerRayData_pathtrace_shadow
+{
+  bool inShadow;
+};
+
+rtDeclareVariable(PerRayData_pathtrace, current_prd, rtPayload, );
+rtDeclareVariable(PerRayData_pathtrace, prd_radiance, rtPayload, );
+
+
+//struct PerRayData_shadow
+//{
+//  float3 attenuation;
+//  bool inShadow;
+//};
+
+
+
+
+RT_PROGRAM void exception()
+{
+  output_buffer[launch_index] = make_float4(bad_color, 0.0f);
+}
+
+
+RT_PROGRAM void pathtrace_camera()
+{
+    size_t2 screen = output_buffer.size();
+
+    float2 inv_screen = 1.0f/make_float2(screen) * 2.f;
+    float2 pixel = (make_float2(launch_index)) * inv_screen - 1.f;
+
+    float2 jitter_scale = inv_screen / sqrt_num_samples;
+    unsigned int samples_per_pixel = sqrt_num_samples*sqrt_num_samples;
+    float3 result = make_float3(0.0f);
+
+    unsigned int seed = tea<16>(screen.x*launch_index.y+launch_index.x, frame_number);
+    do {
+        unsigned int x = samples_per_pixel%sqrt_num_samples;
+        unsigned int y = samples_per_pixel/sqrt_num_samples;
+        float2 jitter = make_float2(x-rnd(seed), y-rnd(seed));
+        float2 d = pixel + jitter*jitter_scale;
+        float3 ray_origin = eye;
+        float3 ray_direction = normalize(d.x*U + d.y*V + W);
+
+        ray_direction = make_float3((make_float4(ray_direction, 1.0) * normalmatrix));
+        ray_direction = normalize(ray_direction);
+
+
+        PerRayData_pathtrace prd;
+        prd.result = make_float3(0.f);
+        prd.attenuation = make_float3(1.0);
+        prd.radiance = make_float3(0.0);
+        prd.countEmitted = true;
+        prd.done = false;
+        prd.seed = seed;
+        prd.depth = 0;
+
+        Ray ray = make_Ray(ray_origin, ray_direction, pathtrace_ray_type, scene_epsilon, RT_DEFAULT_MAX);
+        rtTrace(top_object, ray, prd);
+
+        result += prd.result;
+        seed = prd.seed;
+    } while (--samples_per_pixel);
+
+    float3 pixel_color = result/(sqrt_num_samples*sqrt_num_samples);
+
+    if (frame_number > 1){
+        float a = 1.0f / (float)frame_number;
+        float b = ((float)frame_number - 1.0f) * a;
+        float3 old_color = make_float3(output_buffer[launch_index]);
+        output_buffer[launch_index] = make_float4(a * pixel_color + b * old_color, 0.0f);
+    }
+    else{
+        output_buffer[launch_index] = make_float4(pixel_color, 0.0f);
+    }
+}
+
+static __device__ inline float3 powf(float3 a, float exp)
+{
+  return make_float3(powf(a.x, exp), powf(a.y, exp), powf(a.z, exp));
+}
+
+
+
 
 
 // Quaternion helpers.
@@ -389,7 +515,7 @@ RT_PROGRAM void intersect(int primIdx)
       {
         // color HACK
         distance.m_max_iterations = 14;  // more iterations for normal estimate, to fake some more detail
-        normal = estimate_normal(distance, x, DEL);
+        geometric_normal = shading_normal = normal = estimate_normal(distance, x, DEL);
         rtReportIntersection( 0 );
       }
     }
@@ -409,173 +535,190 @@ RT_PROGRAM void bounds (int, float result[6])
 // Julia set shader.
 //
 
+rtBuffer<ParallelogramLight>     lights;
+
 RT_PROGRAM void julia_ch_radiance()
 {
-  const float3 p = ray.origin + isect_t * ray.direction;
+    if (current_prd.depth > 5){
+        current_prd.done = true;
+        return;
 
-  // ambient occlusion
-  JuliaSet distance( max_iterations );
-  float occlusion = 1.f;
-  float fact = 7.f;
-  const float delta = 0.05f;
-  for( int i=0; i<4; ++i ) {
-    const float dist = delta * i;
-    occlusion -= fact * (dist - distance(p+dist*normal));
-    fact *= 0.5f;
-  }
-  occlusion += 0.3f;
-  occlusion *= occlusion;
-  occlusion = clamp( occlusion, 0.2f, 1.0f );
+    }
+    float3 world_shading_normal   = normalize( rtTransformNormal( RT_OBJECT_TO_WORLD, shading_normal ) );
+    float3 world_geometric_normal = normalize( rtTransformNormal( RT_OBJECT_TO_WORLD, geometric_normal ) );
 
-//   base colors
-  float3 red   = normal*0.5f + make_float3(0.5f);
-  float3 green = red;
-  float3 blue  = red;
+    float3 ffnormal = faceforward( world_shading_normal, -ray.direction, world_geometric_normal );
 
+    float3 hitpoint = ray.origin + t_hit * ray.direction;
 
-//   red/orange
-  red.x = abs(normal.x)*0.5f + 0.5f;
-  red.x = max( red.x, 0.1f );
-  red = red * make_float3( 0.8f, 0.1f+red.x, 0.1f );
-  red.y += 0.2f * red.x;
-  red.x += 0.6f;
-  red.x *= max(occlusion,0.8f);
-  red.y *= occlusion;
-  red.z *= occlusion;
-  
-  // green
-  green.x = abs(normal.x)*0.5f + 0.5f;
-  green.z = -abs(normal.z)*0.5f + 0.5f;
-  green.y = green.y * 0.7f + 0.3f;
-  green = green * make_float3( 0.9f*green.y*green.y, 1.0f, 0.2f );
-  green.x += 0.2f;
-  green.x *= green.x;
-  green.x *= occlusion;
-  green.y = max(0.3f,green.y*occlusion);
-  green.z *= occlusion;
+    float z1=rnd(current_prd.seed);
+    float z2=rnd(current_prd.seed);
+    float3 p;
+    cosine_sample_hemisphere(z1, z2, p);
+    float3 v1, v2;
+    createONB(ffnormal, v1, v2);
+    float3 ray_origin = hitpoint;
+    float3 ray_direction = v1 * p.x + v2 * p.y + ffnormal * p.z;
 
-  // blue
-  blue.x = abs(normal.x)*0.5f + 0.5f;
-  blue.y = abs(normal.y)*0.5f + 0.5f;
-  blue.z = -abs(normal.z)*0.5f + 0.5f;
-  blue.z = blue.z * 0.7f + 0.3f;
-  blue.x += 0.2f;
-  blue.y += 0.2f;
-  blue = blue * make_float3( 0.9f*blue.y*blue.y, 1.0f*blue.z*blue.y, 1.0f );
-  blue.z += 0.3f;
-  blue.x *= blue.z * max(0.3f,occlusion);
-  blue.y *= occlusion;
-  blue.z = blue.z * max(0.6f,occlusion);
+    // Compute attenuation
+    current_prd.attenuation = current_prd.attenuation;
+    // Compute radiance
+    // Compute direct lighting for environment map
 
-  // select color
-  float3 c0 = green;
-  float3 c1 = red;
-  float ct = color_t;
-  if( color_t > 1.0f ) {
-    c0 = red;
-    c1 = blue;
-    ct -= 1.0f;
-  }
-  float3 result = green; //dot(p,p) > ct*3.0f ? c0 : c1;
+    float3 result = make_float3(0.0f);
 
-  // add glow close to particle
-  const float part_dist = length( p-particle );
-  const float glow = 1.0f - smoothstep( 0.0f, 1.0f, part_dist );
-  result = result + make_float3(glow*0.4f);
+    unsigned int num_lights = lights.size();
 
-  // add phong highlight
-  const float3 l = make_float3( 1, 3, 1 );
-  const float3 h = normalize( l - ray.direction );
-  const float ndh = dot( normal, h );
-  if( ndh > 0.0f ) {
-    result = result + make_float3( 0.6f * occlusion * pow(ndh,20.0f) );
-  }
+    for(int i = 0; i < num_lights; ++i)
+    {
+      ParallelogramLight light = lights[i];
+      float z1 = rnd(current_prd.seed);
+      float z2 = rnd(current_prd.seed);
+      float3 light_pos = light.corner + light.v1 * z1 + light.v2 * z2;
 
-  //  float magic_ambient_occlusion(const float3 &x, const float3 &n,
-//                                const float del,
-//                                const float k,
-//                                Distance distance)
+      float Ldist = length(light_pos - hitpoint);
+      float3 L = normalize(light_pos - hitpoint);
+      float nDl = dot( ffnormal, L );
+      float LnDl = dot( light.normal, L );
+      float LnDlinverse = dot(-light.normal, L);
+      float A = length(cross(light.v1, light.v2));
 
-//  float ao = magic_ambient_occlusion( );
+      // cast shadow ray
+      if ( nDl > 0.0f && LnDl > 0.0f )
+      {
+        PerRayData_pathtrace_shadow shadow_prd;
+        shadow_prd.inShadow = false;
+        Ray shadow_ray = make_Ray( hitpoint, L, pathtrace_shadow_ray_type, scene_epsilon, Ldist );
+        rtTrace(top_object, shadow_ray, shadow_prd);
 
-  //result = make_float3( occlusion );
+        if(!shadow_prd.inShadow)
+        {
+          float weight=nDl * LnDl * A / (M_PIf*Ldist*Ldist);
+          result += light.emission * weight;
+        }
+      }
 
-  // Reflection (disabled, doesn't look too great)
+      // cast shadow ray for other side of light
+      if ( nDl > 0.0f && LnDlinverse > 0.0f )
+      {
+        PerRayData_pathtrace_shadow shadow_prd;
+        shadow_prd.inShadow = false;
+        Ray shadow_ray = make_Ray( hitpoint, L, pathtrace_shadow_ray_type, scene_epsilon, Ldist );
+        rtTrace(top_object, shadow_ray, shadow_prd);
 
-  //if( prd_radiance.depth < 5 )
-  //if( prd_radiance.depth < 5 )
-  {
-      PerRayData_radiance new_prd;
-      new_prd.importance = prd_radiance.importance;
-      new_prd.depth = prd_radiance.depth + 1;
-      new_prd.result = make_float3(1,0,0);
+        if(!shadow_prd.inShadow)
+        {
+          float weight=nDl * LnDlinverse * A / (M_PIf*Ldist*Ldist);
+          result += light.emission * weight;
+        }
+      }
+    }
 
-      float3 refl = make_float3(0,0,0);
-      refl = reflect( ray.direction, normal );
-      const optix::Ray refl_ray = optix::make_Ray( p, refl, 0, 1e-3f, RT_DEFAULT_MAX );
-      rtTrace( top_object, refl_ray, new_prd );
-
-      PerRayData_radiance new_prd2;
-      new_prd2.importance = prd_radiance.importance;
-      new_prd2.depth = prd_radiance.depth + 1;
-      new_prd2.result = make_float3(1,0,0);
-
-      float3 refr = make_float3(0,0,0);
-      refract( refr, ray.direction, normal, 1.3);
-      const optix::Ray refr_ray = optix::make_Ray( p, refr, 0, 1e-3f, RT_DEFAULT_MAX );
-      rtTrace( top_object, refr_ray, new_prd2 );
-
-//      result = (result * occlusion) + new_prd.result;
-      result = lerp(new_prd.result + new_prd2.result, result, 0.9);//lerp( new_prd.result * occlusion, result, 0 );
-  }
-
-  prd_radiance.result = result;
-  prd_radiance.result_nrm = normal;//normalize( rtTransformNormal(RT_OBJECT_TO_WORLD, normal) )*0.5f + 0.5f;
-  prd_radiance.result_world = p;
-  prd_radiance.result_depth = length(p - eye) / 100.0;
+    current_prd.done = true; // end the ray comming in
 }
 
 RT_PROGRAM void julia_ah_shadow()
 {
   // this material is opaque, so it fully attenuates all shadow rays
-  prd_shadow.attenuation = make_float3(0);
+//  prd_shadow.attenuation = make_float3(0);
   
   rtTerminateRay();
 }
 
+rtDeclareVariable(float3, emission_color, , );
+RT_PROGRAM void diffuseEmitter(){
+    if(current_prd.countEmitted){
+        current_prd.result = emission_color;
+    }
+    current_prd.done = true;
+}
+
+rtDeclareVariable(PerRayData_pathtrace_shadow, current_prd_shadow, rtPayload, );
+
+RT_PROGRAM void shadow()
+{
+  current_prd_shadow.inShadow = true;
+  rtTerminateRay();
+}
+
+
+rtDeclareVariable(float3,        diffuse_color, , );
+
+RT_PROGRAM void diffuse()
+{
+  float3 world_shading_normal   = normalize( rtTransformNormal( RT_OBJECT_TO_WORLD, shading_normal ) );
+  float3 world_geometric_normal = normalize( rtTransformNormal( RT_OBJECT_TO_WORLD, geometric_normal ) );
+
+  float3 ffnormal = faceforward( world_shading_normal, -ray.direction, world_geometric_normal );
+
+  float3 hitpoint = ray.origin + t_hit * ray.direction;
+  current_prd.origin = hitpoint;
+
+  float z1=rnd(current_prd.seed);
+  float z2=rnd(current_prd.seed);
+  float3 p;
+  cosine_sample_hemisphere(z1, z2, p);
+  float3 v1, v2;
+  createONB(ffnormal, v1, v2);
+  current_prd.direction = v1 * p.x + v2 * p.y + ffnormal * p.z;
+  float3 normal_color = (normalize(world_shading_normal)*0.5f + 0.5f)*0.9;
+  current_prd.attenuation = current_prd.attenuation * diffuse_color; // use the diffuse_color as the diffuse response
+  current_prd.countEmitted = false;
+
+  // Compute direct light...
+  // Or shoot one...
+  unsigned int num_lights = lights.size();
+  float3 result = make_float3(0.0f);
+
+  for(int i = 0; i < num_lights; ++i) {
+    ParallelogramLight light = lights[i];
+    float z1 = rnd(current_prd.seed);
+    float z2 = rnd(current_prd.seed);
+    float3 light_pos = light.corner + light.v1 * z1 + light.v2 * z2;
+
+    float Ldist = length(light_pos - hitpoint);
+    float3 L = normalize(light_pos - hitpoint);
+    float nDl = dot( ffnormal, L );
+    float LnDl = dot( light.normal, L );
+    float A = length(cross(light.v1, light.v2));
+
+    // cast shadow ray
+    if ( nDl > 0.0f && LnDl > 0.0f ) {
+      PerRayData_pathtrace_shadow shadow_prd;
+      shadow_prd.inShadow = false;
+      Ray shadow_ray = make_Ray( hitpoint, L, pathtrace_shadow_ray_type, scene_epsilon, Ldist );
+      rtTrace(top_object, shadow_ray, shadow_prd);
+
+      if(!shadow_prd.inShadow){
+        float weight=nDl * LnDl * A / (M_PIf*Ldist*Ldist);
+        result += light.emission * weight;
+      }
+    }
+  }
+
+  current_prd.result = result;
+  current_prd.done = true;
+}
+
+//-----------------------------------------------------------------------------
+//
+//  Miss program
+//
+//-----------------------------------------------------------------------------
+RT_PROGRAM void miss(){
+    current_prd.result = make_float3(0.0, 0.0, 0.0);
+    current_prd.done = true;
+}
 
 //
 // Chrome shader for force particle.
 //
 
-RT_PROGRAM void chrome_ch_radiance()
-{
-  float3 dir = ray.direction;
-  const float3 hit_point = ray.origin + isect_t * dir;
-
-  if( prd_radiance.depth < 3 )
-  {
-    PerRayData_radiance new_prd;             
-    new_prd.importance = prd_radiance.importance;
-    new_prd.depth = prd_radiance.depth + 1;
-    
-    const float3 refl = reflect( dir, shading_normal );
-    const optix::Ray refl_ray = optix::make_Ray( hit_point, refl, 0, 1e-3f, RT_DEFAULT_MAX );
-    rtTrace( top_object, refl_ray, new_prd );
-    const float fresnel = fresnel_schlick( dot(shading_normal,-dir), 5.0f, 0.3f, 1.0f );
-    const float diff = (shading_normal.y+1.f) * 0.5f;
-    prd_radiance.result = new_prd.result * fresnel
-      + make_float3(diff*diff*diff*0.1f);
-  } else {
-    prd_radiance.result = make_float3( 0 );
-  }
-}
-
 RT_PROGRAM void chrome_ah_shadow()
 {
-  // this material is opaque, so it fully attenuates all shadow rays
-  prd_shadow.attenuation = make_float3(0);
-  rtTerminateRay();
+//  // this material is opaque, so it fully attenuates all shadow rays
+  prd_radiance.attenuation = make_float3(0);
+//  rtTerminateRay();
 }
 
 rtTextureSampler<float4, 2> envmap;
@@ -585,5 +728,9 @@ RT_PROGRAM void envmap_miss()
   float phi   = M_PIf * 0.5f -  acosf( ray.direction.y );
   float u     = (theta + M_PIf) * (0.5f * M_1_PIf);
   float v     = 0.5f * ( 1.0f + sin(phi) );
-  prd_radiance.result = make_float3( tex2D(envmap, u, v) );
+//  prd_radiance.result = make_float3( tex2D(envmap, u, v) );
+
+  current_prd.done = true;
+  current_prd.result = make_float3( tex2D(envmap, u, v) );
+rtTerminateRay();
 }

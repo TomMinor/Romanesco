@@ -131,6 +131,13 @@ public:
     unsigned int vboId;
 
     float m_time;
+
+    unsigned int   m_rr_begin_depth;
+    unsigned int   m_sqrt_num_samples;
+    unsigned int   m_frame;
+    unsigned int   m_sampling_strategy;
+
+    bool m_camera_changed;
 };
 
 #endif // OPTIXSCENE_H
