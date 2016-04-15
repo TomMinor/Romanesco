@@ -1,4 +1,4 @@
-#include "optixsceneadaptive.h"
+#include "OptixSceneAdaptive.h"
 
 OptixSceneAdaptive::OptixSceneAdaptive(unsigned int _width, unsigned int _height)
     : OptixScene(_width, _height)

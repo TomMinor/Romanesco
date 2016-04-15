@@ -29,10 +29,10 @@
 
 #include <iostream>
 #include <boost/algorithm/string/join.hpp>
-
-#include "optixscene.h"
 #include <ImageLoader.h>
-#include "runtimecompiler.h"
+
+#include "OptixScene.h"
+#include "RuntimeCompiler.h"
 
 
 ///@todo
@@ -356,9 +356,9 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height)
     m_context->setMissProgram( 0, m_context->createProgramFromPTXFile( "ptx/raymarch.cu.ptx", "envmap_miss" ) );
 
     const optix::float3 default_color = optix::make_float3(1.0f, 1.0f, 1.0f);
-    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/i7245143/src/optix/SDK/tutorial/data/CedarCity.hdr", default_color) );
+//    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/i7245143/src/optix/SDK/tutorial/data/CedarCity.hdr", default_color) );
 //    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/tom/src/Fragmentarium/Fragmentarium-Source/Examples/Include/Ditch-River_2k.hdr", default_color) );
-    //m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/tom/Downloads/Milkyway/Milkyway_small.hdr", default_color) );
+    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/tom/Downloads/Milkyway/Milkyway_small.hdr", default_color) );
 
 
     m_rr_begin_depth = 1u;
@@ -797,7 +797,7 @@ __device__ float distancehit_hook(float3 p, float3* test)
     GeometryInstance gi = m_context->createGeometryInstance();
     gi->setGeometry(julia);
 
-    std::string ptx_path = "/home/i7245143/src/optix/build/lib/ptx/path_tracer_generated_parallelogram.cu.ptx";
+    std::string ptx_path = "/home/tom/src/optix/build/lib/ptx/path_tracer_generated_parallelogram.cu.ptx";
     auto m_pgram_bounding_box = m_context->createProgramFromPTXFile( ptx_path, "bounds" );
     auto m_pgram_intersection = m_context->createProgramFromPTXFile( ptx_path, "intersect" );
 

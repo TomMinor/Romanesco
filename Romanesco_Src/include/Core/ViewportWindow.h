@@ -4,9 +4,9 @@
 //#include <SDL.h>
 //#include <SDL_haptic.h>
 #include <QOpenGLShaderProgram>
-#include "openglwindow.h"
+#include "OpenGlWindow.h"
 
-#include "optixscene.h"
+#include "OptixScene.h"
 
 #include <stdlib.h>
 #include <stdio.h>

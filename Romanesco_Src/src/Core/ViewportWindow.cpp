@@ -8,9 +8,7 @@
 
 #include <optixu/optixu_math_namespace.h>
 
-#include "shaderwindow.h"
-//#include "rendermath.h"
-
+#include "ViewportWindow.h"
 ShaderWindow::ShaderWindow()
   : m_program(0), m_frame(0), m_optixScene(0), m_previousWidth(0), m_previousHeight(0)
 {

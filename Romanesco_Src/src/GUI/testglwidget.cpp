@@ -204,7 +204,7 @@ void TestGLWidget::paintGL()
         }
     }
 
-    if(AreSame(m_camPos, m_desiredCamPos))
+    if(AreSame(m_camPos, m_desiredCamPos) && AreSame(m_camRot, m_desiredCamRot))
     {
         m_updateCamera = false;
     } else {
