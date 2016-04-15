@@ -15,7 +15,7 @@ using namespace optix;
 #include <sutil/Mouse.h>
 
 #include "commonStructs.h"
-#include "pinholecamera.h"\
+#include "PinholeCamera.h"
 
 struct RayGenCameraData
 {

@@ -1,4 +1,4 @@
-#include "include/pinholecamera.h"
+#include "PinholeCamera.h"
 
 MyPinholeCamera::MyPinholeCamera(optix::float3 eye, optix::float3 lookat, optix::float3 up, float hfov, float vfov, AspectRatioMode arm)
   : eye(eye)

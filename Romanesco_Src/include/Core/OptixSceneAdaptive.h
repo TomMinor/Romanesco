@@ -1,7 +1,7 @@
 #ifndef OPTIXSCENEADAPTIVE_H
 #define OPTIXSCENEADAPTIVE_H
 
-#include "optixscene.h"
+#include "OptixScene.h"
 
 class OptixSceneAdaptive : public OptixScene
 {

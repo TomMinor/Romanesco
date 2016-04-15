@@ -1,7 +1,7 @@
 #include <fstream>
 #include <ostream>
 
-#include "include/runtimecompiler.h"
+#include "RuntimeCompiler.h"
 #include "macrohelpers.h"
 
 #ifndef NVRTC_AVAILABLE

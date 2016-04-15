@@ -23,10 +23,11 @@ QT+=gui opengl core
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-SOURCES += src/*.cpp \
-           src/gui/*.cpp \
-           src/gui/nodes/*.cpp \
-           src/gui/nodegraph/*.cpp \
+SOURCES += src/main.cpp \
+           src/Core/*.cpp \
+           src/GUI/*.cpp \
+           src/GUI/nodes/*.cpp \
+           src/GUI/nodegraph/*.cpp \
            src/SDFOps/*.cpp \
            src/SDFOps/DistDeformer/*.cpp \
            src/SDFOps/DistOp/*.cpp \
@@ -35,10 +36,10 @@ SOURCES += src/*.cpp \
            src/SDFOps/Primitive/*.cpp
 
  
-HEADERS += include/*.h \
-           include/gui/*.h \
-           include/gui/nodes/*.h \
-           include/gui/nodegraph/*.h \
+HEADERS += include/Core/*.h \
+           include/GUI/*.h \
+           include/GUI/nodes/*.h \
+           include/GUI/nodegraph/*.h \
            include/SDFOps/*.h \
            include/SDFOps/DistDeformer/*.h \
            include/SDFOps/DistOp/*.h \
@@ -49,14 +50,15 @@ HEADERS += include/*.h \
 OTHER_FILES += shaders/*
 
 
-INCLUDEPATH += ./include
-INCLUDEPATH += ./include/gui
+INCLUDEPATH += ./include/Core
+INCLUDEPATH += ./include/GUI
 INCLUDEPATH += ./include/SDFOps
 INCLUDEPATH += ./include/SDFOps/DistDeformer
 INCLUDEPATH += ./include/SDFOps/DomainDeformer
 INCLUDEPATH += ./include/SDFOps/DistOp
 INCLUDEPATH += ./include/SDFOps/DomainOp
 INCLUDEPATH += ./include/SDFOps/Primitive
+INCLUDEPATH += ./include
 
 INCLUDEPATH += /opt/local/include
 DESTDIR=./
@@ -70,7 +72,7 @@ macx:INCLUDEPATH+=/usr/local/include/
 unix:LIBS += -L/usr/local/lib
 unix:LIBS += -L/home/i7245143/local/lib
 
-LIBS += -lSeExpr -lSeExprOp
+#LIBS += -lSeExpr
 
 
 CUDA_SOURCES += kernel/*.cu

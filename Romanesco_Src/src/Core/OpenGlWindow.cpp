@@ -1,4 +1,4 @@
-#include "openglwindow.h"
+#include "OpenGlWindow.h"
 
 #include <QPainter>
 #include <QDebug>
