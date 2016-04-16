@@ -127,140 +127,9 @@ void writeRGBA2(std::string fileName, std::vector<Image> _layers)
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 static const unsigned int WIDTH = 1280;
 static const unsigned int HEIGHT = 720;
 
-enum AnimState {
-  ANIM_ALL,       // full auto
-  ANIM_JULIA,     // manual camera
-  ANIM_NONE       // pause all
-};
-static AnimState animstate = ANIM_ALL;
-
-
-// Encapulates the state of the floor
-struct FloorState
-{
-  FloorState()
-    : m_t( 0 )
-  {}
-
-  void update( double t )
-  {
-    if( animstate==ANIM_NONE )
-      return;
-    m_t += t * 0.3f;
-  }
-
-  double m_t;
-};
-
-// Moving force particle.
-struct Particle
-{
-  Particle()
-    : m_pos( optix::make_float3(1,1,0) )
-    , m_t( 0 )
-  {}
-
-  void update( double t )
-  {
-    if( animstate==ANIM_NONE )
-      return;
-    m_t += t * 0.3f;
-    m_pos.x = (float)( sin( m_t ) * cos( m_t*0.2 ) );
-    m_pos.y = (float)sin( m_t*2.5 );
-    m_pos.z = (float)( cos( m_t*1.8 ) * sin( m_t ) );
-  }
-
-  optix::float3 m_pos;
-  double m_t;
-};
-
-// Animated parameter quaternion.
-static const int nposes = 12;
-static const optix::float4 poses[nposes] = {
-  {-0.5f, 0.1f, 0.2f, 0.3f },
-  {-0.71f, 0.31f, -0.02f, 0.03f },
-  {-0.5f, 0.1f, 0.59f, 0.03f },
-  { -0.5f, -0.62f, 0.2f, 0.3f },
-  {-0.57f, 0.04f, -0.17f, 0.36f },
-  {0.0899998f, -0.71f, -0.02f, 0.08f },
-  {-0.19f, -0.22f, -0.79f, 0.03f },
-  {0.49f, 0.48f, -0.38f, -0.11f },
-  {-0.19f, 0.04f, 0.0299999f, 0.77f },
-  { 0.0299998f, -1.1f, -0.03f, -0.1f },
-  {0.45f, 0.04f, 0.56f, -0.00999998f },
-  { -0.5f, -0.61f, -0.08f, -0.00999998f }
-};
-struct ParamQuat
-{
-  ParamQuat()
-    : m_c( optix::make_float4( -0.5f, 0.1f, 0.2f, 0.3f ) )
-    , m_t( 0 )
-  {}
-
-  void update( double t )
-  {
-    if( animstate==ANIM_NONE )
-      return;
-    m_t += t * 0.03f;
-    const float rem   = fmodf( (float)m_t, (float)nposes );
-    const int   p0    = (int)rem;
-    const int   p1    = (p0+1) % nposes;
-    const float lin   = rem - (float)p0;
-    const float blend = optix::smoothstep( 0.0f, 1.0f, lin );
-    m_c = optix::lerp( poses[p0], poses[p1], blend );
-  }
-
-  optix::float4 m_c;
-  double m_t;
-};
-
-// Animated camera.
-struct AnimCamera
-{
-  AnimCamera()
-    : m_pos( optix::make_float3(0) )
-    , m_aspect( (float)WIDTH/(float)HEIGHT )
-    , m_t( 0 )
-  {}
-
-  void update( double t )
-  {
-    m_t += t * 0.1;
-    m_pos.y = (float)( 2 + sin( m_t*1.5 ) );
-    m_pos.x = (float)( 2.3*sin( m_t ) );
-    m_pos.z = (float)( 0.5+2.1*cos( m_t ) );
-  }
-
-  void apply( optix::Context context )
-  {
-    MyPinholeCamera pc( m_pos, optix::make_float3(0), optix::make_float3(0,1,0), 60.f, 60.f/m_aspect );
-    optix::float3 eye, u, v, w;
-    pc.getEyeUVW( eye, u, v, w );
-    context["eye"]->setFloat( eye );
-    context["U"]->setFloat( u );
-    context["V"]->setFloat( v );
-    context["W"]->setFloat( w );
-  }
-
-  optix::float3 m_pos;
-  float  m_aspect;
-  double m_t;
-};
 
 optix::Buffer OptixScene::createOutputBuffer(RTformat _format, unsigned int _width, unsigned int _height)
 {
@@ -323,10 +192,10 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height)
 
     updateBufferSize(_width, _height);
 
-    camera_data = InitialCameraData( optix::make_float3( 3.0f, 2.0f, -3.0f ), // eye
-                                     optix::make_float3( 0.0f, 0.3f,  0.0f ), // lookat
-                                     optix::make_float3( 0.0f, 1.0f,  0.0f ), // up
-                                     60.0f );                          // vfov
+//    camera_data = InitialCameraData( optix::make_float3( 3.0f, 2.0f, -3.0f ), // eye
+//                                     optix::make_float3( 0.0f, 0.3f,  0.0f ), // lookat
+//                                     optix::make_float3( 0.0f, 1.0f,  0.0f ), // up
+//                                     60.0f );                          // vfov
 
     // Declare camera variables.  The values do not matter, they will be overwritten in trace.
     m_context["eye"]->setFloat( optix::make_float3( 0.0f, 0.0f, 0.0f ) );
@@ -406,12 +275,12 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height)
     // Create scene geom
     createGeometry();
 
-    m_camera = new MyPinholeCamera( camera_data.eye,
-                                  camera_data.lookat,
-                                  camera_data.up,
-                                  -1.0f, // hfov is ignored when using keep vertical
-                                  camera_data.vfov,
-                                  MyPinholeCamera::KeepVertical );
+//    m_camera = new MyPinholeCamera( camera_data.eye,
+//                                  camera_data.lookat,
+//                                  camera_data.up,
+//                                  -1.0f, // hfov is ignored when using keep vertical
+//                                  camera_data.vfov,
+//                                  MyPinholeCamera::KeepVertical );
 
 //    setCamera( camera_data.eye,
 //               camera_data.lookat,
@@ -428,15 +297,15 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height)
 
 void OptixScene::setCamera(optix::float3 _eye, /*optix::float3 _lookat, */float _fov, int _width, int _height)
 {
-    m_camera->setParameters( _eye,
-                             optix::make_float3(0,0,0),
-                             camera_data.up,
-                             _fov, // hfov is ignored when using keep vertical
-                             _fov,
-                             MyPinholeCamera::KeepHorizontal );
+//    m_camera->setParameters( _eye,
+//                             optix::make_float3(0,0,0),
+//                             camera_data.up,
+//                             _fov, // hfov is ignored when using keep vertical
+//                             _fov,
+//                             MyPinholeCamera::KeepHorizontal );
 
-    optix::float3 eye, U, V, W;
-    m_camera->setAspectRatio( static_cast<float>(_width)/static_cast<float>(_height) );
+//    optix::float3 eye, U, V, W;
+//    m_camera->setAspectRatio( static_cast<float>(_width)/static_cast<float>(_height) );
 
     m_context["eye"]->setFloat( _eye );
     m_context["U"]->setFloat( optix::make_float3(1, 0, 0) );

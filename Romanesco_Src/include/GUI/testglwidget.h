@@ -8,7 +8,7 @@
 
 #include <QKeyEvent>
 
-#include "optixscene.h"
+#include "OptixScene.h"
 
 class TestGLWidget : public QOpenGLWidget, protected QOpenGLFunctions
 {

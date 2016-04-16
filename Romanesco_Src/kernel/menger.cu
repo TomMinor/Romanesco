@@ -380,7 +380,7 @@ struct JuliaSet
     const float sq_threshold = 2.0f;   // divergence threshold
 
     float oscillatingTime = sin(global_t / 256.0f );
-    float p = (5.0f * abs(oscillatingTime)) + 3.0f; //8;
+    float p = 4.0; //(5.0f * abs(oscillatingTime)) + 3.0f; //8;
     float rad = 0.0f;
     float dist = 0.0f;
     float d = 1.0;

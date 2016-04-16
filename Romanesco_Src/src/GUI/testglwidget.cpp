@@ -1,7 +1,7 @@
 #include <QDir>
 
 #include "testglwidget.h"
-#include "rendermath.h"
+#include "RenderMath.h"
 
 TestGLWidget::TestGLWidget(QWidget *parent)
   : QOpenGLWidget(parent), m_optixScene(0), m_program(0), m_frame(0), m_previousWidth(0), m_previousHeight(0)
