@@ -17,28 +17,6 @@ using namespace optix;
 #include "commonStructs.h"
 #include "PinholeCamera.h"
 
-struct RayGenCameraData
-{
-    RayGenCameraData() {}
-    RayGenCameraData( const optix::float3& m_eye, const optix::float3& m_U, const optix::float3& m_V, const optix::float3& m_W )
-      : eye(m_eye), U(m_U), V(m_V), W(m_W) {}
-    optix::float3 eye;
-    optix::float3 U;
-    optix::float3 V;
-    optix::float3 W;
-};
-
-struct InitialCameraData
-{
-    InitialCameraData() {}
-    InitialCameraData( optix::float3 m_eye, optix::float3 m_lookat, optix::float3 m_up, float  m_vfov )
-    : eye(m_eye), lookat(m_lookat), up(m_up), vfov(m_vfov) {}
-
-    optix::float3 eye;
-    optix::float3 lookat;
-    optix::float3 up;
-    float  vfov;
-};
 
 class OptixScene
 {
@@ -112,7 +90,7 @@ public:
     }
     */
 
-    InitialCameraData camera_data;
+//    InitialCameraData camera_data;
     optix::GeometryGroup m_geometrygroup;
 
     /* Primary RTAPI objects */

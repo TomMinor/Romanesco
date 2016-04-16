@@ -39,7 +39,7 @@ class QNEBlock;
 class DistanceOpNode;
 
 
-#include "gui/nodes/distanceopnode.h"
+#include "nodes/distanceopnode.h"
 
 ///@todo
 /// * Move all parsing code into a separate class
