@@ -19,9 +19,108 @@ CONFIG -= app_bundle
 # Force debug for now
 QMAKE_CXXFLAGS += -g
 
-QT+=gui opengl core
+QT+= core gui opengl
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+
+
+#SOURCES += \
+#src/main.cpp \
+#\
+#src/Core/OptixScene.cpp \
+#src/Core/NodeParser.cpp \
+#src/Core/OptixSceneAdaptive.cpp \
+#src/Core/PinholeCamera.cpp \
+#src/Core/RuntimeCompiler.cpp \
+#src/Core/ViewportWindow.cpp \
+#src/Core/RenderMath.cpp \
+#src/Core/ImageWriter.cpp \
+#src/Core/OpenGlWindow.cpp \
+#src/Core/stringutilities.cpp \
+#\
+#src/GUI/gridscene.cpp \
+#src/GUI/mainwindow.cpp \
+#src/GUI/qtimelinewidget.cpp \
+#src/GUI/testglwidget.cpp \
+#src/GUI/qtimeslider.cpp \
+#\
+#src/GUI/nodegraph/qneblock.cpp \
+#src/GUI/nodegraph/qneconnection.cpp \
+#src/GUI/nodegraph/qneport.cpp \
+#src/GUI/nodegraph/qnodeseditor.cpp \
+#\
+#src/GUI/nodes/distanceopnode.cpp \
+#src/GUI/nodes/terminatenode.cpp \
+#\
+#src/SDFOps/Base_SDFOP.cpp \
+#src/SDFOps/DistDeformer/Blend_SDFOP.cpp \
+#src/SDFOps/DistDeformer/Displace_SDFOP.cpp \
+#src/SDFOps/DistOp/DistOpInterface_SDFOP.cpp \
+#src/SDFOps/DistOp/Intersection_SDFOP.cpp \
+#src/SDFOps/DistOp/Subtraction_SDFOP.cpp \
+#src/SDFOps/DistOp/Union_SDFOP.cpp \
+#\
+#src/SDFOps/DomainDeformer/Twist_SDFOP.cpp \
+#src/SDFOps/DomainDeformer/Bend_SDFOP.cpp \
+#\
+#src/SDFOps/Primitive/Bend_SDFOP.cpp \
+#src/SDFOps/Primitive/Box_SDFOP.cpp \
+#src/SDFOps/Primitive/Capsule_SDFOP.cpp \
+#src/SDFOps/Primitive/Cone_SDFOP.cpp \
+#src/SDFOps/Primitive/Cylinder_SDFOP.cpp \
+#src/SDFOps/Primitive/Mandelbulb_SDFOP.cpp \
+#src/SDFOps/Primitive/Menger_SDFOP.cpp \
+#src/SDFOps/Primitive/Sphere_SDFOP.cpp \
+#src/SDFOps/Primitive/Torus_SDFOP.cpp \
+#src/SDFOps/Primitive/Twist_SDFOP.cpp
+
+#HEADERS += \
+#include/Core/OptixScene.h \
+#include/Core/NodeParser.h \
+#include/Core/OptixSceneAdaptive.h \
+#include/Core/PinholeCamera.h \
+#include/Core/RuntimeCompiler.h \
+#include/Core/ViewportWindow.h \
+#include/Core/RenderMath.h \
+#include/Core/ImageWriter.h \
+#include/Core/OpenGlWindow.h \
+#include/Core/stringutilities.h \
+#\
+#include/GUI/gridscene.h \
+#include/GUI/mainwindow.h \
+#include/GUI/testglwidget.h \
+#include/GUI/qtimeslider.h \
+#include/GUI/qtimelineanimated.h \
+#\
+#include/GUI/nodegraph/qneblock.h \
+#include/GUI/nodegraph/qneconnection.h \
+#include/GUI/nodegraph/qneport.h \
+#include/GUI/nodegraph/qnodeseditor.h \
+#\
+#include/GUI/nodes/distanceopnode.h \
+#include/GUI/nodes/terminatenode.h \
+#\
+#include/SDFOps/Base_SDFOP.h \
+#include/SDFOps/DistDeformer/Blend_SDFOP.h \
+#include/SDFOps/DistDeformer/Displace_SDFOP.h \
+#include/SDFOps/DistOp/DistOpInterface_SDFOP.h \
+#include/SDFOps/DistOp/Intersection_SDFOP.h \
+#include/SDFOps/DistOp/Subtraction_SDFOP.h \
+#include/SDFOps/DistOp/Union_SDFOP.h \
+#\
+#include/SDFOps/DomainDeformer/Twist_SDFOP.h \
+#include/SDFOps/DomainDeformer/Bend_SDFOP.h \
+#\
+#include/SDFOps/Primitive/Bend_SDFOP.h \
+#include/SDFOps/Primitive/Box_SDFOP.h \
+#include/SDFOps/Primitive/Capsule_SDFOP.h \
+#include/SDFOps/Primitive/Cone_SDFOP.h \
+#include/SDFOps/Primitive/Cylinder_SDFOP.h \
+#include/SDFOps/Primitive/Mandelbulb_SDFOP.h \
+#include/SDFOps/Primitive/Menger_SDFOP.h \
+#include/SDFOps/Primitive/Sphere_SDFOP.h \
+#include/SDFOps/Primitive/Torus_SDFOP.h \
+#include/SDFOps/Primitive/Twist_SDFOP.h
 
 SOURCES += src/main.cpp \
            src/Core/*.cpp \
@@ -34,7 +133,7 @@ SOURCES += src/main.cpp \
            src/SDFOps/DomainOp/*.cpp \
            src/SDFOps/DomainDeformer/*.cpp \
            src/SDFOps/Primitive/*.cpp
- 
+
 HEADERS += include/Core/*.h \
                        include/GUI/*.h \
                        include/GUI/nodes/*.h \
@@ -44,8 +143,7 @@ HEADERS += include/Core/*.h \
                        include/SDFOps/DistOp/*.h \
                        include/SDFOps/DomainOp/*.h \
                        include/SDFOps/DomainDeformer/*.h \
-                       include/SDFOps/Primitive/*.h \
-                        include/Core/stringutilities.h
+                       include/SDFOps/Primitive/*.h
 
 OTHER_FILES += shaders/*
 

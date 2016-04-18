@@ -35,10 +35,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 #include "nodegraph/qneport.h"
 
 #include "nodes/distanceopnode.h"
-
 #include "gridscene.h"
-#include "testglwidget.h"
-#include "qtimelinewidget.h"
+
+#include "qtimelineanimated.h"
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent)
@@ -72,40 +71,40 @@ MainWindow::MainWindow(QWidget *parent) :
     setWindowTitle(tr("Node Editor"));
 
 
-    QDockWidget *dock = new QDockWidget(tr("Hierarchy"), this);
-    dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+    QWidget* window = new QWidget(this);
+    QVBoxLayout* layout = new QVBoxLayout(window);
+//    layout->setMargin(0);
+
+    QSplitter* splitter = new QSplitter(window);
 
     scene = new GridScene(-1000, -1000, 2000, 2000);
-
-    view = new QGraphicsView(dock);
+    view = new QGraphicsView(splitter);
     view->setScene(scene);
     //view->setViewport(new QOpenGLWidget);
 
     view->setRenderHint(QPainter::Antialiasing, true);
     view->setRenderHint(QPainter::HighQualityAntialiasing, true);
 
-    dock->setWidget(view);
-    addDockWidget(Qt::RightDockWidgetArea, dock);
-
-    QDockWidget *dockGL = new QDockWidget(tr("Viewport"), this);
-    dockGL->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-
-    glwidget = 0;
-    glwidget = new TestGLWidget(dockGL);
-
-    dockGL->setWidget(glwidget);
-    addDockWidget(Qt::LeftDockWidgetArea, dockGL);
-
-
     nodeEditor = new QNodeGraph(this);
     nodeEditor->install(scene);
 
     connect(nodeEditor, SIGNAL(graphChanged()), this, SLOT(graphUpdated()) );
 
-    //DistanceOpNode *c = new DistanceOpNode("Union", scene, 0);
+    glwidget = 0;
+    glwidget = new TestGLWidget(splitter);
+    glwidget->setMinimumWidth(640);
+    glwidget->setMinimumHeight(480);
 
-//    b = b->clone();
-//    b->setPos(150, 150);
+    splitter->addWidget(glwidget);
+    splitter->addWidget(view);
+
+    QAnimatedTimeline* timeline = new QAnimatedTimeline;
+
+    layout->addWidget(splitter);
+    layout->addWidget(timeline);
+    window->setLayout(layout);
+
+    setCentralWidget(window);
 
     m_updateTimer = startTimer(30);
     m_drawTimer = startTimer(30);

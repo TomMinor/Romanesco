@@ -12,7 +12,7 @@ using namespace optix;
 #include <cuda.h>
 #include <cuda_runtime.h>
 
-#include <sutil/Mouse.h>
+//#include <sutil/Mouse.h>
 
 #include "commonStructs.h"
 #include "PinholeCamera.h"
