@@ -49,6 +49,8 @@ HEADERS += include/Core/*.h \
 
 OTHER_FILES += shaders/*
 
+RESOURCES += \
+    romanesco.qrc
 
 INCLUDEPATH += ./include/Core
 INCLUDEPATH += ./include/GUI
@@ -59,8 +61,8 @@ INCLUDEPATH += ./include/SDFOps/DistOp
 INCLUDEPATH += ./include/SDFOps/DomainOp
 INCLUDEPATH += ./include/SDFOps/Primitive
 INCLUDEPATH += ./include
-
 INCLUDEPATH += /opt/local/include
+
 DESTDIR=./
 
 CONFIG += console

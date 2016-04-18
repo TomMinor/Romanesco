@@ -38,6 +38,8 @@ public:
 
     void setOutputBuffer(std::string _name);
 
+    float* mapBuffer(std::string _name);
+
 //    InitialCameraData camera_data;
     optix::GeometryGroup m_geometrygroup;
 

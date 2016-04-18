@@ -200,7 +200,7 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height)
 //               60.0f,
 //               _width, _height);
 
-    setOutputBuffer("output_buffer_depth");
+    setOutputBuffer("output_buffer");
 
     //ray_gen_program["draw_color"]->setFloat( optix::make_float3(0.462f, 0.725f, 0.0f) );
 
@@ -633,6 +633,21 @@ OptixScene::~OptixScene()
 
 }
 
+float* OptixScene::mapBuffer(std::string _name)
+{
+    // Calculate the buffer byte size etc from it's optix buffer properties
+    optix::Buffer buffer = m_context[_name]->getBuffer();
+    RTsize buffer_width, buffer_height;
+    buffer->getSize(buffer_width, buffer_height);
+
+    RTsize bufferSize = buffer_width * buffer_height;
+    float* hostPtr = new float[buffer->getElementSize() * bufferSize];
+    CUdeviceptr devicePtr = buffer->getDevicePointer( 0 );
+    cudaMemcpy( (void*)hostPtr,   (void*)devicePtr,    buffer->getElementSize() * bufferSize, cudaMemcpyDeviceToHost );
+
+    return hostPtr;
+}
+
 void OptixScene::drawToBuffer()
 {
     if( m_camera_changed ) {
@@ -655,43 +670,87 @@ void OptixScene::drawToBuffer()
     optix::Buffer buffer = m_context[m_outputBuffer]->getBuffer();
     RTformat buffer_format = buffer->getFormat();
 
-//    // Debug dump
-//    {
-//        const unsigned int totalPixels = 4 * static_cast<unsigned int>(buffer_width) * static_cast<unsigned int>(buffer_height);
+    // Debug dump
+    {
+        const unsigned int totalPixels = 4 * static_cast<unsigned int>(buffer_width) * static_cast<unsigned int>(buffer_height);
 
-//        float* h_ptrDiffuse = new float[totalPixels];
-//        CUdeviceptr d_ptrDiffuse = buffer->getDevicePointer( 0 );
+        auto outBuffer = m_context["output_buffer"]->getBuffer();
+        auto nrmBuffer = m_context["output_buffer_nrm"]->getBuffer();
+        auto worldBuffer = m_context["output_buffer_world"]->getBuffer();
+        auto depthBuffer = m_context["output_buffer_depth"]->getBuffer();
+
+        unsigned int bufferSize =  buffer_width * buffer_height;
+
+//        float* diffuse = new float[ outBuffer->getElementSize() * bufferSize];
+//        CUdeviceptr d_Diffuse = outBuffer->getDevicePointer( 0 );
+//        cudaMemcpy( (void*)diffuse,   (void*)d_Diffuse,    outBuffer->getElementSize() * bufferSize, cudaMemcpyDeviceToHost );
+
+//        float* normal = new float[nrmBuffer->getElementSize() * bufferSize];
+//        CUdeviceptr d_Normal = nrmBuffer->getDevicePointer( 0 );
+//        cudaMemcpy( (void*)normal,   (void*)d_Normal,    nrmBuffer->getElementSize() * bufferSize, cudaMemcpyDeviceToHost );
+
+//        float* world = new float[worldBuffer->getElementSize() * bufferSize];
+//        CUdeviceptr d_World = worldBuffer->getDevicePointer( 0 );
+//        cudaMemcpy( (void*)world,   (void*)d_World,    worldBuffer->getElementSize() * bufferSize, cudaMemcpyDeviceToHost );
+
+//        float* depth = new float[depthBuffer->getElementSize() * bufferSize];
+//        CUdeviceptr d_Depth = depthBuffer->getDevicePointer( 0 );
+//        cudaMemcpy( (void*)depth,   (void*)d_Depth,    depthBuffer->getElementSize() * bufferSize, cudaMemcpyDeviceToHost );
+
+        float* diffuse = mapBuffer("output_buffer");
+        float* normal = mapBuffer("output_buffer_nrm");
+        float* world = mapBuffer("output_buffer_world");
+        float* depth = mapBuffer("output_buffer_depth");
+
+//        float* h_ptrWorld = new float[totalPixels];
+//        CUdeviceptr d_ptrWorld = buffer->getDevicePointer( 0 );
 //        cudaMemcpy( (void*)h_ptrDiffuse,   (void*)d_ptrDiffuse,    sizeof(float) * totalPixels, cudaMemcpyDeviceToHost );
 
-//        std::vector<ImageWriter::Pixel> pixels;
-//        pixels.reserve(totalPixels);
-//        for(int i = 0; i < totalPixels; i+=4)
-//        {
-//            ImageWriter::Pixel tmp;
-//            tmp.r = h_ptrDiffuse[i + 0];
-//            tmp.g = h_ptrDiffuse[i + 1];
-//            tmp.b = h_ptrDiffuse[i + 2];
-//            tmp.a = 1.0f;
-////          tmp.a = h_ptrDiffuse[i + 3];
+        std::vector<ImageWriter::Pixel> pixels;
+        pixels.reserve(totalPixels);
 
-//            tmp.z = 400.0f;
+        ///@Todo move this into one loop, brainfarting right now
+        for(unsigned int i = 0; i < totalPixels; i+=4)
+        {
+            ImageWriter::Pixel tmp;
+            tmp.r = diffuse[i + 0];
+            tmp.g = diffuse[i + 1];
+            tmp.b = diffuse[i + 2];
+            tmp.a = diffuse[i + 3];
 
-//            tmp.x_nrm = 0.5;
-//            tmp.y_nrm = 0.5;
-//            tmp.z_nrm = 0.5;
+            pixels.push_back(tmp);
+        }
 
-//            tmp.x_pos = 100.0f;
-//            tmp.y_pos = 50.0f;
-//            tmp.z_pos = 70.0f;
+        for(unsigned int j = 0; j < buffer_width * buffer_height; j++)
+        {
+            pixels[j].x_nrm = normal[3*j + 0];
+            pixels[j].y_nrm = normal[3*j + 1];
+            pixels[j].z_nrm = normal[3*j + 2];
 
-//            pixels.push_back(tmp);
-//        }
+            pixels[j].x_pos = world[3*j + 0];
+            pixels[j].y_pos = world[3*j + 1];
+            pixels[j].z_pos = world[3*j + 2];
+        }
 
-//        ImageWriter image("./test.exr", buffer_width, buffer_height);
-//        image.write(pixels);
+        for(unsigned int k = 0; k < buffer_width * buffer_height; k++)
+        {
+            pixels[k].z = depth[k];
+        }
 
-////        writeRGBA2("test.exr", passes );
-//    }
+        delete diffuse;
+        diffuse = nullptr;
+        delete normal;
+        normal = nullptr;
+        delete world;
+        world = nullptr;
+        delete depth;
+        depth = nullptr;
+
+        ImageWriter image("./test.exr", buffer_width, buffer_height);
+        image.write(pixels);
+
+//        writeRGBA2("test.exr", passes );
+    }
 
     vboId = buffer->getGLBOId();
 
