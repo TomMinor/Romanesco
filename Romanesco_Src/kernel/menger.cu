@@ -103,7 +103,7 @@ rtDeclareVariable(float,      t_hit,        rtIntersectionDistance, );
 
 struct PerRayData_pathtrace
 {
-  float3 result;
+  float4 result;
   float3 result_nrm;
   float3 result_world;
   float result_depth;
@@ -158,7 +158,7 @@ RT_PROGRAM void pathtrace_camera()
     unsigned int samples_per_pixel = sqrt_num_samples*sqrt_num_samples;
 
     // Store accumulated radiance, world position, normal and depth
-    float3 result = make_float3(0.0f);
+    float4 result = make_float4(0.0f);
     float3 normal = make_float3(0.0f);
     float3 world = make_float3(0.0f);
     float depth = 0.0f;
@@ -176,7 +176,7 @@ RT_PROGRAM void pathtrace_camera()
 //        ray_direction = normalize(ray_direction);
 
         PerRayData_pathtrace prd;
-        prd.result = make_float3(0.f);
+        prd.result = make_float4(0.f);
         prd.result_nrm = make_float3(0.0f);
         prd.result_world = make_float3(0.0f);
         prd.result_depth = 0.0f;
@@ -198,7 +198,7 @@ RT_PROGRAM void pathtrace_camera()
         seed = prd.seed;
     } while (--samples_per_pixel);
 
-    float3 pixel_color = result/(sqrt_num_samples*sqrt_num_samples);
+    float4 pixel_color = result/(sqrt_num_samples*sqrt_num_samples);
     float3 pixel_color_normal = normal/(sqrt_num_samples*sqrt_num_samples);
     float3 pixel_color_world = world/(sqrt_num_samples*sqrt_num_samples);
     float pixel_color_depth = depth/(sqrt_num_samples*sqrt_num_samples);
@@ -208,8 +208,8 @@ RT_PROGRAM void pathtrace_camera()
         float a = 1.0f / (float)frame_number;
         float b = ((float)frame_number - 1.0f) * a;
 
-        float3 old_color = make_float3(output_buffer[launch_index]);
-        output_buffer[launch_index] = make_float4(a * pixel_color + b * old_color, 1.0f);
+        float4 old_color = output_buffer[launch_index];
+        output_buffer[launch_index] = a * pixel_color + b * old_color;
 
         float3 old_nrm = output_buffer_nrm[launch_index];
         output_buffer_nrm[launch_index] = a * pixel_color_normal + b * old_nrm;
@@ -222,7 +222,7 @@ RT_PROGRAM void pathtrace_camera()
     }
     else
     {
-        output_buffer[launch_index] = make_float4(pixel_color, 0.0f);
+        output_buffer[launch_index] = pixel_color;
         output_buffer_nrm[launch_index] = pixel_color_normal;
         output_buffer_world[launch_index] = pixel_color_world;
         output_buffer_depth[launch_index] = pixel_color_depth;
@@ -617,7 +617,7 @@ RT_PROGRAM void julia_ah_shadow()
 rtDeclareVariable(float3, emission_color, , );
 RT_PROGRAM void diffuseEmitter(){
     if(current_prd.countEmitted){
-        current_prd.result = emission_color;
+        current_prd.result = make_float4(emission_color, 1.0f);
     }
     current_prd.done = true;
 }
@@ -685,7 +685,7 @@ RT_PROGRAM void diffuse()
     }
   }
 
-  current_prd.result = result;
+  current_prd.result = make_float4(result, 1.0);
   current_prd.result_nrm = shading_normal;
   current_prd.result_world = hitpoint;
   current_prd.result_depth = t_hit;
@@ -698,7 +698,7 @@ RT_PROGRAM void diffuse()
 //
 //-----------------------------------------------------------------------------
 RT_PROGRAM void miss(){
-    current_prd.result = make_float3(0.0, 0.0, 0.0);
+    current_prd.result = make_float4(0.0f);
     current_prd.result_nrm = make_float3(0.0, 0.0, 0.0);
     current_prd.result_world = make_float3(0.0, 0.0, 0.0);
     current_prd.result_depth = RT_DEFAULT_MAX;
@@ -727,7 +727,8 @@ RT_PROGRAM void envmap_miss()
 //  prd_radiance.result = make_float3( tex2D(envmap, u, v) );
 
   current_prd.done = true;
-  current_prd.result = make_float3( tex2D(envmap, u, v) );
+  current_prd.result = tex2D(envmap, u, v);
+  current_prd.result.w = 0.0; // Alpha should be 0 if we missed
   current_prd.result_nrm = make_float3(0.0, 0.0, 0.0);
   current_prd.result_world = make_float3(0.0, 0.0, 0.0);
   current_prd.result_depth = RT_DEFAULT_MAX;
