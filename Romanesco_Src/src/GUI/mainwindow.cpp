@@ -26,6 +26,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 #include <QGraphicsScene>
 #include <QFileDialog>
 #include <QOpenGLWidget>
+#include <QSplitter>
 
 #include "mainwindow.h"
 
@@ -37,6 +38,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
 #include "gridscene.h"
 #include "testglwidget.h"
+#include "qtimelinewidget.h"
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent)

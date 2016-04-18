@@ -40,6 +40,8 @@ public:
 
     float* mapBuffer(std::string _name);
 
+    bool saveBuffersToDisk(std::string _filename);
+
 //    InitialCameraData camera_data;
     optix::GeometryGroup m_geometrygroup;
 

@@ -397,8 +397,8 @@ void TestGLWidget::keyPressEvent(QKeyEvent *_event)
             break;
 
         case Qt::Key_P:
-            testctr++;
-//            m_optixScene->createGeometry(testctr % 2);
+                m_optixScene->saveBuffersToDisk("./text.exr");
+        break;
 
         default:
             _event->ignore();
