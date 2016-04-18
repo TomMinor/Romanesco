@@ -23,9 +23,7 @@ void TestGLWidget::initializeGL()
 {
     initializeOpenGLFunctions();
 
-
-
-    glClearColor(1, 0, 0, 1);
+    glClearColor(0, 0, 0, 1);
 
     m_optixScene = 0;
     m_optixScene = new OptixScene(width(), height());
@@ -186,8 +184,6 @@ void TestGLWidget::paintGL()
     m_camRot.setX( FInterpTo( m_camRot.x(), m_desiredCamRot.x(), m_frame, 0.00025) );
     m_camRot.setY( FInterpTo( m_camRot.y(), m_desiredCamRot.y(), m_frame, 0.00025) );
     m_camRot.setZ( FInterpTo( m_camRot.z(), m_desiredCamRot.z(), m_frame, 0.00025) );
-
-    qDebug() << m_updateCamera;
 
     if(m_optixScene)
     {

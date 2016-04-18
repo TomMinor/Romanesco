@@ -1,4 +1,4 @@
-#include "include/gui/nodes/terminatenode.h"
+#include "nodes/terminatenode.h"
 #include "nodegraph/qneport.h"
 
 TerminateNode::TerminateNode(QGraphicsScene* _scene, QGraphicsItem *parent)
