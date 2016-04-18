@@ -7,131 +7,34 @@
 #include <QOpenGLFunctions>
 #include <QOpenGLPaintDevice>
 #include <QOpenGLFramebufferObject>
-
 #include <QScreen>
 #include <QDebug>
 #include <QKeyEvent>
-#include <unistd.h>
-#include <math.h>
 #include <QtMath>
 #include <QDir>
+
+#include <unistd.h>
+#include <math.h>
 #include <fstream>
 #include <string>
 #include <cerrno>
 #include <assert.h>
-
-#include <OpenEXR/ImfRgba.h>
-#include <OpenEXR/ImfRgbaFile.h>
-#include <OpenEXR/ImfChannelList.h>
-#include <OpenEXR/ImfFrameBuffer.h>
-#include <OpenEXR/ImfOutputFile.h>
-#include <OpenEXR/half.h>
-
 #include <iostream>
+
 #include <boost/algorithm/string/join.hpp>
+
 #include <ImageLoader.h>
 
+#include "stringutilities.h"
+#include "ImageWriter.h"
 #include "OptixScene.h"
 #include "RuntimeCompiler.h"
 
-
 ///@todo
-/// * Move ALL image stuff into it's own OIIO based class
 /// * Split this into a simple base class and derive from that, OptixScene -> OptixSceneAdaptive -> OptixScenePathTracer
 /// * All camera stuff should be moved into it's own, simpler class
-
-struct Image
-{
-public:
-    Image( float* _pixels, unsigned int _width, unsigned int _height, std::string _name = "" )
-        : m_width(_width), m_height(_height), m_name(_name)
-  {
-    m_pixels = new Imf::Rgba[m_width * m_height];
-    std::fill(m_pixels, m_pixels + (m_width * m_height), Imf::Rgba(1.f, 1.f, 1.f, 1.f) );
-
-    for(int i = 0; i < 4 * m_width * m_height; i+=4)
-    {
-        //unsigned int idx = i + (j * m_width);
-
-        float R = _pixels[i];
-        float G = _pixels[i + 1];
-        float B = _pixels[i + 2];
-        float A = _pixels[i + 3];
-
-        //setPixel(i, j, Imf::Rgba(R, G, B, A) );
-        m_pixels[i / 4] = Imf::Rgba(R, G, B, A);
-    }
-  }
-
-  void setPixel(int x, int y, Imf::Rgba _val)
-  {
-    m_pixels[x + (y * m_width)] = _val;
-  }
-
-  ~Image()
-  {
-        //delete m_pixels;
-  }
-
-//private:
-  Imf::Rgba* m_pixels;
-  unsigned int m_width, m_height;
-    std::string m_name;
-};
-
-
-std::string layerChannelString( std::string _layerName, std::string _channel )
-{
-    return (_layerName.size() == 0) ? _channel : _layerName + "." + _channel;
-}
-
-void writeRGBA2(std::string fileName, std::vector<Image> _layers)
-{
-    Imf::Header header(_layers[0].m_width, _layers[0].m_height);
-
-    Imf::ChannelList& channels = header.channels();
-    Imf::FrameBuffer framebuffer;
-
-    for(unsigned int i = 0; i < _layers.size(); i++)
-    {
-        Image& _image = _layers[i];
-
-        std::string name_r = layerChannelString(_image.m_name, "R");
-        std::string name_g = layerChannelString(_image.m_name, "G");
-        std::string name_b = layerChannelString(_image.m_name, "B");
-        std::string name_a = layerChannelString(_image.m_name, "A");
-
-        channels.insert( name_r, Imf::Channel(Imf::HALF) );
-        channels.insert( name_g, Imf::Channel(Imf::HALF) );
-        channels.insert( name_b, Imf::Channel(Imf::HALF) );
-        channels.insert( name_a, Imf::Channel(Imf::HALF) );
-
-        char* channel_rPtr = (char*) &(_image.m_pixels[0].r);
-        char* channel_gPtr = (char*) &(_image.m_pixels[0].g);
-        char* channel_bPtr = (char*) &(_image.m_pixels[0].b);
-        char* channel_aPtr = (char*) &(_image.m_pixels[0].a);
-
-        unsigned int xstride = sizeof( half ) * 4;
-        unsigned int ystride = sizeof( half ) * 4 * _image.m_width;
-
-        framebuffer.insert( name_r, Imf::Slice( Imf::HALF, channel_rPtr, xstride, ystride ) );
-        framebuffer.insert( name_g, Imf::Slice( Imf::HALF, channel_gPtr, xstride, ystride ) );
-        framebuffer.insert( name_b, Imf::Slice( Imf::HALF, channel_bPtr, xstride, ystride ) );
-        framebuffer.insert( name_a, Imf::Slice( Imf::HALF, channel_aPtr, xstride, ystride ) );
-    }
-
-    Imf::OutputFile file(fileName.c_str(), header);
-    file.setFrameBuffer( framebuffer );
-    file.writePixels( _layers[0].m_height );
-}
-
-
-
-static const unsigned int WIDTH = 1280;
-static const unsigned int HEIGHT = 720;
-
-
-optix::Buffer OptixScene::createOutputBuffer(RTformat _format, unsigned int _width, unsigned int _height)
+///
+optix::Buffer OptixScene::createGLOutputBuffer(RTformat _format, unsigned int _width, unsigned int _height)
 {
     optix::Buffer buffer;
 
@@ -145,6 +48,16 @@ optix::Buffer OptixScene::createOutputBuffer(RTformat _format, unsigned int _wid
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     buffer = m_context->createBufferFromGLBO(RT_BUFFER_OUTPUT, vbo);
+    buffer->setFormat(_format);
+    buffer->setSize( _width, _height );
+
+    return buffer;
+}
+
+optix::Buffer OptixScene::createOutputBuffer(RTformat _format, unsigned int _width, unsigned int _height)
+{
+    optix::Buffer buffer;
+    buffer = m_context->createBuffer(RT_BUFFER_OUTPUT);
     buffer->setFormat(_format);
     buffer->setSize( _width, _height );
 
@@ -287,7 +200,7 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height)
 //               60.0f,
 //               _width, _height);
 
-
+    setOutputBuffer("output_buffer_depth");
 
     //ray_gen_program["draw_color"]->setFloat( optix::make_float3(0.462f, 0.725f, 0.0f) );
 
@@ -327,6 +240,11 @@ void OptixScene::setVar(const std::string& _name, float _v)
     m_context[_name]->setFloat(_v);
 }
 
+void OptixScene::setOutputBuffer(std::string _name)
+{
+    m_outputBuffer = _name;
+}
+
 void OptixScene::setVar(const std::string& _name, optix::float3 _v )
 {
     m_context[_name]->setFloat( _v  );
@@ -340,17 +258,25 @@ void OptixScene::setVar(const std::string& _name, optix::Matrix4x4 _v )
 
 void OptixScene::updateBufferSize(unsigned int _width, unsigned int _height)
 {
-    static std::vector<std::string> bufferNames = { "output_buffer",
-                                                    /*"output_buffer_nrm",
-                                                    "output_buffer_depth",
-                                                    "output_buffer_world" */};
+    static std::vector<std::pair<std::string, RTformat>> glOutputBuffers = {
+        std::make_pair("output_buffer",         RT_FORMAT_FLOAT4),
+        std::make_pair("output_buffer_nrm",     RT_FORMAT_FLOAT3),
+        std::make_pair("output_buffer_world",   RT_FORMAT_FLOAT3),
+        std::make_pair("output_buffer_depth",   RT_FORMAT_FLOAT)
+    };
 
-    for( auto& bufferName : bufferNames )
+    static std::vector<std::pair<std::string, RTformat>> outputBuffers = {
+
+    };
+
+    // Update any GL bound Optix buffers
+    for( auto& buffer : glOutputBuffers )
     {
-
+        std::string bufferName = buffer.first;
         if(m_context[bufferName]->getType() == RT_OBJECTTYPE_UNKNOWN )
         {
-            m_context[bufferName]->set( createOutputBuffer(RT_FORMAT_FLOAT4, _width, _height) );
+            RTformat bufferType = buffer.second;
+            m_context[bufferName]->set( createGLOutputBuffer(bufferType, _width, _height) );
         }
         else
         {
@@ -363,59 +289,23 @@ void OptixScene::updateBufferSize(unsigned int _width, unsigned int _height)
             m_context[bufferName]->getBuffer()->registerGLBuffer();
         }
     }
-}
 
-
-std::vector<std::string> FileToVector(const std::string& _filename)
-{
-    std::vector<std::string> result;
-    std::ifstream file(_filename);
-
-    if(!file)
+    // Update regular Optix buffers
+    for( auto& buffer : outputBuffers )
     {
-        qDebug("Can't open file %s", qPrintable(_filename.c_str()) );
-        throw std::runtime_error("Can't open file");
-    }
-
-    std::string line;
-    while (std::getline(file, line))
-    {
-        result.push_back(line);
-    }
-
-    return result;
-}
-
-std::vector<std::string> StringToVector(const std::string& _str)
-{
-    std::vector<std::string> result;
-    {
-        std::istringstream src_stream( _str );
-        std::string line;
-        while(std::getline(src_stream, line))
+        std::string bufferName = buffer.first;
+        if(m_context[bufferName]->getType() == RT_OBJECTTYPE_UNKNOWN )
         {
-            result.push_back(line);
+            RTformat bufferType = buffer.second;
+            m_context[bufferName]->set( createOutputBuffer(bufferType, _width, _height) );
+        }
+        else
+        {
+            m_context[bufferName]->getBuffer()->setSize(_width, _height);
         }
     }
-
-    return result;
 }
 
-bool findString(std::vector<std::string>& _lines,
-                const std::string& _searchString,
-                std::vector<std::string>::iterator* o_result)
-{
-    for(auto line = _lines.begin(); line != _lines.end(); ++line)
-    {
-        if ( line->find(_searchString) != std::string::npos)
-        {
-            *o_result = line + 1;
-            return true;
-        }
-    }
-
-    return false;
-}
 
 bool findFunction(std::vector<std::string>& _lines,
                   const std::string& _funcName,
@@ -456,7 +346,6 @@ bool findFunction(std::vector<std::string>& _lines,
     return false;
 }
 
-#include <sstream>
 #include <algorithm>
 
 bool hookPtxFunction(  const std::string& _ptxPath,
@@ -635,11 +524,6 @@ __device__ float distancehit_hook(float3 p, float3* test)
 //    optix::Program julia_ah = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "julia_ah_shadow" );
 #endif
 
-    // Julia material
-//    optix::Material julia_matl = m_context->createMaterial();
-//    julia_matl->setClosestHitProgram( 0, julia_ch );
-//    julia_matl->setAnyHitProgram( 1, julia_ah );
-
     m_context["Ka"]->setFloat(0.5f,0.0f,0.0f);
     m_context["Kd"]->setFloat(.6f, 0.1f, 0.1f);
     m_context["Ks"]->setFloat(.6f, .2f, .1f);
@@ -666,10 +550,9 @@ __device__ float distancehit_hook(float3 p, float3* test)
     GeometryInstance gi = m_context->createGeometryInstance();
     gi->setGeometry(julia);
 
-    std::string ptx_path = "/home/tom/src/optix/build/lib/ptx/path_tracer_generated_parallelogram.cu.ptx";
+    std::string ptx_path = "/home/i7245143/src/optix/build/lib/ptx/path_tracer_generated_parallelogram.cu.ptx";
     auto m_pgram_bounding_box = m_context->createProgramFromPTXFile( ptx_path, "bounds" );
     auto m_pgram_intersection = m_context->createProgramFromPTXFile( ptx_path, "intersect" );
-
 
     const float3 white = make_float3( 0.8f, 0.8f, 0.8f );
     const float3 green = make_float3( 0.05f, 0.8f, 0.05f );
@@ -682,30 +565,12 @@ __device__ float distancehit_hook(float3 p, float3* test)
     diffuse->setClosestHitProgram( 0, diffuse_ch );
     diffuse->setAnyHitProgram( 1, diffuse_ah );
 
-//    m_geometrygroup = m_context->createGeometryGroup();
-//    m_geometrygroup->setChildCount( 1 );
-//    m_geometrygroup->setChild( (int)0, m_context->createGeometryInstance( julia,  &julia_matl, &julia_matl+1 ));
-//    m_geometrygroup->setAcceleration( m_context->createAcceleration("NoAccel","NoAccel") );
-
-
     Material diffuse_light = m_context->createMaterial();
     Program diffuse_em = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "diffuseEmitter" );
     diffuse_light->setClosestHitProgram( 0, diffuse_em );
 
     gis.push_back( gi );
     setMaterial(gis.back(), diffuse, "diffuse_color", white);
-
-    // Floor
-//    gis.push_back( createParallelogram( &m_context,
-//                                        &m_pgram_bounding_box,
-//                                        &m_pgram_intersection,
-//                                        make_float3( 0.0f, 0.0f, 0.0f ),
-//                                        make_float3( 0.0f, 0.0f, 559.2f ),
-//                                        make_float3( 556.0f, 0.0f, 0.0f ) ) );
-//    setMaterial(gis.back(), diffuse, "diffuse_color", white);
-//    gis.push_back( gi );
-//    setMaterial(gis.back(), diffuse, "diffuse_color", red);
-
 
     // Create shadow group (no light)
     GeometryGroup shadow_group = m_context->createGeometryGroup(gis.begin(), gis.end());
@@ -787,12 +652,10 @@ void OptixScene::drawToBuffer()
 
     /// ==================  Copy to texture =======================
 
-    optix::Buffer buffer = m_context["output_buffer"]->getBuffer();
+    optix::Buffer buffer = m_context[m_outputBuffer]->getBuffer();
     RTformat buffer_format = buffer->getFormat();
 
-
-
-    // Debug dump
+//    // Debug dump
 //    {
 //        const unsigned int totalPixels = 4 * static_cast<unsigned int>(buffer_width) * static_cast<unsigned int>(buffer_height);
 
@@ -800,13 +663,35 @@ void OptixScene::drawToBuffer()
 //        CUdeviceptr d_ptrDiffuse = buffer->getDevicePointer( 0 );
 //        cudaMemcpy( (void*)h_ptrDiffuse,   (void*)d_ptrDiffuse,    sizeof(float) * totalPixels, cudaMemcpyDeviceToHost );
 
-//        std::vector<Image> passes;
+//        std::vector<ImageWriter::Pixel> pixels;
+//        pixels.reserve(totalPixels);
+//        for(int i = 0; i < totalPixels; i+=4)
+//        {
+//            ImageWriter::Pixel tmp;
+//            tmp.r = h_ptrDiffuse[i + 0];
+//            tmp.g = h_ptrDiffuse[i + 1];
+//            tmp.b = h_ptrDiffuse[i + 2];
+//            tmp.a = 1.0f;
+////          tmp.a = h_ptrDiffuse[i + 3];
 
-//        passes.push_back( Image( h_ptrDiffuse, static_cast<unsigned int>(buffer_width), static_cast<unsigned int>(buffer_height)) );
+//            tmp.z = 400.0f;
 
-//        writeRGBA2("test.exr", passes );
+//            tmp.x_nrm = 0.5;
+//            tmp.y_nrm = 0.5;
+//            tmp.z_nrm = 0.5;
+
+//            tmp.x_pos = 100.0f;
+//            tmp.y_pos = 50.0f;
+//            tmp.z_pos = 70.0f;
+
+//            pixels.push_back(tmp);
+//        }
+
+//        ImageWriter image("./test.exr", buffer_width, buffer_height);
+//        image.write(pixels);
+
+////        writeRGBA2("test.exr", passes );
 //    }
-
 
     vboId = buffer->getGLBOId();
 
@@ -822,7 +707,6 @@ void OptixScene::drawToBuffer()
         else if ((elementSize % 4) == 0) glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
         else if ((elementSize % 2) == 0) glPixelStorei(GL_UNPACK_ALIGNMENT, 2);
         else                             glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
         {
             if(buffer_format == RT_FORMAT_UNSIGNED_BYTE4) {
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, buffer_width, buffer_height, 0, GL_BGRA, GL_UNSIGNED_BYTE, 0);
@@ -846,7 +730,7 @@ void OptixScene::drawToBuffer()
     }
     else
     {
-        assert("Couldn't bind GL Buffer Object");
+        assert(0 && "Couldn't bind GL Buffer Object");
     }
 
     /// ===========================================================

@@ -34,18 +34,18 @@ SOURCES += src/main.cpp \
            src/SDFOps/DomainOp/*.cpp \
            src/SDFOps/DomainDeformer/*.cpp \
            src/SDFOps/Primitive/*.cpp
-
  
 HEADERS += include/Core/*.h \
-           include/GUI/*.h \
-           include/GUI/nodes/*.h \
-           include/GUI/nodegraph/*.h \
-           include/SDFOps/*.h \
-           include/SDFOps/DistDeformer/*.h \
-           include/SDFOps/DistOp/*.h \
-           include/SDFOps/DomainOp/*.h \
-           include/SDFOps/DomainDeformer/*.h \
-           include/SDFOps/Primitive/*.h
+                       include/GUI/*.h \
+                       include/GUI/nodes/*.h \
+                       include/GUI/nodegraph/*.h \
+                       include/SDFOps/*.h \
+                       include/SDFOps/DistDeformer/*.h \
+                       include/SDFOps/DistOp/*.h \
+                       include/SDFOps/DomainOp/*.h \
+                       include/SDFOps/DomainDeformer/*.h \
+                       include/SDFOps/Primitive/*.h \
+                        include/Core/stringutilities.h
 
 OTHER_FILES += shaders/*
 
@@ -65,8 +65,9 @@ DESTDIR=./
 
 CONFIG += console
 CONFIG -= app_bundle
- 
-LIBS += -lpthread -lIlmImf -lHalf
+
+# Link to OpenImageIO/OpenEXR
+LIBS += -lpthread -lIlmImf -lHalf -lOpenImageIO -lOpenImageIO_Util
 
 macx:INCLUDEPATH+=/usr/local/include/
 unix:LIBS += -L/usr/local/lib

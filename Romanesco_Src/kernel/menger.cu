@@ -39,7 +39,7 @@ using namespace optix;
 // [2] http://www.devmaster.net/forums/showthread.php?t=4448
 
 
-rtDeclareVariable(float3,        eye, , );
+rtDeclareVariable( float3, eye, , );
 rtDeclareVariable( float4, c4 , , );                // parameter quaternion
 rtDeclareVariable( float,  alpha , , );
 rtDeclareVariable( float,  delta , , );
@@ -61,9 +61,9 @@ rtDeclareVariable(float3, shading_normal2, attribute shading_normal2, );
 rtDeclareVariable(float3, geometric_normal, attribute geometric_normal, );
 
 rtBuffer<float4, 2>              output_buffer;
-rtBuffer<float4, 2>              output_buffer_nrm;
-rtBuffer<float4, 2>              output_buffer_depth;
-rtBuffer<float4, 2>              output_buffer_world;
+rtBuffer<float3, 2>              output_buffer_nrm;
+rtBuffer<float3, 2>              output_buffer_world;
+rtBuffer<float, 2>              output_buffer_depth;
 
 rtDeclareVariable(uint2, launch_index, rtLaunchIndex, );
 rtDeclareVariable(uint2, launch_dim,   rtLaunchDim, );
@@ -140,7 +140,10 @@ rtDeclareVariable(PerRayData_pathtrace, prd_radiance, rtPayload, );
 
 RT_PROGRAM void exception()
 {
-  output_buffer[launch_index] = make_float4(bad_color, 0.0f);
+  output_buffer[launch_index] = make_float4(bad_color, 0.0f);  
+  output_buffer_nrm[launch_index] = make_float3(0.0, 0.0, 0.0);
+  output_buffer_world[launch_index] = make_float3(0.0, 0.0, 0.0);
+  output_buffer_depth[launch_index] = RT_DEFAULT_MAX;
 }
 
 
@@ -153,9 +156,14 @@ RT_PROGRAM void pathtrace_camera()
 
     float2 jitter_scale = inv_screen / sqrt_num_samples;
     unsigned int samples_per_pixel = sqrt_num_samples*sqrt_num_samples;
-    float3 result = make_float3(0.0f);
 
-    unsigned int seed = tea<16>(screen.x*launch_index.y+launch_index.x, frame_number);
+    // Store accumulated radiance, world position, normal and depth
+    float3 result = make_float3(0.0f);
+    float3 normal = make_float3(0.0f);
+    float3 world = make_float3(0.0f);
+    float depth = 0.0f;
+
+    unsigned int seed = tea<4>(screen.x*launch_index.y+launch_index.x, frame_number);
     do {
         unsigned int x = samples_per_pixel%sqrt_num_samples;
         unsigned int y = samples_per_pixel/sqrt_num_samples;
@@ -165,11 +173,13 @@ RT_PROGRAM void pathtrace_camera()
         float3 ray_direction = normalize(d.x*U + d.y*V + W);
 
         ray_direction = make_float3((make_float4(ray_direction, 1.0) * normalmatrix));
-        ray_direction = normalize(ray_direction);
-
+//        ray_direction = normalize(ray_direction);
 
         PerRayData_pathtrace prd;
         prd.result = make_float3(0.f);
+        prd.result_nrm = make_float3(0.0f);
+        prd.result_world = make_float3(0.0f);
+        prd.result_depth = 0.0f;
         prd.attenuation = make_float3(1.0);
         prd.radiance = make_float3(0.0);
         prd.countEmitted = true;
@@ -181,19 +191,41 @@ RT_PROGRAM void pathtrace_camera()
         rtTrace(top_object, ray, prd);
 
         result += prd.result;
+        normal += prd.result_nrm;
+        world += prd.result_world;
+        depth += prd.result_depth;
+
         seed = prd.seed;
     } while (--samples_per_pixel);
 
     float3 pixel_color = result/(sqrt_num_samples*sqrt_num_samples);
+    float3 pixel_color_normal = normal/(sqrt_num_samples*sqrt_num_samples);
+    float3 pixel_color_world = world/(sqrt_num_samples*sqrt_num_samples);
+    float pixel_color_depth = depth/(sqrt_num_samples*sqrt_num_samples);
 
+    // Smoothly blend with previous frames value
     if (frame_number > 1){
         float a = 1.0f / (float)frame_number;
         float b = ((float)frame_number - 1.0f) * a;
+
         float3 old_color = make_float3(output_buffer[launch_index]);
-        output_buffer[launch_index] = make_float4(a * pixel_color + b * old_color, 0.0f);
+        output_buffer[launch_index] = make_float4(a * pixel_color + b * old_color, 1.0f);
+
+        float3 old_nrm = output_buffer_nrm[launch_index];
+        output_buffer_nrm[launch_index] = a * pixel_color_normal + b * old_nrm;
+
+        float3 old_world = output_buffer_world[launch_index];
+        output_buffer_world[launch_index] = a * pixel_color_world + b * old_world;
+
+        float old_depth = output_buffer_depth[launch_index];
+        output_buffer_depth[launch_index] = a * pixel_color_depth + b * old_depth;
     }
-    else{
+    else
+    {
         output_buffer[launch_index] = make_float4(pixel_color, 0.0f);
+        output_buffer_nrm[launch_index] = pixel_color_normal;
+        output_buffer_world[launch_index] = pixel_color_world;
+        output_buffer_depth[launch_index] = pixel_color_depth;
     }
 }
 
@@ -259,21 +291,6 @@ static __host__ __device__ bool intersectBoundingSphere( float3 o, float3 d, flo
   return false;
 }
 
-//__host__ __device__
-//float udBox( float3 p, float3 b )
-//{
-//  return length( make_float3(
-//                        max( fabs(p.x) - b.x, 0.0),
-//                        max( fabs(p.y) - b.y, 0.0),
-//                        max( fabs(p.z) - b.z, 0.0)
-//                          ) );
-//}
-
-//__device__ float maxcomp(float3 _p )
-//{
-//    return max(_p.x,max(_p.y, _p.z));
-//}
-
 
 
 #define inf 10000.0
@@ -329,34 +346,6 @@ __device__ float3 fracf(float3 p)
                         p.z - floorf(p.z) );
 }
 
-//__device__ float map(float3 _p)
-//{
-//    float scale = 1.0f;
-
-//    float4 orb = make_float4(1000.0);
-
-//    for(int i=0; i<8; i++)
-//    {
-//        _p = -1.0 + 2.0 * fracf(0.5f * _p + 0.5f);
-////        float3 a = make_float3( fmod(_p.x * s, 2.0f),
-////                                fmod(_p.y * s, 2.0f),
-////                                fmod(_p.z * s, 2.0f)) - 1.0f;
-//        float r2 = dot(_p, _p);
-
-//        orb = make_float4( min( orb.x, abs(_p.x) ),
-//                           min( orb.y, abs(_p.y) ),
-//                           min( orb.z, abs(_p.z) ),
-//                           min( orb.w, r2 ) );
-
-//        float k = max( r2, 0.1f);
-//        _p *= k;
-//        scale *= k;
-//    }
-
-//    return 0.25 * abs(_p.y) / scale;
-//}
-
-
 struct JuliaSet
 {
   __host__ __device__
@@ -368,63 +357,63 @@ struct JuliaSet
   float operator()( float3 x ) const
   {
   //Warp space around the particle to get the blob-effect.
-    const float part_dist = length( particle - x );
-    const float force = smoothstep( 0.0f, 1.0f, 0.1f / (part_dist*part_dist) ) * 0.2f;
-    const float3 weg = (x - particle) / max(0.01f,part_dist);
-    x -= weg * force;
+//    const float part_dist = length( particle - x );
+//    const float force = smoothstep( 0.0f, 1.0f, 0.1f / (part_dist*part_dist) ) * 0.2f;
+//    const float3 weg = (x - particle) / max(0.01f,part_dist);
+//    x -= weg * force;
 
-    // Iterated values.
-    float3 zn  = x;//make_float3( x, 0 );
-    float4 fp_n = make_float4( 1, 0, 0, 0 );  // start derivative at real 1 (see [2]).
+//    // Iterated values.
+//    float3 zn  = x;//make_float3( x, 0 );
+//    float4 fp_n = make_float4( 1, 0, 0, 0 );  // start derivative at real 1 (see [2]).
 
-    const float sq_threshold = 2.0f;   // divergence threshold
+//    const float sq_threshold = 2.0f;   // divergence threshold
 
-    float oscillatingTime = sin(global_t / 256.0f );
-    float p = 4.0; //(5.0f * abs(oscillatingTime)) + 3.0f; //8;
-    float rad = 0.0f;
-    float dist = 0.0f;
-    float d = 1.0;
+//    float oscillatingTime = sin(global_t / 256.0f );
+//    float p = 4.0; //(5.0f * abs(oscillatingTime)) + 3.0f; //8;
+//    float rad = 0.0f;
+//    float dist = 0.0f;
+//    float d = 1.0;
 
-    // Iterate to compute f_n and fp_n for the distance estimator.
-    int i = m_max_iterations;
-    while( i-- )
-    {
-//      fp_n = 2.0f * mul( make_float4(zn), fp_n );   // z prime in [2]
-//      zn = square( make_float4(zn) ) + c4;         // equation (1) in [1]
+//    // Iterate to compute f_n and fp_n for the distance estimator.
+//    int i = m_max_iterations;
+//    while( i-- )
+//    {
+////      fp_n = 2.0f * mul( make_float4(zn), fp_n );   // z prime in [2]
+////      zn = square( make_float4(zn) ) + c4;         // equation (1) in [1]
 
-      // Stop when we know the point diverges.
-      // TODO: removing this condition burns 2 less registers and results in
-      //       in a big perf improvement. Can we do something about it?
+//      // Stop when we know the point diverges.
+//      // TODO: removing this condition burns 2 less registers and results in
+//      //       in a big perf improvement. Can we do something about it?
 
-      rad = length(zn);
+//      rad = length(zn);
 
-      if( rad > sq_threshold )
-      {
-        dist = 0.5f * rad * logf( rad ) / d;
-      }
-      else
-      {
-        float th = atan2( length( make_float3(zn.x, zn.y, 0.0f) ), zn.z );
-        float phi = atan2( zn.y, zn.x );
-        float rado = pow(rad, p);
-        d = pow(rad, p - 1) * (p-1) * d + 1.0;
+//      if( rad > sq_threshold )
+//      {
+//        dist = 0.5f * rad * logf( rad ) / d;
+//      }
+//      else
+//      {
+//        float th = atan2( length( make_float3(zn.x, zn.y, 0.0f) ), zn.z );
+//        float phi = atan2( zn.y, zn.x );
+//        float rado = pow(rad, p);
+//        d = pow(rad, p - 1) * (p-1) * d + 1.0;
 
-        float sint = sin(th * p);
-        zn.x = rado * sint * cos(phi * p);
-        zn.y = rado * sint * sin(phi * p);
-        zn.z = rado * cos(th * p);
-        zn += x;
-      }
-    }
+//        float sint = sin(th * p);
+//        zn.x = rado * sint * cos(phi * p);
+//        zn.y = rado * sint * sin(phi * p);
+//        zn.z = rado * cos(th * p);
+//        zn += x;
+//      }
+//    }
 
-    // Distance estimation. Equation (8) from [1], with correction mentioned in [2].
-    //const float norm = length( zn );
+//    // Distance estimation. Equation (8) from [1], with correction mentioned in [2].
+//    //const float norm = length( zn );
 
-    //float a = length(x) - 1.0f;
-    float a = dist;
-    float b = sdBox(x, make_float3(1.0f) );
+//    //float a = length(x) - 1.0f;
+//    float a = dist;
+//    float b = sdBox(x, make_float3(1.0f) );
 
-    return dist;
+//    return dist;
 
 //      float3 p = x;
 
@@ -446,9 +435,9 @@ struct JuliaSet
 //        d = max(d, -c);
 //    }
 
-//    float d = map(p);
+    float d = map(x);
 
-//    return d;
+    return d;
 
 //    float d1 = sdBox(p, make_float3(1.0f) );
 //    float d2 = sdBox(p - make_float3(0.6f), make_float3(1.1f) );
@@ -537,85 +526,85 @@ RT_PROGRAM void bounds (int, float result[6])
 
 rtBuffer<ParallelogramLight>     lights;
 
-RT_PROGRAM void julia_ch_radiance()
-{
-    if (current_prd.depth > 5){
-        current_prd.done = true;
-        return;
+//RT_PROGRAM void julia_ch_radiance()
+//{
+//    if (current_prd.depth > 5){
+//        current_prd.done = true;
+//        return;
 
-    }
-    float3 world_shading_normal   = normalize( rtTransformNormal( RT_OBJECT_TO_WORLD, shading_normal ) );
-    float3 world_geometric_normal = normalize( rtTransformNormal( RT_OBJECT_TO_WORLD, geometric_normal ) );
+//    }
+//    float3 world_shading_normal   = normalize( rtTransformNormal( RT_OBJECT_TO_WORLD, shading_normal ) );
+//    float3 world_geometric_normal = normalize( rtTransformNormal( RT_OBJECT_TO_WORLD, geometric_normal ) );
 
-    float3 ffnormal = faceforward( world_shading_normal, -ray.direction, world_geometric_normal );
+//    float3 ffnormal = faceforward( world_shading_normal, -ray.direction, world_geometric_normal );
 
-    float3 hitpoint = ray.origin + t_hit * ray.direction;
+//    float3 hitpoint = ray.origin + t_hit * ray.direction;
 
-    float z1=rnd(current_prd.seed);
-    float z2=rnd(current_prd.seed);
-    float3 p;
-    cosine_sample_hemisphere(z1, z2, p);
-    float3 v1, v2;
-    createONB(ffnormal, v1, v2);
-    float3 ray_origin = hitpoint;
-    float3 ray_direction = v1 * p.x + v2 * p.y + ffnormal * p.z;
+//    float z1=rnd(current_prd.seed);
+//    float z2=rnd(current_prd.seed);
+//    float3 p;
+//    cosine_sample_hemisphere(z1, z2, p);
+//    float3 v1, v2;
+//    createONB(ffnormal, v1, v2);
+//    float3 ray_origin = hitpoint;
+//    float3 ray_direction = v1 * p.x + v2 * p.y + ffnormal * p.z;
 
-    // Compute attenuation
-    current_prd.attenuation = current_prd.attenuation;
-    // Compute radiance
-    // Compute direct lighting for environment map
+//    // Compute attenuation
+//    current_prd.attenuation = current_prd.attenuation;
+//    // Compute radiance
+//    // Compute direct lighting for environment map
 
-    float3 result = make_float3(0.0f);
+//    float3 result = make_float3(0.0f);
 
-    unsigned int num_lights = lights.size();
+//    unsigned int num_lights = lights.size();
 
-    for(int i = 0; i < num_lights; ++i)
-    {
-      ParallelogramLight light = lights[i];
-      float z1 = rnd(current_prd.seed);
-      float z2 = rnd(current_prd.seed);
-      float3 light_pos = light.corner + light.v1 * z1 + light.v2 * z2;
+//    for(int i = 0; i < num_lights; ++i)
+//    {
+//      ParallelogramLight light = lights[i];
+//      float z1 = rnd(current_prd.seed);
+//      float z2 = rnd(current_prd.seed);
+//      float3 light_pos = light.corner + light.v1 * z1 + light.v2 * z2;
 
-      float Ldist = length(light_pos - hitpoint);
-      float3 L = normalize(light_pos - hitpoint);
-      float nDl = dot( ffnormal, L );
-      float LnDl = dot( light.normal, L );
-      float LnDlinverse = dot(-light.normal, L);
-      float A = length(cross(light.v1, light.v2));
+//      float Ldist = length(light_pos - hitpoint);
+//      float3 L = normalize(light_pos - hitpoint);
+//      float nDl = dot( ffnormal, L );
+//      float LnDl = dot( light.normal, L );
+//      float LnDlinverse = dot(-light.normal, L);
+//      float A = length(cross(light.v1, light.v2));
 
-      // cast shadow ray
-      if ( nDl > 0.0f && LnDl > 0.0f )
-      {
-        PerRayData_pathtrace_shadow shadow_prd;
-        shadow_prd.inShadow = false;
-        Ray shadow_ray = make_Ray( hitpoint, L, pathtrace_shadow_ray_type, scene_epsilon, Ldist );
-        rtTrace(top_object, shadow_ray, shadow_prd);
+//      // cast shadow ray
+//      if ( nDl > 0.0f && LnDl > 0.0f )
+//      {
+//        PerRayData_pathtrace_shadow shadow_prd;
+//        shadow_prd.inShadow = false;
+//        Ray shadow_ray = make_Ray( hitpoint, L, pathtrace_shadow_ray_type, scene_epsilon, Ldist );
+//        rtTrace(top_object, shadow_ray, shadow_prd);
 
-        if(!shadow_prd.inShadow)
-        {
-          float weight=nDl * LnDl * A / (M_PIf*Ldist*Ldist);
-          result += light.emission * weight;
-        }
-      }
+//        if(!shadow_prd.inShadow)
+//        {
+//          float weight=nDl * LnDl * A / (M_PIf*Ldist*Ldist);
+//          result += light.emission * weight;
+//        }
+//      }
 
-      // cast shadow ray for other side of light
-      if ( nDl > 0.0f && LnDlinverse > 0.0f )
-      {
-        PerRayData_pathtrace_shadow shadow_prd;
-        shadow_prd.inShadow = false;
-        Ray shadow_ray = make_Ray( hitpoint, L, pathtrace_shadow_ray_type, scene_epsilon, Ldist );
-        rtTrace(top_object, shadow_ray, shadow_prd);
+//      // cast shadow ray for other side of light
+//      if ( nDl > 0.0f && LnDlinverse > 0.0f )
+//      {
+//        PerRayData_pathtrace_shadow shadow_prd;
+//        shadow_prd.inShadow = false;
+//        Ray shadow_ray = make_Ray( hitpoint, L, pathtrace_shadow_ray_type, scene_epsilon, Ldist );
+//        rtTrace(top_object, shadow_ray, shadow_prd);
 
-        if(!shadow_prd.inShadow)
-        {
-          float weight=nDl * LnDlinverse * A / (M_PIf*Ldist*Ldist);
-          result += light.emission * weight;
-        }
-      }
-    }
+//        if(!shadow_prd.inShadow)
+//        {
+//          float weight=nDl * LnDlinverse * A / (M_PIf*Ldist*Ldist);
+//          result += light.emission * weight;
+//        }
+//      }
+//    }
 
-    current_prd.done = true; // end the ray comming in
-}
+//    current_prd.done = true; // end the ray comming in
+//}
 
 RT_PROGRAM void julia_ah_shadow()
 {
@@ -697,6 +686,9 @@ RT_PROGRAM void diffuse()
   }
 
   current_prd.result = result;
+  current_prd.result_nrm = shading_normal;
+  current_prd.result_world = hitpoint;
+  current_prd.result_depth = t_hit;
   current_prd.done = true;
 }
 
@@ -707,6 +699,10 @@ RT_PROGRAM void diffuse()
 //-----------------------------------------------------------------------------
 RT_PROGRAM void miss(){
     current_prd.result = make_float3(0.0, 0.0, 0.0);
+    current_prd.result_nrm = make_float3(0.0, 0.0, 0.0);
+    current_prd.result_world = make_float3(0.0, 0.0, 0.0);
+    current_prd.result_depth = RT_DEFAULT_MAX;
+
     current_prd.done = true;
 }
 
@@ -732,5 +728,8 @@ RT_PROGRAM void envmap_miss()
 
   current_prd.done = true;
   current_prd.result = make_float3( tex2D(envmap, u, v) );
-rtTerminateRay();
+  current_prd.result_nrm = make_float3(0.0, 0.0, 0.0);
+  current_prd.result_world = make_float3(0.0, 0.0, 0.0);
+  current_prd.result_depth = RT_DEFAULT_MAX;
+  rtTerminateRay();
 }
