@@ -42,6 +42,8 @@ public:
 
     bool saveBuffersToDisk(std::string _filename);
 
+    void setTime(float _t);
+
 //    InitialCameraData camera_data;
     optix::GeometryGroup m_geometrygroup;
 
