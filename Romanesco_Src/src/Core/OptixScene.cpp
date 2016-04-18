@@ -208,6 +208,12 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height)
     m_context->compile();
 }
 
+void OptixScene::setTime(float _t)
+{
+    m_time = (_t / 10.0f);
+    m_context[ "global_t" ]->setFloat( m_time );
+}
+
 void OptixScene::setCamera(optix::float3 _eye, /*optix::float3 _lookat, */float _fov, int _width, int _height)
 {
 //    m_camera->setParameters( _eye,
@@ -621,7 +627,6 @@ __device__ float distancehit_hook(float3 p, float3* test)
     m_context[ "max_iterations" ]->setUint( m_max_iterations );
     m_context[ "DEL" ]->setFloat( m_DEL );
     m_context[ "particle" ]->setFloat( 0.5f, 0.5f, 0.4f );
-    m_context[ "global_t" ]->setFloat( m_time );
 }
 
 OptixScene::~OptixScene()

@@ -4,12 +4,10 @@
 #include "RenderMath.h"
 
 TestGLWidget::TestGLWidget(QWidget *parent)
-  : QOpenGLWidget(parent), m_optixScene(0), m_program(0), m_frame(0), m_previousWidth(0), m_previousHeight(0)
+  : QOpenGLWidget(parent), m_optixScene(0), m_program(0), m_frame(0), m_time(0), m_previousWidth(0), m_previousHeight(0)
 {
     m_desiredCamPos = m_camPos = QVector3D(1.09475, 0.0750364, -1.00239);
     m_desiredCamRot = m_camRot = QVector3D(-0.301546, 0.399876, 0);
-
-    testctr = 0;
 
     m_updateCamera = true;
 }
@@ -190,8 +188,6 @@ void TestGLWidget::paintGL()
 
         if(m_updateCamera)
         {
-            m_optixScene->setVar("global_t", m_frame);
-
             m_optixScene->setVar("normalmatrix", normalmatrix);
             m_optixScene->setCamera(  optix::make_float3( m_camPos.x(), m_camPos.y(), m_camPos.z() ),
                                       90.0f,

@@ -357,63 +357,63 @@ struct JuliaSet
   float operator()( float3 x ) const
   {
   //Warp space around the particle to get the blob-effect.
-//    const float part_dist = length( particle - x );
-//    const float force = smoothstep( 0.0f, 1.0f, 0.1f / (part_dist*part_dist) ) * 0.2f;
-//    const float3 weg = (x - particle) / max(0.01f,part_dist);
-//    x -= weg * force;
+    const float part_dist = length( particle - x );
+    const float force = smoothstep( 0.0f, 1.0f, 0.1f / (part_dist*part_dist) ) * 0.2f;
+    const float3 weg = (x - particle) / max(0.01f,part_dist);
+    x -= weg * force;
 
-//    // Iterated values.
-//    float3 zn  = x;//make_float3( x, 0 );
-//    float4 fp_n = make_float4( 1, 0, 0, 0 );  // start derivative at real 1 (see [2]).
+    // Iterated values.
+    float3 zn  = x;//make_float3( x, 0 );
+    float4 fp_n = make_float4( 1, 0, 0, 0 );  // start derivative at real 1 (see [2]).
 
-//    const float sq_threshold = 2.0f;   // divergence threshold
+    const float sq_threshold = 2.0f;   // divergence threshold
 
-//    float oscillatingTime = sin(global_t / 256.0f );
-//    float p = 4.0; //(5.0f * abs(oscillatingTime)) + 3.0f; //8;
-//    float rad = 0.0f;
-//    float dist = 0.0f;
-//    float d = 1.0;
+    float oscillatingTime = sin(global_t / 32.0f );
+    float p = (5.0f * abs(oscillatingTime)) + 3.0f; //8;
+    float rad = 0.0f;
+    float dist = 0.0f;
+    float d = 1.0;
 
-//    // Iterate to compute f_n and fp_n for the distance estimator.
-//    int i = m_max_iterations;
-//    while( i-- )
-//    {
-////      fp_n = 2.0f * mul( make_float4(zn), fp_n );   // z prime in [2]
-////      zn = square( make_float4(zn) ) + c4;         // equation (1) in [1]
+    // Iterate to compute f_n and fp_n for the distance estimator.
+    int i = m_max_iterations;
+    while( i-- )
+    {
+//      fp_n = 2.0f * mul( make_float4(zn), fp_n );   // z prime in [2]
+//      zn = square( make_float4(zn) ) + c4;         // equation (1) in [1]
 
-//      // Stop when we know the point diverges.
-//      // TODO: removing this condition burns 2 less registers and results in
-//      //       in a big perf improvement. Can we do something about it?
+      // Stop when we know the point diverges.
+      // TODO: removing this condition burns 2 less registers and results in
+      //       in a big perf improvement. Can we do something about it?
 
-//      rad = length(zn);
+      rad = length(zn);
 
-//      if( rad > sq_threshold )
-//      {
-//        dist = 0.5f * rad * logf( rad ) / d;
-//      }
-//      else
-//      {
-//        float th = atan2( length( make_float3(zn.x, zn.y, 0.0f) ), zn.z );
-//        float phi = atan2( zn.y, zn.x );
-//        float rado = pow(rad, p);
-//        d = pow(rad, p - 1) * (p-1) * d + 1.0;
+      if( rad > sq_threshold )
+      {
+        dist = 0.5f * rad * logf( rad ) / d;
+      }
+      else
+      {
+        float th = atan2( length( make_float3(zn.x, zn.y, 0.0f) ), zn.z );
+        float phi = atan2( zn.y, zn.x );
+        float rado = pow(rad, p);
+        d = pow(rad, p - 1) * (p-1) * d + 1.0;
 
-//        float sint = sin(th * p);
-//        zn.x = rado * sint * cos(phi * p);
-//        zn.y = rado * sint * sin(phi * p);
-//        zn.z = rado * cos(th * p);
-//        zn += x;
-//      }
-//    }
+        float sint = sin(th * p);
+        zn.x = rado * sint * cos(phi * p);
+        zn.y = rado * sint * sin(phi * p);
+        zn.z = rado * cos(th * p);
+        zn += x;
+      }
+    }
 
-//    // Distance estimation. Equation (8) from [1], with correction mentioned in [2].
-//    //const float norm = length( zn );
+    // Distance estimation. Equation (8) from [1], with correction mentioned in [2].
+    //const float norm = length( zn );
 
-//    //float a = length(x) - 1.0f;
-//    float a = dist;
-//    float b = sdBox(x, make_float3(1.0f) );
+    //float a = length(x) - 1.0f;
+    float a = dist;
+    float b = sdBox(x, make_float3(1.0f) );
 
-//    return dist;
+    return dist;
 
 //      float3 p = x;
 
@@ -435,9 +435,9 @@ struct JuliaSet
 //        d = max(d, -c);
 //    }
 
-    float d = map(x);
+//    float d = map(x);
 
-    return d;
+//    return d;
 
 //    float d1 = sdBox(p, make_float3(1.0f) );
 //    float d2 = sdBox(p - make_float3(0.6f), make_float3(1.1f) );

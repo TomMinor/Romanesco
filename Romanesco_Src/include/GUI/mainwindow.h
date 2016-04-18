@@ -48,6 +48,7 @@ private slots:
 	void loadFile();
 	void addBlock();
     void graphUpdated();
+    void timeUpdated(float _t);
 
 private:
     QNodeGraph *nodeEditor;

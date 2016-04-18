@@ -7,6 +7,8 @@
 #include <QTimeLine>
 #include <QDebug>
 
+#include <assert.h>
+
 #include "qtimelineanimated.h"
 
 QAnimatedTimeline::QAnimatedTimeline(QWidget *parent) : QWidget(parent)
@@ -56,13 +58,14 @@ QAnimatedTimeline::QAnimatedTimeline(QWidget *parent) : QWidget(parent)
     m_slider->setRange(0, 10);
     m_slider->setOrientation(Qt::Horizontal);
     m_slider->setTickPosition(QSlider::TicksBothSides);
-//    m_slider->setMinimumHeight(32);
 
     connect(playBtn, SIGNAL(pressed()), this, SLOT(play()));
     connect(stopBtn, SIGNAL(pressed()), m_timeline, SLOT(stop()));
     connect(rewindBtn, SIGNAL(pressed()), this, SLOT(rewind()));
     connect(prevBtn, SIGNAL(pressed()), this, SLOT(prevFrame()));
     connect(nextBtn, SIGNAL(pressed()), this, SLOT(nextFrame()));
+
+    connect(m_slider, SIGNAL(valueChanged(int)), this, SLOT(updateTime(int)));
 
     connect(m_slider, SIGNAL(rangeChanged(int,int)), this, SLOT(setRange(int,int)) );
     connect(m_timeline, SIGNAL(frameChanged(int)), m_slider, SLOT(setValue(int)));
@@ -76,8 +79,29 @@ QAnimatedTimeline::QAnimatedTimeline(QWidget *parent) : QWidget(parent)
     layout->addWidget(m_slider);
     layout->addWidget(m_spinbox_timeStart);
     layout->addWidget(m_spinbox_timeEnd);
+}
 
+void QAnimatedTimeline::updateTime(int _x)
+{
+    emit timeUpdated(_x);
+}
 
+int QAnimatedTimeline::getStartFrame()
+{
+    if(!m_timeline)
+    {
+        assert(0 && "Timeline pointer invalid");
+    }
+    return m_timeline->startFrame();
+}
+
+int QAnimatedTimeline::getEndFrame()
+{
+    if(!m_timeline)
+    {
+        assert(0 && "Timeline pointer invalid");
+    }
+    return m_timeline->endFrame();
 }
 
 void QAnimatedTimeline::play()

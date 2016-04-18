@@ -100,6 +100,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     QAnimatedTimeline* timeline = new QAnimatedTimeline;
 
+    connect(timeline, SIGNAL(timeUpdated(float)), glwidget, SLOT(updateTime(float)));
+
     layout->addWidget(splitter);
     layout->addWidget(timeline);
     window->setLayout(layout);
@@ -127,6 +129,11 @@ void MainWindow::graphUpdated()
     std::string src = nodeEditor->parseGraph().c_str();
     qDebug() << src.c_str();
     glwidget->m_optixScene->createGeometry( src );
+}
+
+void MainWindow::timeUpdated(float _t)
+{
+    qDebug() << "Time : " << _t;
 }
 
 MainWindow::~MainWindow()

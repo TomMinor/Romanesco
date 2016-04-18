@@ -5,13 +5,14 @@
 #include <QOpenGLFunctions>
 #include <QOpenGLWidget>
 #include <QMatrix4x4>
-
+#include <QDebug>
 #include <QKeyEvent>
 
 #include "OptixScene.h"
 
 class TestGLWidget : public QOpenGLWidget, protected QOpenGLFunctions
 {
+    Q_OBJECT
 public:
     TestGLWidget(QWidget *parent = 0);
     virtual ~TestGLWidget();
@@ -30,15 +31,21 @@ public:
     void leaveEvent(QEvent* _event) override;
 
     OptixScene* m_optixScene;
-
     unsigned int m_previousWidth, m_previousHeight;
+
+public slots:
+    void updateTime(float _t)
+    {
+        m_time = _t;
+        m_updateCamera = true;
+
+        m_optixScene->setTime(_t);
+    }
 
 private:
     //QMatrix4x4 m_projection;
 
     bool m_updateCamera;
-
-    int testctr;
 
     QOpenGLShaderProgram *m_program;
 
@@ -48,7 +55,8 @@ private:
     GLuint m_vtxPosAttr;
     GLuint m_vtxUVAttr;
 
-    int m_frame;
+    float m_time;
+    long m_frame;
 };
 
 #endif // TESTGLWIDGET_H
