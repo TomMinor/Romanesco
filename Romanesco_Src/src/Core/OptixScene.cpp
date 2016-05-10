@@ -200,7 +200,7 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height)
 //               60.0f,
 //               _width, _height);
 
-    setOutputBuffer("output_buffer");
+    setOutputBuffer("output_buffer_nrm");
 
     //ray_gen_program["draw_color"]->setFloat( optix::make_float3(0.462f, 0.725f, 0.0f) );
 
@@ -690,6 +690,7 @@ bool OptixScene::saveBuffersToDisk(std::string _filename)
     {
         pixels[k].z = depth[k];
     }
+
 
     delete [] diffuse;
     delete [] normal;

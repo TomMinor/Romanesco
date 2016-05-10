@@ -393,8 +393,18 @@ void TestGLWidget::keyPressEvent(QKeyEvent *_event)
             break;
 
         case Qt::Key_P:
+            {
                 m_optixScene->saveBuffersToDisk("./text.exr");
-        break;
+            }
+            break;
+        case Qt::Key_U:
+            {
+                qDebug() << "Updating geo";
+                system("nvcc -m64 -gencode arch=compute_20,code=sm_20 --compiler-options -fno-strict-aliasing -use_fast_math --ptxas-options=-v -ptx -I$OPTIX_PATH/SDK/sutil -I$OPTIX_PATH/SDK -I$OPTIX_PATH/include kernel/menger.cu -o ptx/menger.cu.ptx");
+                m_optixScene->createGeometry();
+                m_updateCamera = true;
+            }
+            break;
 
         default:
             _event->ignore();

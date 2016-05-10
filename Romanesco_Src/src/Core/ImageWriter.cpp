@@ -56,6 +56,9 @@ ImageWriter::~ImageWriter()
     }
 }
 
+#include <OpenImageIO/imagebuf.h>
+#include <OpenImageIO/imagebufalgo.h>
+
 bool ImageWriter::write(std::vector<ImageWriter::Pixel> _pixels)
 {
     m_outFile = nullptr;
@@ -81,12 +84,15 @@ bool ImageWriter::write(std::vector<ImageWriter::Pixel> _pixels)
 
     success = m_outFile->write_image (OpenImageIO::TypeDesc::UNKNOWN,
                             _pixels.data(),
-                            sizeof( ImageWriter::Pixel ), OpenImageIO::AutoStride, OpenImageIO::AutoStride,
+                            sizeof( ImageWriter::Pixel ),
+                            OpenImageIO::AutoStride,
+                            OpenImageIO::AutoStride,
                             callback,
                             this // This class is the callback payload
                             );
 
     m_outFile->close();
+
 
     return success;
 }
