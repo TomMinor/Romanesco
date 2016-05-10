@@ -229,6 +229,8 @@ void ShaderWindow::keyPressEvent(QKeyEvent* event)
   const float offset = 0.025f;
   const float rotateOffset = 0.10f;
 
+  qDebug() << "Arse";
+
   if( event->key() ==  Qt::Key_A )
   {
       float radius = offset;
@@ -305,10 +307,6 @@ void ShaderWindow::keyPressEvent(QKeyEvent* event)
       m_desiredCamPos.setX( m_desiredCamPos.x() - xMove );
       m_desiredCamPos.setY( m_desiredCamPos.y() - yMove );
       m_desiredCamPos.setZ( m_desiredCamPos.z() - zMove );
-
-
-
-
   }
   if( event->key() ==  Qt::Key_Up )
   {
@@ -325,6 +323,11 @@ void ShaderWindow::keyPressEvent(QKeyEvent* event)
   if( event->key() ==  Qt::Key_Right )
   {
       m_desiredCamRot.setY( m_desiredCamRot.y() - rotateOffset );
+  }
+  if( event->key() ==  Qt::Key_U )
+  {
+      qDebug() << "Updating geo";
+      m_optixScene->createGeometry();
   }
   if( event->key() == Qt::Key_Escape )
     {
