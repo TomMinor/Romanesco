@@ -175,13 +175,16 @@ void TestGLWidget::paintGL()
 
 
 
-    m_camPos.setX( FInterpTo( m_camPos.x(), m_desiredCamPos.x(), m_frame, 0.0001) );
-    m_camPos.setY( FInterpTo( m_camPos.y(), m_desiredCamPos.y(), m_frame, 0.0001) );
-    m_camPos.setZ( FInterpTo( m_camPos.z(), m_desiredCamPos.z(), m_frame, 0.0001) );
+//    m_camPos.setX( FInterpTo( m_camPos.x(), m_desiredCamPos.x(), m_frame, 0.0001) );
+//    m_camPos.setY( FInterpTo( m_camPos.y(), m_desiredCamPos.y(), m_frame, 0.0001) );
+//    m_camPos.setZ( FInterpTo( m_camPos.z(), m_desiredCamPos.z(), m_frame, 0.0001) );
 
-    m_camRot.setX( FInterpTo( m_camRot.x(), m_desiredCamRot.x(), m_frame, 0.00025) );
-    m_camRot.setY( FInterpTo( m_camRot.y(), m_desiredCamRot.y(), m_frame, 0.00025) );
-    m_camRot.setZ( FInterpTo( m_camRot.z(), m_desiredCamRot.z(), m_frame, 0.00025) );
+//    m_camRot.setX( FInterpTo( m_camRot.x(), m_desiredCamRot.x(), m_frame, 0.00025) );
+//    m_camRot.setY( FInterpTo( m_camRot.y(), m_desiredCamRot.y(), m_frame, 0.00025) );
+//    m_camRot.setZ( FInterpTo( m_camRot.z(), m_desiredCamRot.z(), m_frame, 0.00025) );
+
+    m_camRot = m_desiredCamRot;
+    m_camPos = m_desiredCamPos;
 
     if(m_optixScene)
     {
@@ -193,15 +196,16 @@ void TestGLWidget::paintGL()
                                       90.0f,
                                       width(), height()
                                       );
+            m_updateCamera = false;
         }
     }
 
-    if(AreSame(m_camPos, m_desiredCamPos) && AreSame(m_camRot, m_desiredCamRot))
-    {
-        m_updateCamera = false;
-    } else {
-        m_updateCamera = true;
-    }
+//    if(AreSame(m_camPos, m_desiredCamPos) && AreSame(m_camRot, m_desiredCamRot))
+//    {
+//        m_updateCamera = false;
+//    } else {
+//        m_updateCamera = true;
+//    }
 
 
     const qreal retinaScale = devicePixelRatio();
@@ -301,6 +305,7 @@ void TestGLWidget::keyPressEvent(QKeyEvent *_event)
                 m_desiredCamPos.setX( m_desiredCamPos.x() + xMove );
                 m_desiredCamPos.setY( m_desiredCamPos.y() + yMove );
                 m_desiredCamPos.setZ( m_desiredCamPos.z() + zMove );
+                m_updateCamera = true;
             }
 
             break;
@@ -322,6 +327,7 @@ void TestGLWidget::keyPressEvent(QKeyEvent *_event)
                 m_desiredCamPos.setX( m_desiredCamPos.x() - xMove );
                 m_desiredCamPos.setY( m_desiredCamPos.y() - yMove );
                 m_desiredCamPos.setZ( m_desiredCamPos.z() - zMove );
+                m_updateCamera = true;
             }
 
             break;
@@ -343,6 +349,7 @@ void TestGLWidget::keyPressEvent(QKeyEvent *_event)
                 m_desiredCamPos.setX( m_desiredCamPos.x() + xMove );
                 m_desiredCamPos.setY( m_desiredCamPos.y() + yMove );
                 m_desiredCamPos.setZ( m_desiredCamPos.z() + zMove );
+                m_updateCamera = true;
             }
 
             break;
@@ -364,6 +371,7 @@ void TestGLWidget::keyPressEvent(QKeyEvent *_event)
                 m_desiredCamPos.setX( m_desiredCamPos.x() - xMove );
                 m_desiredCamPos.setY( m_desiredCamPos.y() - yMove );
                 m_desiredCamPos.setZ( m_desiredCamPos.z() - zMove );
+                m_updateCamera = true;
             }
 
             break;
@@ -371,24 +379,28 @@ void TestGLWidget::keyPressEvent(QKeyEvent *_event)
         case Qt::Key_Up:
             {
                 m_desiredCamRot.setX( m_desiredCamRot.x() + rotateOffset );
+                m_updateCamera = true;
             }
             break;
 
         case Qt::Key_Down:
             {
                 m_desiredCamRot.setX( m_desiredCamRot.x() - rotateOffset );
+                m_updateCamera = true;
             }
             break;
 
         case Qt::Key_Left:
             {
                 m_desiredCamRot.setY( m_desiredCamRot.y() + rotateOffset );
+                m_updateCamera = true;
             }
             break;
 
         case Qt::Key_Right:
             {
                  m_desiredCamRot.setY( m_desiredCamRot.y() - rotateOffset );
+                 m_updateCamera = true;
             }
             break;
 
@@ -405,7 +417,6 @@ void TestGLWidget::keyPressEvent(QKeyEvent *_event)
                 m_updateCamera = true;
             }
             break;
-
         default:
             _event->ignore();
             break;

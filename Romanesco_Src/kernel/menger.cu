@@ -641,6 +641,7 @@ RT_PROGRAM void diffuse()
   float3 ffnormal = faceforward( world_shading_normal, -ray.direction, world_geometric_normal );
 
   float3 hitpoint = ray.origin + t_hit * ray.direction;
+  hitpoint += make_float3(0, 0, 0);
   current_prd.origin = hitpoint;
 
   float z1=rnd(current_prd.seed);
