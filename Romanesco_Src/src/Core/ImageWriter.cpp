@@ -46,7 +46,9 @@ ImageWriter::~ImageWriter()
 {
     if(m_outFile)
     {
-        OpenImageIO::ImageOutput::destroy(m_outFile);
+        m_outFile->close();
+//        OpenImageIO::ImageOutput::destroy(m_outFile);
+
         m_outFile = nullptr;
     }
 
@@ -78,7 +80,8 @@ bool ImageWriter::write(std::vector<ImageWriter::Pixel> _pixels)
     if (!m_outFile->supports("channelformats")) {
         qDebug("Warning: Filetype %s doesn't support multichannel data", m_outFile->format_name());
 
-        OpenImageIO::ImageOutput::destroy(m_outFile);
+//        OpenImageIO::ImageOutput::destroy(m_outFile);
+        m_outFile->close();
         throw std::runtime_error("Can't write per channel data (passes) in ImageWriter");
     }
 

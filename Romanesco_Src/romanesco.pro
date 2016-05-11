@@ -172,6 +172,7 @@ LIBS += -lpthread -lIlmImf -lHalf -lOpenImageIO -lOpenImageIO_Util
 macx:INCLUDEPATH+=/usr/local/include/
 unix:LIBS += -L/usr/local/lib
 unix:LIBS += -L/home/i7245143/local/lib
+LIBS += -lboost_system
 
 #LIBS += -lSeExpr
 
