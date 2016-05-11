@@ -12,7 +12,7 @@ class QTimeLineWidget : public QWidget
     Q_OBJECT
 public:
     explicit QTimeLineWidget(QWidget *parent = 0);
-    ~QTimeLineWidget();
+    virtual ~QTimeLineWidget() {;}
 
 signals:
     void play();

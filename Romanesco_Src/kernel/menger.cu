@@ -477,6 +477,7 @@ RT_PROGRAM void intersect(int primIdx)
     //const float epsilon = 1e-3f;
     const float epsilon = 0.00001;
 
+    float fudgeFactor = 0.99f;
 
     // float t = tmin;//0.0;
     // const int maxSteps = 128;
@@ -488,7 +489,7 @@ RT_PROGRAM void intersect(int primIdx)
 
       // Step along the ray and accumulate the distance from the origin.
       x += dist * ray_direction;
-      dist_from_origin += dist;
+      dist_from_origin += dist * fudgeFactor;
 
       // Check if we're close enough or too far.
       if( dist < epsilon || dist_from_origin > tmax  )
@@ -641,7 +642,6 @@ RT_PROGRAM void diffuse()
   float3 ffnormal = faceforward( world_shading_normal, -ray.direction, world_geometric_normal );
 
   float3 hitpoint = ray.origin + t_hit * ray.direction;
-  current_prd.origin = hitpoint;
 
   float z1=rnd(current_prd.seed);
   float z2=rnd(current_prd.seed);
@@ -653,6 +653,11 @@ RT_PROGRAM void diffuse()
   float3 normal_color = (normalize(world_shading_normal)*0.5f + 0.5f)*0.9;
   current_prd.attenuation = current_prd.attenuation * diffuse_color; // use the diffuse_color as the diffuse response
   current_prd.countEmitted = false;
+
+  // @Todo, trace back from the hit to calculate a new sample point?
+  PerRayData_pathtrace backwards_prd;
+  backwards_prd.origin = hitpoint;
+  backwards_prd.direction = -ray.direction;
 
   // Compute direct light...
   // Or shoot one...

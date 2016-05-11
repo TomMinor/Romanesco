@@ -20,7 +20,6 @@ public:
 
 protected:
     virtual void paintEvent(QPaintEvent *ev) override;
-
 };
 
 #endif // QTIMESLIDER_H
