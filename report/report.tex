@@ -11,6 +11,9 @@
 \usepackage{xcolor}
 \usepackage{textcomp}
 \usepackage{listings}
+
+\usepackage{stackengine,graphicx,trimclip,scalerel}
+
 \renewcommand{\baselinestretch}{1.25} %Increase 
 
 \makeatletter
@@ -24,6 +27,14 @@
     \addcontentsline{toc}{chapter}{#2}
 }
 
+\usepackage[nopar]{lipsum}
+\usepackage{stackengine,graphicx,trimclip,scalerel}
+\savestack\eye{\rotatebox{90}{$^\circ\mkern-6mu\raisebox{1pt}{)}$}}
+\savestack\nose{\raisebox{3pt}{\scalebox{1}[-1]{\clipbox{0pt 1pt 0pt 0pt}{?}}}}
+\savestack\mouth{\rotatebox{90}{(}}
+\newcommand\Lenny{(\scalerel{\stackanchor[2pt]{\eye \nose \eye}{\mouth}}{)}}
+
+
 \begin{document}
 
 \title{ Major Project Report }
@@ -34,7 +45,7 @@
 
 \maketitle
 
-\renewcommand{\abstractname}{Project Overview}
+\renewcommand{\abstractname}{Project Overview \Lenny{}}
 \begin{abstract}
 
 \textit{Main Aspects}
