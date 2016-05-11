@@ -477,6 +477,7 @@ RT_PROGRAM void intersect(int primIdx)
     //const float epsilon = 1e-3f;
     const float epsilon = 0.00001;
 
+    http://blog.hvidtfeldts.net/index.php/2011/09/distance-estimated-3d-fractals-v-the-mandelbulb-different-de-approximations/
     float fudgeFactor = 0.99f;
 
     // float t = tmin;//0.0;
