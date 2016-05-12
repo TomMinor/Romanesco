@@ -1,6 +1,6 @@
 #include "PinholeCamera.h"
 
-MyPinholeCamera::MyPinholeCamera(optix::float3 eye, optix::float3 lookat, optix::float3 up, float hfov, float vfov, AspectRatioMode arm)
+PinholeCamera::PinholeCamera(optix::float3 eye, optix::float3 lookat, optix::float3 up, float hfov, float vfov, AspectRatioMode arm)
   : eye(eye)
   , lookat(lookat)
   , up(up)
@@ -61,23 +61,23 @@ optix::float3 assignWithCheck( optix::float3& dst, const optix::float3 &src )
   return dst;
 }
 
-void MyPinholeCamera::setAspectRatio(float ratio)
+void PinholeCamera::setAspectRatio(float ratio)
 {
   float realRatio = ratio;
 
   const float* inputAngle = 0;
   float* outputAngle = 0;
   switch(aspectRatioMode) {
-  case MyPinholeCamera::KeepHorizontal:
+  case PinholeCamera::KeepHorizontal:
     inputAngle = &hfov;
     outputAngle = &vfov;
     realRatio = 1.f/ratio;
     break;
-  case MyPinholeCamera::KeepVertical:
+  case PinholeCamera::KeepVertical:
     inputAngle = &vfov;
     outputAngle = &hfov;
     break;
-  case MyPinholeCamera::KeepNone:
+  case PinholeCamera::KeepNone:
     return;
     break;
   }
@@ -87,7 +87,7 @@ void MyPinholeCamera::setAspectRatio(float ratio)
   setup();
 }
 
-void MyPinholeCamera::setParameters(optix::float3 eye_in, optix::float3 lookat_in, optix::float3 up_in, float hfov_in, float vfov_in, MyPinholeCamera::AspectRatioMode aspectRatioMode_in)
+void PinholeCamera::setParameters(optix::float3 eye_in, optix::float3 lookat_in, optix::float3 up_in, float hfov_in, float vfov_in, PinholeCamera::AspectRatioMode aspectRatioMode_in)
 {
   eye = eye_in;
   lookat = lookat_in;
@@ -99,7 +99,7 @@ void MyPinholeCamera::setParameters(optix::float3 eye_in, optix::float3 lookat_i
   setup();
 }
 
-void MyPinholeCamera::setup()
+void PinholeCamera::setup()
 {
   lookdir = assignWithCheck( lookdir, lookat-eye );  // do not normalize lookdir -- implies focal length
   float lookdir_len = length( lookdir );
@@ -112,7 +112,7 @@ void MyPinholeCamera::setup()
   camera_v = assignWithCheck( camera_v, camera_v * vlen );
 }
 
-void MyPinholeCamera::getEyeUVW(optix::float3& eye_out, optix::float3& U, optix::float3& V, optix::float3& W)
+void PinholeCamera::getEyeUVW(optix::float3& eye_out, optix::float3& U, optix::float3& V, optix::float3& W)
 {
   eye_out = eye;
   U = camera_u;
@@ -120,7 +120,7 @@ void MyPinholeCamera::getEyeUVW(optix::float3& eye_out, optix::float3& U, optix:
   W = lookdir;
 }
 
-void MyPinholeCamera::getEyeLookUpFOV(optix::float3& eye_out, optix::float3& lookat_out, optix::float3& up_out, float& HFOV_out, float& VFOV_out)
+void PinholeCamera::getEyeLookUpFOV(optix::float3& eye_out, optix::float3& lookat_out, optix::float3& up_out, float& HFOV_out, float& VFOV_out)
 {
   eye_out = eye;
   lookat_out = lookat;
@@ -129,7 +129,7 @@ void MyPinholeCamera::getEyeLookUpFOV(optix::float3& eye_out, optix::float3& loo
   VFOV_out = vfov;
 }
 
-void MyPinholeCamera::scaleFOV(float scale)
+void PinholeCamera::scaleFOV(float scale)
 {
   const float fov_min = 0.0f;
   const float fov_max = 120.0f;
@@ -144,7 +144,7 @@ void MyPinholeCamera::scaleFOV(float scale)
   setup();
 }
 
-void MyPinholeCamera::translate(float2 t)
+void PinholeCamera::translate(optix::float2 t)
 {
   optix::float3 trans = camera_u*t.x + camera_v*t.y;
 
@@ -158,7 +158,7 @@ void MyPinholeCamera::translate(float2 t)
 // Here scale will move the eye point closer or farther away from the
 // lookat point.  If you want an invertable value feed it
 // (previous_scale/(previous_scale-1)
-void MyPinholeCamera::dolly(float scale)
+void PinholeCamera::dolly(float scale)
 {
   // Better make sure the scale isn't exactly one.
   if (scale == 1.0f) return;
@@ -334,7 +334,7 @@ inline float det3 (float a, float b, float c,
     return inverse;
 }
 
-void MyPinholeCamera::transform( const optix::Matrix4x4& trans )
+void PinholeCamera::transform( const optix::Matrix4x4& trans )
 {
   optix::float3 cen = lookat;         // TODO: Add logic for various rotation types (eg, flythrough)
 

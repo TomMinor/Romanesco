@@ -53,7 +53,7 @@ public:
     RTbuffer  m_buffer;
 
     optix::Context m_context;
-    MyPinholeCamera* m_camera;
+    PinholeCamera* m_camera;
 
     /* Parameters */
     RTvariable result_buffer;
@@ -73,6 +73,8 @@ public:
 
 private:
     std::string m_outputBuffer;
+
+    unsigned int m_progressiveTimeout;
 
 };
 
