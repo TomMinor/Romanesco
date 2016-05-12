@@ -264,7 +264,7 @@ static __host__ __device__ float4 square( float4 a )
 // Intersect the bounding sphere of the Julia set.
 static __host__ __device__ bool intersectBoundingSphere( float3 o, float3 d, float& tmin, float &tmax )
 {
-  const float sq_radius = 32.0f;
+  const float sq_radius = 8.0f;
   const float b = dot( o, d );
   const float c = dot( o, o ) - sq_radius;
   const float disc = b*b - c;
@@ -451,7 +451,6 @@ struct JuliaSet
   unsigned int m_max_iterations;
 };
 
-
 RT_PROGRAM void intersect(int primIdx)
 {
   normal = make_float3(0,0,0);
@@ -477,7 +476,7 @@ RT_PROGRAM void intersect(int primIdx)
     //const float epsilon = 1e-3f;
     const float epsilon = 0.00001;
 
-    http://blog.hvidtfeldts.net/index.php/2011/09/distance-estimated-3d-fractals-v-the-mandelbulb-different-de-approximations/
+    //http://blog.hvidtfeldts.net/index.php/2011/09/distance-estimated-3d-fractals-v-the-mandelbulb-different-de-approximations/
     float fudgeFactor = 0.99f;
 
     // float t = tmin;//0.0;
@@ -506,7 +505,9 @@ RT_PROGRAM void intersect(int primIdx)
       {
         // color HACK
         distance.m_max_iterations = 14;  // more iterations for normal estimate, to fake some more detail
-        geometric_normal = shading_normal = normal = estimate_normal(distance, x, DEL);
+        normal = estimate_normal(distance, x, 0.00001 /*DEL*/);
+        geometric_normal = normal;
+        shading_normal = normal;
         rtReportIntersection( 0 );
       }
     }
@@ -620,6 +621,7 @@ rtDeclareVariable(float3, emission_color, , );
 RT_PROGRAM void diffuseEmitter(){
     if(current_prd.countEmitted){
         current_prd.result = make_float4(emission_color, 1.0f);
+        current_prd.result_nrm = make_float3(0);
     }
     current_prd.done = true;
 }
@@ -655,9 +657,9 @@ RT_PROGRAM void diffuse()
   current_prd.countEmitted = false;
 
   // @Todo, trace back from the hit to calculate a new sample point?
-  PerRayData_pathtrace backwards_prd;
-  backwards_prd.origin = hitpoint;
-  backwards_prd.direction = -ray.direction;
+//  PerRayData_pathtrace backwards_prd;
+//  backwards_prd.origin = hitpoint;
+//  backwards_prd.direction = -ray.direction;
 
   // Compute direct light...
   // Or shoot one...
@@ -680,7 +682,7 @@ RT_PROGRAM void diffuse()
     if ( nDl > 0.0f && LnDl > 0.0f ) {
       PerRayData_pathtrace_shadow shadow_prd;
       shadow_prd.inShadow = false;
-      Ray shadow_ray = make_Ray( hitpoint, L, pathtrace_shadow_ray_type, scene_epsilon, Ldist );
+      Ray shadow_ray = make_Ray( hitpoint, L, pathtrace_shadow_ray_type, scene_epsilon, RT_DEFAULT_MAX /*Ldist*/ );
       rtTrace(top_object, shadow_ray, shadow_prd);
 
       if(!shadow_prd.inShadow){
@@ -691,7 +693,7 @@ RT_PROGRAM void diffuse()
   }
 
   current_prd.result = make_float4(result, 1.0);
-  current_prd.result_nrm = shading_normal;
+  current_prd.result_nrm = ffnormal;
   current_prd.result_world = hitpoint;
   current_prd.result_depth = t_hit;
   current_prd.done = true;
@@ -703,7 +705,7 @@ RT_PROGRAM void diffuse()
 //
 //-----------------------------------------------------------------------------
 RT_PROGRAM void miss(){
-    current_prd.result = make_float4(1.0, 0.0, 0.0f, 0.0f);
+    current_prd.result = make_float4(0.0, 0.0, 0.0f, 0.0f);
     current_prd.result_nrm = make_float3(0.0, 0.0, 0.0);
     current_prd.result_world = make_float3(0.0, 0.0, 0.0);
     current_prd.result_depth = RT_DEFAULT_MAX;
