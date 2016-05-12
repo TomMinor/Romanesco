@@ -56,7 +56,7 @@ private:
     QGraphicsView *view;
     QGraphicsScene *scene;
 
-    TestGLWidget* glwidget;
+    TestGLWidget* m_glViewport;
 
     bool m_update_pending;
     bool m_animating;

@@ -70,14 +70,23 @@ MainWindow::MainWindow(QWidget *parent) :
 
     setWindowTitle(tr("Node Editor"));
 
-
     QWidget* window = new QWidget(this);
     QVBoxLayout* layout = new QVBoxLayout(window);
 //    layout->setMargin(0);
 
     QSplitter* splitter = new QSplitter(window);
+    splitter->setOpaqueResize(false);
 
     scene = new GridScene(-1000, -1000, 2000, 2000);
+
+    QFormLayout* settingsLayout = new QFormLayout;
+
+//    QVBoxLayout* rhs_layout = new QVBoxLayout;
+//    rhs_layout->
+
+//    QWidget* rhs = new QWidget(this);
+//    rhs->setLayout(  );
+
     view = new QGraphicsView(splitter);
     view->setScene(scene);
     //view->setViewport(new QOpenGLWidget);
@@ -90,17 +99,20 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect(nodeEditor, SIGNAL(graphChanged()), this, SLOT(graphUpdated()) );
 
-    glwidget = 0;
-    glwidget = new TestGLWidget(splitter);
-    glwidget->setMinimumWidth(640);
-    glwidget->setMinimumHeight(480);
+    m_glViewport = 0;
+    m_glViewport = new TestGLWidget(splitter);
+    m_glViewport->setMinimumWidth(640);
+    m_glViewport->setMinimumHeight(480);
 
-    splitter->addWidget(glwidget);
+    // Add Viewport
+    splitter->addWidget(m_glViewport);
+
+    // Add right hand side
     splitter->addWidget(view);
 
     QAnimatedTimeline* timeline = new QAnimatedTimeline;
 
-    connect(timeline, SIGNAL(timeUpdated(float)), glwidget, SLOT(updateTime(float)));
+    connect(timeline, SIGNAL(timeUpdated(float)), m_glViewport, SLOT(updateTime(float)));
 
     layout->addWidget(splitter);
     layout->addWidget(timeline);
@@ -117,9 +129,9 @@ void MainWindow::timerEvent(QTimerEvent *_event)
     if(_event->timerId() == m_updateTimer)
     {
       //if (isExposed())
-      if(glwidget)
+      if(m_glViewport)
       {
-          glwidget->update();
+          m_glViewport->update();
       }
     }
 }
@@ -128,7 +140,7 @@ void MainWindow::graphUpdated()
 {
     std::string src = nodeEditor->parseGraph().c_str();
     qDebug() << src.c_str();
-    glwidget->m_optixScene->createGeometry( src );
+    m_glViewport->m_optixScene->createGeometry( src );
 }
 
 void MainWindow::timeUpdated(float _t)
