@@ -6,8 +6,6 @@
 #include <QSlider>
 #include <QTimeLine>
 
-#include "qtimeslider.h"
-
 class QAnimatedTimeline : public QWidget
 {
     Q_OBJECT
