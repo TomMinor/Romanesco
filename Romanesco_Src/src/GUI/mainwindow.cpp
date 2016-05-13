@@ -75,6 +75,7 @@ MainWindow::MainWindow(QWidget *parent) :
 //    layout->setMargin(0);
 
     QSplitter* splitter = new QSplitter(window);
+    // Don't try and resize the gl widgets until user
     splitter->setOpaqueResize(false);
 
     scene = new GridScene(-1000, -1000, 2000, 2000);
