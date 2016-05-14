@@ -17,11 +17,6 @@ public:
     int getEndFrame();
 
 signals:
-//    void playing();
-//    void rewinding();
-//    void stopping();
-//    void toNextFrame();
-//    void toPrevFrame();
     void timeUpdated(float);
 
 
@@ -37,12 +32,15 @@ public slots:
 
 private slots:
     void updateTime(int _t);
+    void updateSlider(int _t);
 
 private:
     QSpinBox* m_spinbox_timeStart;
     QSpinBox* m_spinbox_timeEnd;
     QSlider* m_slider;
     QTimeLine* m_timeline;
+
+    unsigned int m_fps;
 };
 
 #endif // QTIMELINE_H

@@ -27,13 +27,18 @@ QAnimatedTimeline::QAnimatedTimeline(QWidget *parent) : QWidget(parent)
     QPushButton* stopBtn = new QPushButton(QIcon(":/images/stop.png"), "", 0);
     QPushButton* rewindBtn = new QPushButton(QIcon(":/images/rewind.png"), "", 0);
 
-    const unsigned int fps = 30;
+    m_fps = 30;
+    const float fps_ms = (1.0f / m_fps) * 1000.0f;
+    qDebug() << fps_ms;
 
     m_timeline  = new QTimeLine;
     m_timeline->setLoopCount(99999999);
-//    m_timeline->setUpdateInterval( 10.0 );
+//    m_timeline->killTimer(m_timeline->
+//    m_timeline->setUpdateInterval( 100.0 );
     m_timeline->setCurveShape(QTimeLine::LinearCurve);
-    m_timeline->setUpdateInterval( 1.0 / fps );
+
+    m_timeline->setUpdateInterval( fps_ms );
+//    qDebug() << m_timeline->updateInterval();
 
     nextBtn->setIconSize(QSize(16,16));
     rewindBtn->setIconSize(QSize(16,16));
@@ -58,9 +63,9 @@ QAnimatedTimeline::QAnimatedTimeline(QWidget *parent) : QWidget(parent)
     m_slider = new QSlider;
     m_slider->setMinimumWidth(300);
     m_slider->setTickInterval( 1 );
-    m_slider->setRange(0, 10);
+    m_slider->setRange(0, 2000);
     m_slider->setOrientation(Qt::Horizontal);
-    m_slider->setTickPosition(QSlider::TicksBothSides);
+    m_slider->setTickPosition(QSlider::TicksAbove);
 
     connect(playBtn, SIGNAL(pressed()), this, SLOT(play()));
     connect(stopBtn, SIGNAL(pressed()), m_timeline, SLOT(stop()));
@@ -70,8 +75,7 @@ QAnimatedTimeline::QAnimatedTimeline(QWidget *parent) : QWidget(parent)
 
     connect(m_slider, SIGNAL(valueChanged(int)), this, SLOT(updateTime(int)));
 
-    connect(m_slider, SIGNAL(rangeChanged(int,int)), this, SLOT(setRange(int,int)) );
-    connect(m_timeline, SIGNAL(frameChanged(int)), m_slider, SLOT(setValue(int)));
+    connect(m_timeline, SIGNAL(frameChanged(int)), this, SLOT(updateSlider(int)));
     connect(m_spinbox_timeStart, SIGNAL(valueChanged(int)), this, SLOT( setRangeMin(int) ));
     connect(m_spinbox_timeEnd, SIGNAL(valueChanged(int)), this, SLOT( setRangeMax(int) ));
 
@@ -84,10 +88,17 @@ QAnimatedTimeline::QAnimatedTimeline(QWidget *parent) : QWidget(parent)
     layout->addWidget(m_spinbox_timeEnd);
 }
 
+void QAnimatedTimeline::updateSlider(int _x)
+{
+    m_slider->setValue(_x / m_fps);
+}
+
 void QAnimatedTimeline::updateTime(int _x)
 {
-    emit timeUpdated(_x * m_spinbox_timeEnd->value() );
+//    qDebug() << m_timeline->currentFrame() / m_fps;
+    emit timeUpdated( _x );
 }
+
 
 int QAnimatedTimeline::getStartFrame()
 {
@@ -122,11 +133,13 @@ void QAnimatedTimeline::rewind()
 void QAnimatedTimeline::nextFrame()
 {
     m_slider->setValue(m_slider->value() + 1);
+    m_timeline->setCurrentTime( m_timeline->valueForTime( m_slider->value()) );
 }
 
 void QAnimatedTimeline::prevFrame()
 {
     m_slider->setValue(m_slider->value() - 1);
+    m_timeline->setCurrentTime( m_timeline->valueForTime( m_slider->value()) );
 }
 
 void QAnimatedTimeline::setRangeMin(int x)
@@ -138,7 +151,11 @@ void QAnimatedTimeline::setRangeMin(int x)
     }
 
     if(m_slider)
-        m_slider->setMinimum(x);
+        m_slider->setMinimum(x * m_fps);
+
+    m_timeline->setStartFrame(x);
+    unsigned int difference = m_timeline->endFrame() - m_timeline->startFrame();
+    m_timeline->setDuration( difference );
 }
 
 void QAnimatedTimeline::setRangeMax(int x)
@@ -151,6 +168,10 @@ void QAnimatedTimeline::setRangeMax(int x)
 
     if(m_slider)
         m_slider->setMaximum(x);
+
+    m_timeline->setEndFrame(x * m_fps);
+    unsigned int difference = m_timeline->endFrame() - m_timeline->startFrame();
+    m_timeline->setDuration( difference );
 }
 
 void QAnimatedTimeline::setRange(int a, int b)
