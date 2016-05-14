@@ -63,7 +63,7 @@ QAnimatedTimeline::QAnimatedTimeline(QWidget *parent) : QWidget(parent)
     m_slider = new QSlider;
     m_slider->setMinimumWidth(300);
     m_slider->setTickInterval( 1 );
-    m_slider->setRange(0, 2000);
+    m_slider->setRange(0, 10);
     m_slider->setOrientation(Qt::Horizontal);
     m_slider->setTickPosition(QSlider::TicksAbove);
 
@@ -73,14 +73,17 @@ QAnimatedTimeline::QAnimatedTimeline(QWidget *parent) : QWidget(parent)
     connect(prevBtn, SIGNAL(pressed()), this, SLOT(prevFrame()));
     connect(nextBtn, SIGNAL(pressed()), this, SLOT(nextFrame()));
 
-    connect(m_slider, SIGNAL(valueChanged(int)), this, SLOT(updateTime(int)));
-
+    ///@todo Fix draggable time slider
+//    connect(m_slider, SIGNAL(valueChanged(int)), this, SLOT(updateTime(int)));
     connect(m_timeline, SIGNAL(frameChanged(int)), this, SLOT(updateSlider(int)));
+
+    connect(m_timeline, SIGNAL(frameChanged(int)), this, SLOT(emitTime(int)));
+
     connect(m_spinbox_timeStart, SIGNAL(valueChanged(int)), this, SLOT( setRangeMin(int) ));
     connect(m_spinbox_timeEnd, SIGNAL(valueChanged(int)), this, SLOT( setRangeMax(int) ));
 
     m_spinbox_timeStart->setValue(0);
-    m_spinbox_timeEnd->setValue(200);
+    m_spinbox_timeEnd->setValue(250);
 
     layout->addLayout(buttonLayout);
     layout->addWidget(m_slider);
@@ -95,10 +98,15 @@ void QAnimatedTimeline::updateSlider(int _x)
 
 void QAnimatedTimeline::updateTime(int _x)
 {
-//    qDebug() << m_timeline->currentFrame() / m_fps;
-    emit timeUpdated( _x / m_fps );
+    qDebug() << _x << " : " << m_timeline->frameForTime( _x );
+//    m_timeline->setCurrentTime( m_timeline->frameForTime( _x ) );
 }
 
+void QAnimatedTimeline::emitTime(int _x)
+{
+//    qDebug() << m_timeline->currentFrame();// / m_fps;
+    emit timeUpdated( _x / m_fps );
+}
 
 int QAnimatedTimeline::getStartFrame()
 {
