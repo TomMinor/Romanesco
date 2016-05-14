@@ -91,6 +91,16 @@ QAnimatedTimeline::QAnimatedTimeline(QWidget *parent) : QWidget(parent)
     layout->addWidget(m_spinbox_timeEnd);
 }
 
+void QAnimatedTimeline::setStartFrame(int _x)
+{
+    m_spinbox_timeStart->setValue(_x);
+}
+
+void QAnimatedTimeline::setEndFrame(int _x)
+{
+    m_spinbox_timeEnd->setValue(_x);
+}
+
 void QAnimatedTimeline::updateSlider(int _x)
 {
     m_slider->setValue(_x / m_fps);
@@ -159,7 +169,9 @@ void QAnimatedTimeline::setRangeMin(int x)
     }
 
     if(m_slider)
+    {
         m_slider->setMinimum(x * m_fps);
+    }
 
     m_timeline->setStartFrame(x);
     unsigned int difference = m_timeline->endFrame() - m_timeline->startFrame();
@@ -175,7 +187,9 @@ void QAnimatedTimeline::setRangeMax(int x)
     }
 
     if(m_slider)
+    {
         m_slider->setMaximum(x);
+    }
 
     m_timeline->setEndFrame(x * m_fps);
     unsigned int difference = m_timeline->endFrame() - m_timeline->startFrame();

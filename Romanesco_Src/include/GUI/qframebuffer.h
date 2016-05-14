@@ -15,6 +15,11 @@ class QFramebuffer : public QMainWindow
 public:
     explicit QFramebuffer(QWidget *parent = 0);
 
+    void addFrame(const QImage& _frame);
+
+private:
+    void setFrame(int _f);
+
 private:
     QAnimatedTimeline* m_timeline;
     QGraphicsScene* m_scene;
@@ -25,7 +30,9 @@ private:
 
 signals:
 
+
 public slots:
+    void updateFrame(float _f);
 };
 
 #endif // QFRAMEBUFFER_H
