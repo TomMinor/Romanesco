@@ -96,7 +96,7 @@ void QAnimatedTimeline::updateSlider(int _x)
 void QAnimatedTimeline::updateTime(int _x)
 {
 //    qDebug() << m_timeline->currentFrame() / m_fps;
-    emit timeUpdated( _x );
+    emit timeUpdated( _x / m_fps );
 }
 
 
