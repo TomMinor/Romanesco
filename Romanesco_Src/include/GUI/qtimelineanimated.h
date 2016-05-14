@@ -33,6 +33,7 @@ public slots:
 private slots:
     void updateTime(int _t);
     void updateSlider(int _t);
+    void emitTime(int _t);
 
 private:
     QSpinBox* m_spinbox_timeStart;
