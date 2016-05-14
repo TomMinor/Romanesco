@@ -16,9 +16,11 @@ public:
     int getStartFrame();
     int getEndFrame();
 
+    void setStartFrame(int _x);
+    void setEndFrame(int _x);
+
 signals:
     void timeUpdated(float);
-
 
 public slots:
     void setRangeMin(int x);
