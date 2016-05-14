@@ -58,9 +58,6 @@ ImageWriter::~ImageWriter()
     }
 }
 
-#include <OpenImageIO/imagebuf.h>
-#include <OpenImageIO/imagebufalgo.h>
-
 bool ImageWriter::write(std::vector<ImageWriter::Pixel> _pixels)
 {
     m_outFile = nullptr;

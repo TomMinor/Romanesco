@@ -7,14 +7,16 @@
 
 QFramebuffer::QFramebuffer(QWidget *parent) : QMainWindow(parent)
 {
-    QLayout* layout = this->layout();
+    QWidget* widget = new QWidget;
+    QVBoxLayout* layout = new QVBoxLayout;
+    //    QVBoxLayout* layout = new QVBoxLayout;
 
-//    m_menu = new QMenuBar(this);
-//    this->setMenuBar( m_menu );
+    m_menu = new QMenuBar(this);
+    this->setMenuBar( m_menu );
 
     m_timeline = new QAnimatedTimeline;
 
-    QImage image("/home/i7245143/Pictures/heliostest.png.png");
+    QImage image("/home/tom/Pictures/fractal.jpg");
 
     m_view = new QGraphicsView;
 
@@ -26,11 +28,14 @@ QFramebuffer::QFramebuffer(QWidget *parent) : QMainWindow(parent)
 
     m_view->setScene(m_scene);
 
-//    layout->addWidget(m_view);
-//    layout->addWidget(m_timeline);
+    layout->addWidget(m_view);
+    layout->addWidget(m_timeline);
 
-    this->setCentralWidget(m_view);
+    widget->setLayout(layout);
 
+    this->setCentralWidget(widget);
+
+//    this->setCentralWidget(m_view);
 //    this->setLayout( layout );
 }
 

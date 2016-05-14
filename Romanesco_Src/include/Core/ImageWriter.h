@@ -6,6 +6,7 @@
 #include <OpenImageIO/imageio.h>
 #include <OpenEXR/half.h>
 
+
 class ImageWriter
 {
 public:
