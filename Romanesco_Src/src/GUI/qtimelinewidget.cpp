@@ -27,18 +27,9 @@ QAnimatedTimeline::QAnimatedTimeline(QWidget *parent) : QWidget(parent)
     QPushButton* stopBtn = new QPushButton(QIcon(":/images/stop.png"), "", 0);
     QPushButton* rewindBtn = new QPushButton(QIcon(":/images/rewind.png"), "", 0);
 
-    m_fps = 30;
-    const float fps_ms = (1.0f / m_fps) * 1000.0f;
-    qDebug() << fps_ms;
-
     m_timeline  = new QTimeLine;
     m_timeline->setLoopCount(99999999);
-//    m_timeline->killTimer(m_timeline->
-//    m_timeline->setUpdateInterval( 100.0 );
     m_timeline->setCurveShape(QTimeLine::LinearCurve);
-
-    m_timeline->setUpdateInterval( fps_ms );
-//    qDebug() << m_timeline->updateInterval();
 
     nextBtn->setIconSize(QSize(16,16));
     rewindBtn->setIconSize(QSize(16,16));
@@ -89,6 +80,18 @@ QAnimatedTimeline::QAnimatedTimeline(QWidget *parent) : QWidget(parent)
     layout->addWidget(m_slider);
     layout->addWidget(m_spinbox_timeStart);
     layout->addWidget(m_spinbox_timeEnd);
+
+    setFPS(10);
+}
+
+void QAnimatedTimeline::setFPS(int _f)
+{
+    m_fps = _f;
+    const float fps_ms = (1.0f / m_fps) * 1000.0f;
+    if(m_timeline)
+    {
+        m_timeline->setUpdateInterval( fps_ms );
+    }
 }
 
 void QAnimatedTimeline::setStartFrame(int _x)
@@ -151,13 +154,14 @@ void QAnimatedTimeline::rewind()
 void QAnimatedTimeline::nextFrame()
 {
     m_slider->setValue(m_slider->value() + 1);
-    m_timeline->setCurrentTime( m_timeline->valueForTime( m_slider->value()) );
+    m_timeline->setCurrentTime( m_timeline->currentFrame()+ 1 );
+//    qDebug() << m_timeline->valueForTime( m_timeline->currentFrame()+ 1);
 }
 
 void QAnimatedTimeline::prevFrame()
 {
     m_slider->setValue(m_slider->value() - 1);
-    m_timeline->setCurrentTime( m_timeline->valueForTime( m_slider->value()) );
+    m_timeline->setCurrentTime( m_timeline->valueForTime( m_slider->value() - 1) );
 }
 
 void QAnimatedTimeline::setRangeMin(int x)
@@ -175,7 +179,7 @@ void QAnimatedTimeline::setRangeMin(int x)
 
     m_timeline->setStartFrame(x);
     unsigned int difference = m_timeline->endFrame() - m_timeline->startFrame();
-    m_timeline->setDuration( difference );
+    m_timeline->setDuration( difference + 1);
 }
 
 void QAnimatedTimeline::setRangeMax(int x)

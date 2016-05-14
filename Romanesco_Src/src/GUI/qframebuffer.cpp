@@ -53,7 +53,7 @@ QFramebuffer::QFramebuffer(QWidget *parent) : QMainWindow(parent)
 void QFramebuffer::addFrame(const QImage& _frame)
 {
     m_frames.push_back( _frame );
-    m_timeline->setEndFrame( m_frames.size() );
+    m_timeline->setEndFrame( m_frames.size() - 1);
 }
 
 void QFramebuffer::updateFrame(float _f)

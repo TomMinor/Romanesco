@@ -19,6 +19,8 @@ public:
     void setStartFrame(int _x);
     void setEndFrame(int _x);
 
+    void setFPS(int _f);
+
 signals:
     void timeUpdated(float);
 
