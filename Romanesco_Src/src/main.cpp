@@ -134,15 +134,11 @@ int main(int argc, char *argv[])
   format.setStencilBufferSize(8);
   QSurfaceFormat::setDefaultFormat(format);
 
-  QFramebuffer test;
-  test.resize(800, 600);
-  test.show();
-
-//  //ShaderWindow window;
-//  MainWindow window;
-//  //window.setFormat(format);
-//  window.resize(1280, 800);
-//  window.show();
+  //ShaderWindow window;
+  MainWindow window;
+  //window.setFormat(format);
+  window.resize(1280, 800);
+  window.show();
 
   //window.setAnimating(true);
 

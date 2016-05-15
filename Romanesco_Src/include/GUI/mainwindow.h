@@ -29,6 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 #include <QMainWindow>
 #include <QtWidgets>
 
+#include "qframebuffer.h"
 #include "testglwidget.h"
 
 class QNodeGraph;
@@ -43,6 +44,10 @@ public:
 
     void timerEvent(QTimerEvent *_event);
 
+    void keyPressEvent(QKeyEvent* _event);
+
+
+
 private slots:
 	void saveFile();
 	void loadFile();
@@ -50,9 +55,22 @@ private slots:
     void graphUpdated();
     void timeUpdated(float _t);
 
+    void startFlipbook();
+
+    void test()
+    {
+        qDebug() << "Frame ready";
+    }
+
+     void initializeGL();
+
 private:
+    QFramebuffer *framebuffer;
     QNodeGraph *nodeEditor;
+
     QMenu *fileMenu;
+    QMenu *renderMenu;
+
     QGraphicsView *view;
     QGraphicsScene *scene;
 

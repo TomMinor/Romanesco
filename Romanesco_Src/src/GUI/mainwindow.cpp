@@ -42,6 +42,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent)
 {
+    framebuffer = new QFramebuffer;
+    framebuffer->resize(800, 600);
+
     QAction *quitAct = new QAction(tr("&Quit"), this);
     quitAct->setShortcuts(QKeySequence::Quit);
     quitAct->setStatusTip(tr("Quit the application"));
@@ -61,12 +64,22 @@ MainWindow::MainWindow(QWidget *parent) :
     addAct->setStatusTip(tr("Add a block"));
     connect(addAct, SIGNAL(triggered()), this, SLOT(addBlock()));
 
+
     fileMenu = menuBar()->addMenu(tr("&File"));
     fileMenu->addAction(addAct);
     fileMenu->addAction(loadAct);
     fileMenu->addAction(saveAct);
     fileMenu->addSeparator();
     fileMenu->addAction(quitAct);
+
+
+    QAction *flipbookAct = new QAction(tr("&Flipbook"), this);
+    addAct->setStatusTip(tr("Flipbook a preview animation"));
+    connect(flipbookAct, SIGNAL(triggered()), this, SLOT(startFlipbook()));
+
+    renderMenu = menuBar()->addMenu(tr("&Render"));
+    renderMenu->addAction(flipbookAct);
+
 
     setWindowTitle(tr("Node Editor"));
 
@@ -105,6 +118,8 @@ MainWindow::MainWindow(QWidget *parent) :
     m_glViewport->setMinimumWidth(640);
     m_glViewport->setMinimumHeight(480);
 
+    connect(m_glViewport, SIGNAL(initializedGL()), this, SLOT(initializeGL()));
+
     // Add Viewport
     splitter->addWidget(m_glViewport);
 
@@ -112,6 +127,8 @@ MainWindow::MainWindow(QWidget *parent) :
     splitter->addWidget(view);
 
     QAnimatedTimeline* timeline = new QAnimatedTimeline;
+    timeline->setStartFrame(0);
+    timeline->setEndFrame(200);
 
     connect(timeline, SIGNAL(timeUpdated(float)), m_glViewport, SLOT(updateTime(float)));
 
@@ -123,6 +140,22 @@ MainWindow::MainWindow(QWidget *parent) :
 
     m_updateTimer = startTimer(30);
     m_drawTimer = startTimer(30);
+}
+
+void MainWindow::initializeGL()
+{
+    OptixScene* optixscene = m_glViewport->m_optixScene;
+    connect(optixscene, SIGNAL(frameReady()), this, SLOT(test()));
+}
+
+void MainWindow::startFlipbook()
+{
+    framebuffer->show();
+}
+
+void MainWindow::keyPressEvent(QKeyEvent* _event)
+{
+
 }
 
 void MainWindow::timerEvent(QTimerEvent *_event)

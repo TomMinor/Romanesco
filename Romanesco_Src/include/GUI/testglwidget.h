@@ -42,6 +42,9 @@ public slots:
         m_optixScene->setTime(_t);
     }
 
+signals:
+    void initializedGL();
+
 private:
     //QMatrix4x4 m_projection;
 

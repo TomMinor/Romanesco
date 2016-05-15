@@ -4,10 +4,19 @@
 #include <QWidget>
 #include <QSpinBox>
 #include <QSlider>
+
 #include <QTimeLine>
+#include <QTimer>
+#include <QTime>
 
 class QAnimatedTimeline : public QWidget
 {
+    enum Direction
+    {
+        Forward = 1,
+        Backward = -1
+    };
+
     Q_OBJECT
 public:
     explicit QAnimatedTimeline(QWidget *parent = 0);
@@ -39,12 +48,20 @@ private slots:
     void updateSlider(int _t);
     void emitTime(int _t);
 
+    void timerUpdate();
+
 private:
     QSpinBox* m_spinbox_timeStart;
     QSpinBox* m_spinbox_timeEnd;
     QSlider* m_slider;
     QTimeLine* m_timeline;
 
+    QTimer* m_timer;
+    QTime m_lastFrameTime;
+
+    Direction m_direction;
+
+    int m_currentFrame;
     unsigned int m_fps;
 };
 
