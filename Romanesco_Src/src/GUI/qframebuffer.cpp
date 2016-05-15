@@ -7,6 +7,8 @@
 
 QFramebuffer::QFramebuffer(QWidget *parent) : QMainWindow(parent)
 {
+    setWindowTitle("Flipbook");
+
     QWidget* widget = new QWidget;
     QVBoxLayout* layout = new QVBoxLayout;
     //    QVBoxLayout* layout = new QVBoxLayout;

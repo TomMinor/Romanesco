@@ -17,11 +17,14 @@ using namespace optix;
 #include "commonStructs.h"
 #include "PinholeCamera.h"
 
+#include <QObject>
 
-class OptixScene
+class OptixScene : public QObject
 {
+    Q_OBJECT
+
 public:
-    OptixScene(unsigned int _width, unsigned int _height);
+    OptixScene(unsigned int _width, unsigned int _height, QObject *_parent = 0);
     virtual ~OptixScene();
 
     virtual void updateBufferSize(unsigned int _width, unsigned int _height);
@@ -75,6 +78,10 @@ private:
     std::string m_outputBuffer;
 
     unsigned int m_progressiveTimeout;
+    bool m_frameDone;
+
+signals:
+    void frameReady();
 
 };
 

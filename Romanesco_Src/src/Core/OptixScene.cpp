@@ -64,8 +64,8 @@ optix::Buffer OptixScene::createOutputBuffer(RTformat _format, unsigned int _wid
     return buffer;
 }
 
-OptixScene::OptixScene(unsigned int _width, unsigned int _height)
-    : m_time(0.0f)
+OptixScene::OptixScene(unsigned int _width, unsigned int _height, QObject *_parent)
+    : QObject(_parent), m_time(0.0f)
 {
     /// ================ Output Texture Buffer ======================
 
@@ -172,7 +172,6 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height)
 
     m_context["lights"]->set(light_buffer);
 
-
     float3 test_data[] = {
         { 1.0f, 0.0f, 0.0f },
         { 0.0f, 1.0f, 0.0f },
@@ -194,7 +193,7 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height)
 //                                  -1.0f, // hfov is ignored when using keep vertical
 //                                  camera_data.vfov,
 //                                  MyPinholeCamera::KeepVertical );
-
+//
 //    setCamera( camera_data.eye,
 //               camera_data.lookat,
 //               60.0f,
@@ -206,6 +205,8 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height)
 
     m_context->validate();
     m_context->compile();
+
+    m_progressiveTimeout = 20;
 }
 
 void OptixScene::setTime(float _t)
@@ -561,7 +562,8 @@ __device__ float distancehit_hook(float3 p, float3* test)
     GeometryInstance gi = m_context->createGeometryInstance();
     gi->setGeometry(julia);
 
-    std::string ptx_path = "/home/i7245143/src/optix/build/lib/ptx/path_tracer_generated_parallelogram.cu.ptx";
+    //@todo Critical : Fix this :|
+    std::string ptx_path = "/home/tom/src/optix/build/lib/ptx/path_tracer_generated_parallelogram.cu.ptx";
     auto m_pgram_bounding_box = m_context->createProgramFromPTXFile( ptx_path, "bounds" );
     auto m_pgram_intersection = m_context->createProgramFromPTXFile( ptx_path, "intersect" );
 
@@ -718,9 +720,9 @@ void OptixScene::drawToBuffer()
         m_frame = 1;
     }
 
-    if(m_frame < 20)
+    if(m_frame < m_progressiveTimeout)
     {
-        m_context["frame_number"]->setUint( m_frame++ );
+        m_frame++;
 
         RTsize buffer_width, buffer_height;
         m_context["output_buffer"]->getBuffer()->getSize( buffer_width, buffer_height );
@@ -764,18 +766,20 @@ void OptixScene::drawToBuffer()
             }
 
             glBindBuffer( GL_PIXEL_UNPACK_BUFFER, 0 );
-
-            // Initialize offsets to pixel center sampling.
-
-      //      float u = 0.5f/buffer_width;
-      //      float v = 0.5f/buffer_height;
+            m_frameDone = false;
         }
         else
         {
             assert(0 && "Couldn't bind GL Buffer Object");
         }
-
     }
+    else if(!m_frameDone) // We've hit the 'max' timeout
+    {
+        m_frameDone = true;
+        emit frameReady();
+    }
+
+    m_context["frame_number"]->setUint(m_frame);
     /// ===========================================================
 
   //  RT_CHECK_ERROR( sutilDisplayFilePPM( "/home/tom/src/OptixQt/out.ppm", buffer->get() ) );

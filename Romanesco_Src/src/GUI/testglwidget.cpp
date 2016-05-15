@@ -1,5 +1,7 @@
 #include <QDir>
 
+#include <QApplication>
+
 #include "testglwidget.h"
 #include "RenderMath.h"
 
@@ -79,7 +81,7 @@ void TestGLWidget::initializeGL()
 //    m_posUniform = m_program->uniformLocation("pos");
 //    m_normalMatrix = m_program->uniformLocation("normalMatrix");
 
-
+    emit initializedGL();
 }
 
 void TestGLWidget::resizeGL(int w, int h)
