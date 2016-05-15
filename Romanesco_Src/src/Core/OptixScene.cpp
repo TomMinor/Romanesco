@@ -718,11 +718,13 @@ void OptixScene::drawToBuffer()
     if( m_camera_changed ) {
         m_camera_changed = false;
         m_frame = 1;
+//        m_context["frame_number"]->setUint(m_frame);
     }
 
     if(m_frame < m_progressiveTimeout)
     {
         m_frame++;
+        m_context["frame_number"]->setUint(m_frame);
 
         RTsize buffer_width, buffer_height;
         m_context["output_buffer"]->getBuffer()->getSize( buffer_width, buffer_height );
@@ -779,7 +781,7 @@ void OptixScene::drawToBuffer()
         emit frameReady();
     }
 
-    m_context["frame_number"]->setUint(m_frame);
+
     /// ===========================================================
 
   //  RT_CHECK_ERROR( sutilDisplayFilePPM( "/home/tom/src/OptixQt/out.ppm", buffer->get() ) );
