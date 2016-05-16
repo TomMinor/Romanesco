@@ -27,8 +27,8 @@ public:
     void setStartFrame(int _x);
     void setEndFrame(int _x);
 
-    void setFPS(int _f);
     void setTime(int _f);
+    void setFPS(int _f);
 
 signals:
     void timeUpdated(float);
@@ -37,6 +37,7 @@ public slots:
     void setRangeMin(int x);
     void setRangeMax(int x);
     void setRange(int a, int b);
+
 
     void play();
     void stop();
@@ -51,6 +52,8 @@ private slots:
 
     void timerUpdate();
 
+    void updateFPS(int _f);
+
 private:
     int getTime();
 
@@ -59,6 +62,7 @@ private:
     QSpinBox* m_spinbox_timeEnd;
     QSlider* m_slider;
     QSpinBox* m_currentFrameSpinbox;
+    QSpinBox* m_fpsSpinbox;
 
     QTimer* m_timer;
     QTime m_lastFrameTime;

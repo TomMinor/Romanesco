@@ -79,7 +79,6 @@ QAnimatedTimeline::QAnimatedTimeline(QWidget *parent) : QWidget(parent)
     m_spinbox_timeEnd->setWrapping(false);
     m_spinbox_timeEnd->setAlignment(Qt::AlignCenter|Qt::AlignTrailing|Qt::AlignVCenter);
 
-
     m_currentFrameSpinbox = new QSpinBox;
     m_currentFrameSpinbox->setMaximumWidth(150);
     m_currentFrameSpinbox->setMaximum(1000000);
@@ -91,9 +90,22 @@ QAnimatedTimeline::QAnimatedTimeline(QWidget *parent) : QWidget(parent)
 
     connect(m_slider, SIGNAL(valueChanged(int)), m_currentFrameSpinbox, SLOT(setValue(int)));
 
+    m_fpsSpinbox = new QSpinBox;
+    m_fpsSpinbox->setMinimumWidth(40);
+    m_fpsSpinbox->setMaximumWidth(40);
+    m_fpsSpinbox->setMaximum(120);
+    m_fpsSpinbox->setMinimum(1);
+    m_fpsSpinbox->setFrame(false);
+    m_fpsSpinbox->setWrapping(false);
+    m_fpsSpinbox->setAlignment(Qt::AlignCenter|Qt::AlignTrailing|Qt::AlignVCenter);
+    m_fpsSpinbox->setButtonSymbols(QAbstractSpinBox::NoButtons);
+
+    connect(m_fpsSpinbox, SIGNAL(valueChanged(int)), this, SLOT(updateFPS(int)));
+
     spinnerLayout->addWidget(m_currentFrameSpinbox);
     spinnerLayout->addWidget(m_spinbox_timeStart);
     spinnerLayout->addWidget(m_spinbox_timeEnd);
+    spinnerLayout->addWidget(m_fpsSpinbox);
 
     connect(playBtn, SIGNAL(pressed()), this, SLOT(play()));
     connect(stopBtn, SIGNAL(pressed()), this, SLOT(stop()));
@@ -157,6 +169,11 @@ int QAnimatedTimeline::getTime()
 }
 
 void QAnimatedTimeline::setFPS(int _f)
+{
+    m_fpsSpinbox->setValue(_f);
+}
+
+void QAnimatedTimeline::updateFPS(int _f)
 {
     m_fps = _f;
     const float fps_ms = (1.0f / m_fps) * 1000.0f;
