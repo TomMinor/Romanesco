@@ -199,7 +199,7 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height, QObject *_pare
 //               60.0f,
 //               _width, _height);
 
-    setOutputBuffer("output_buffer_nrm");
+    setOutputBuffer("output_buffer");
 
     //ray_gen_program["draw_color"]->setFloat( optix::make_float3(0.462f, 0.725f, 0.0f) );
 
@@ -721,7 +721,7 @@ void OptixScene::drawToBuffer()
     if( m_camera_changed ) {
         m_camera_changed = false;
         m_frame = 1;
-//        m_context["frame_number"]->setUint(m_frame);
+        m_frameDone = false;
     }
 
     RTsize buffer_width, buffer_height;
@@ -779,7 +779,6 @@ void OptixScene::drawToBuffer()
         }
 
         glBindBuffer( GL_PIXEL_UNPACK_BUFFER, 0 );
-        m_frameDone = false;
     }
     else
     {
