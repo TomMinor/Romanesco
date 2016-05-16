@@ -21,6 +21,9 @@ QAnimatedTimeline::QAnimatedTimeline(QWidget *parent) : QWidget(parent)
     QHBoxLayout* layout = new QHBoxLayout(this);
     layout->setMargin(0);
 
+    setSizePolicy(QSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Fixed));
+    setContentsMargins(0, 0, 0, 0);
+
     QHBoxLayout* buttonLayout = new QHBoxLayout(this);
     buttonLayout->setMargin(0);
 

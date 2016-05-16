@@ -724,65 +724,66 @@ void OptixScene::drawToBuffer()
 //        m_context["frame_number"]->setUint(m_frame);
     }
 
+    RTsize buffer_width, buffer_height;
+    m_context["output_buffer"]->getBuffer()->getSize( buffer_width, buffer_height );
+
+    // Update Optix scene if necessary
     if(m_frame < m_progressiveTimeout)
     {
         m_context["frame_number"]->setUint(m_frame);
         m_frame++;
-//        m_context["frame_number"]->setUint( m_frame++ );
 
-        RTsize buffer_width, buffer_height;
-        m_context["output_buffer"]->getBuffer()->getSize( buffer_width, buffer_height );
         m_context->launch( 0,
                            static_cast<unsigned int>(buffer_width),
                            static_cast<unsigned int>(buffer_height)
                            );
-
-
-        /// ==================  Copy to texture =======================
-
-        optix::Buffer buffer = m_context[m_outputBuffer]->getBuffer();
-        RTformat buffer_format = buffer->getFormat();
-
-        vboId = buffer->getGLBOId();
-
-        if (vboId)
-        {
-            glBindTexture( GL_TEXTURE_2D, m_texId );
-
-            // send pbo to texture
-            glBindBuffer(GL_PIXEL_UNPACK_BUFFER, vboId);
-
-            RTsize elementSize = buffer->getElementSize();
-            if      ((elementSize % 8) == 0) glPixelStorei(GL_UNPACK_ALIGNMENT, 8);
-            else if ((elementSize % 4) == 0) glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-            else if ((elementSize % 2) == 0) glPixelStorei(GL_UNPACK_ALIGNMENT, 2);
-            else                             glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-            {
-                if(buffer_format == RT_FORMAT_UNSIGNED_BYTE4) {
-                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, buffer_width, buffer_height, 0, GL_BGRA, GL_UNSIGNED_BYTE, 0);
-                } else if(buffer_format == RT_FORMAT_FLOAT4) {
-                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F_ARB, buffer_width, buffer_height, 0, GL_RGBA, GL_FLOAT, 0);
-                } else if(buffer_format == RT_FORMAT_FLOAT3) {
-                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F_ARB, buffer_width, buffer_height, 0, GL_RGB, GL_FLOAT, 0);
-                } else if(buffer_format == RT_FORMAT_FLOAT) {
-                    glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE32F_ARB, buffer_width, buffer_height, 0, GL_LUMINANCE, GL_FLOAT, 0);
-                } else {
-                    assert(0 && "Unknown buffer format");
-                }
-            }
-
-            glBindBuffer( GL_PIXEL_UNPACK_BUFFER, 0 );
-            m_frameDone = false;
-        }
-        else
-        {
-            assert(0 && "Couldn't bind GL Buffer Object");
-        }
     }
     else if(!m_frameDone) // We've hit the 'max' timeout
     {
         m_frameDone = true;
         emit frameReady();
+    }
+
+    // Copy optix buffer to gl texture directly on the GPU
+    // (current visible buffer could potentially be changed even when optix scene is finished rendering, so copy over this every frame regardless)
+    /// ==================  Copy to texture =======================
+    optix::Buffer buffer = m_context[m_outputBuffer]->getBuffer();
+    RTformat buffer_format = buffer->getFormat();
+
+    vboId = buffer->getGLBOId();
+
+    if (vboId)
+    {
+        glBindTexture( GL_TEXTURE_2D, m_texId );
+
+        // send pbo to texture
+        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, vboId);
+
+        RTsize elementSize = buffer->getElementSize();
+        if      ((elementSize % 8) == 0) glPixelStorei(GL_UNPACK_ALIGNMENT, 8);
+        else if ((elementSize % 4) == 0) glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+        else if ((elementSize % 2) == 0) glPixelStorei(GL_UNPACK_ALIGNMENT, 2);
+        else                             glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+        {
+            if(buffer_format == RT_FORMAT_UNSIGNED_BYTE4) {
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, buffer_width, buffer_height, 0, GL_BGRA, GL_UNSIGNED_BYTE, 0);
+            } else if(buffer_format == RT_FORMAT_FLOAT4) {
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F_ARB, buffer_width, buffer_height, 0, GL_RGBA, GL_FLOAT, 0);
+            } else if(buffer_format == RT_FORMAT_FLOAT3) {
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F_ARB, buffer_width, buffer_height, 0, GL_RGB, GL_FLOAT, 0);
+            } else if(buffer_format == RT_FORMAT_FLOAT) {
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE32F_ARB, buffer_width, buffer_height, 0, GL_LUMINANCE, GL_FLOAT, 0);
+            } else {
+                assert(0 && "Unknown buffer format");
+            }
+        }
+
+        glBindBuffer( GL_PIXEL_UNPACK_BUFFER, 0 );
+        m_frameDone = false;
+    }
+    else
+    {
+        assert(0 && "Couldn't bind GL Buffer Object");
     }
 
 
