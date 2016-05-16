@@ -113,7 +113,9 @@ QAnimatedTimeline::QAnimatedTimeline(QWidget *parent) : QWidget(parent)
     connect(prevBtn, SIGNAL(pressed()), this, SLOT(gotoPrevFrame()));
     connect(nextBtn, SIGNAL(pressed()), this, SLOT(gotoNextFrame()));
 
-    connect(m_slider, SIGNAL(valueChanged(int)), this, SLOT(updateTime(int)));
+    connect(m_currentFrameSpinbox, SIGNAL(valueChanged(int)), m_slider, SLOT(setValue(int)));
+
+    connect(m_currentFrameSpinbox, SIGNAL(valueChanged(int)), this, SLOT(updateTime(int)));
 
 
     connect(m_spinbox_timeStart, SIGNAL(valueChanged(int)), this, SLOT( setRangeMin(int) ));
@@ -154,7 +156,6 @@ void QAnimatedTimeline::timerUpdate()
     }
 
     setTime(newtime);
-
 }
 
 void QAnimatedTimeline::setTime(int _f)
@@ -266,6 +267,7 @@ void QAnimatedTimeline::setRangeMin(int x)
         m_slider->setMinimum(x);
     }
 
+    m_currentFrameSpinbox->setMinimum(x);
 
 }
 
@@ -282,6 +284,7 @@ void QAnimatedTimeline::setRangeMax(int x)
         m_slider->setMaximum(x);
     }
 
+    m_currentFrameSpinbox->setMaximum(x);
 }
 
 void QAnimatedTimeline::setRange(int a, int b)

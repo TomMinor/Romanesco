@@ -16,6 +16,7 @@ public:
     explicit QFramebuffer(QWidget *parent = 0);
 
     void addFrame(const QImage& _frame);
+    void clearFrames();
 
 private:
     void setFrame(int _f);

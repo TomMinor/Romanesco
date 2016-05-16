@@ -150,6 +150,12 @@ void MainWindow::initializeGL()
 
 void MainWindow::startFlipbook()
 {
+    // Reuse existing window
+    if(framebuffer->isVisible())
+    {
+        framebuffer->clearFrames();
+    }
+
     framebuffer->show();
 }
 
