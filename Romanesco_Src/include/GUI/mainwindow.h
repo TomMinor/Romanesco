@@ -76,6 +76,8 @@ private:
 
     TestGLWidget* m_glViewport;
 
+
+
     bool m_update_pending;
     bool m_animating;
     int m_updateTimer, m_drawTimer;

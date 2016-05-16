@@ -140,7 +140,7 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height, QObject *_pare
     const optix::float3 default_color = optix::make_float3(1.0f, 1.0f, 1.0f);
 //    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/i7245143/src/optix/SDK/tutorial/data/CedarCity.hdr", default_color) );
 //    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/tom/src/Fragmentarium/Fragmentarium-Source/Examples/Include/Ditch-River_2k.hdr", default_color) );
-    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/i7245143/Downloads/Milkyway/Milkyway_small.hdr", default_color) );
+    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/tom/Downloads/Milkyway/Milkyway_small.hdr", default_color) );
 
 
     m_rr_begin_depth = 1u;

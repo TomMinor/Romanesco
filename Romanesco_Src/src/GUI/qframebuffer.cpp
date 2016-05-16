@@ -63,6 +63,13 @@ void QFramebuffer::updateFrame(float _f)
     setFrame((int)_f);
 }
 
+void QFramebuffer::clearFrames()
+{
+    m_frames.clear();
+    m_scene->clear();
+    m_timeline->setEndFrame( 0 );
+}
+
 void QFramebuffer::setFrame(int _f)
 {
     if(_f > m_frames.size() - 1)
