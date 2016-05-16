@@ -5,7 +5,6 @@
 #include <QSpinBox>
 #include <QSlider>
 
-#include <QTimeLine>
 #include <QTimer>
 #include <QTime>
 
@@ -29,6 +28,7 @@ public:
     void setEndFrame(int _x);
 
     void setFPS(int _f);
+    void setTime(int _f);
 
 signals:
     void timeUpdated(float);
@@ -39,9 +39,10 @@ public slots:
     void setRange(int a, int b);
 
     void play();
+    void stop();
     void rewind();
-    void nextFrame();
-    void prevFrame();
+    void gotoNextFrame();
+    void gotoPrevFrame();
 
 private slots:
     void updateTime(int _t);
@@ -51,10 +52,13 @@ private slots:
     void timerUpdate();
 
 private:
+    int getTime();
+
+private:
     QSpinBox* m_spinbox_timeStart;
     QSpinBox* m_spinbox_timeEnd;
     QSlider* m_slider;
-    QTimeLine* m_timeline;
+    QSpinBox* m_currentFrameSpinbox;
 
     QTimer* m_timer;
     QTime m_lastFrameTime;

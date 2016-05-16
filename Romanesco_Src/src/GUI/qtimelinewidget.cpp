@@ -24,14 +24,6 @@ QAnimatedTimeline::QAnimatedTimeline(QWidget *parent) : QWidget(parent)
     setSizePolicy(QSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Fixed));
     setContentsMargins(0, 0, 0, 0);
 
-    QHBoxLayout* buttonLayout = new QHBoxLayout(this);
-    buttonLayout->setMargin(0);
-
-    QPushButton* playBtn = new QPushButton(QIcon(":/images/play.png"), "", 0);
-    QPushButton* nextBtn = new QPushButton(QIcon(":/images/next.png"), "", 0);
-    QPushButton* prevBtn = new QPushButton(QIcon(":/images/prev.png"), "", 0);
-    QPushButton* stopBtn = new QPushButton(QIcon(":/images/stop.png"), "", 0);
-    QPushButton* rewindBtn = new QPushButton(QIcon(":/images/rewind.png"), "", 0);
 
     // Set this up like the Fabric guys did https://github.com/fabric-engine/FabricUI/blob/arbus/Viewports/TimeLineWidget.cpp
     // QTimer is inaccurate, so set the interval to be as rapid as possible and figure out the update rate ourselves
@@ -40,9 +32,21 @@ QAnimatedTimeline::QAnimatedTimeline(QWidget *parent) : QWidget(parent)
 
     connect(m_timer, SIGNAL(timeout()), this, SLOT(timerUpdate()));
 
-    m_timeline  = new QTimeLine;
-    m_timeline->setLoopCount(99999999);
-    m_timeline->setCurveShape(QTimeLine::LinearCurve);
+    m_slider = new QSlider;
+    m_slider->setMinimumWidth(300);
+    m_slider->setTickInterval( 10 );
+    m_slider->setRange(0, 10);
+    m_slider->setOrientation(Qt::Horizontal);
+    m_slider->setTickPosition(QSlider::TicksBelow);
+
+    QHBoxLayout* buttonLayout = new QHBoxLayout(this);
+    buttonLayout->setMargin(0);
+
+    QPushButton* playBtn = new QPushButton(QIcon(":/images/play.png"), "", 0);
+    QPushButton* nextBtn = new QPushButton(QIcon(":/images/next.png"), "", 0);
+    QPushButton* prevBtn = new QPushButton(QIcon(":/images/prev.png"), "", 0);
+    QPushButton* stopBtn = new QPushButton(QIcon(":/images/stop.png"), "", 0);
+    QPushButton* rewindBtn = new QPushButton(QIcon(":/images/rewind.png"), "", 0);
 
     nextBtn->setIconSize(QSize(16,16));
     rewindBtn->setIconSize(QSize(16,16));
@@ -56,32 +60,49 @@ QAnimatedTimeline::QAnimatedTimeline(QWidget *parent) : QWidget(parent)
     buttonLayout->addWidget(playBtn);
     buttonLayout->addWidget(nextBtn);
 
+    QHBoxLayout* spinnerLayout = new QHBoxLayout(this);
+    spinnerLayout->setMargin(0);
+
     m_spinbox_timeStart = new QSpinBox;
     m_spinbox_timeStart->setMaximumWidth(150);
-    m_spinbox_timeStart->setMaximum(200000);
+    m_spinbox_timeStart->setMaximum(1000000);
+    m_spinbox_timeStart->setMinimum(-1000000);
+    m_spinbox_timeStart->setFrame(false);
+    m_spinbox_timeStart->setWrapping(false);
+    m_spinbox_timeStart->setAlignment(Qt::AlignCenter|Qt::AlignTrailing|Qt::AlignVCenter);
 
     m_spinbox_timeEnd = new QSpinBox;
     m_spinbox_timeEnd->setMaximumWidth(150);
-    m_spinbox_timeEnd->setMaximum(200000);
+    m_spinbox_timeEnd->setMaximum(1000000);
+    m_spinbox_timeEnd->setMinimum(-1000000);
+    m_spinbox_timeEnd->setFrame(false);
+    m_spinbox_timeEnd->setWrapping(false);
+    m_spinbox_timeEnd->setAlignment(Qt::AlignCenter|Qt::AlignTrailing|Qt::AlignVCenter);
 
-    m_slider = new QSlider;
-    m_slider->setMinimumWidth(300);
-    m_slider->setTickInterval( 10 );
-    m_slider->setRange(0, 10);
-    m_slider->setOrientation(Qt::Horizontal);
-    m_slider->setTickPosition(QSlider::TicksAbove);
+
+    m_currentFrameSpinbox = new QSpinBox;
+    m_currentFrameSpinbox->setMaximumWidth(150);
+    m_currentFrameSpinbox->setMaximum(1000000);
+    m_currentFrameSpinbox->setMinimum(-1000000);
+    m_currentFrameSpinbox->setFrame(false);
+    m_currentFrameSpinbox->setWrapping(false);
+    m_currentFrameSpinbox->setAlignment(Qt::AlignCenter|Qt::AlignTrailing|Qt::AlignVCenter);
+    m_currentFrameSpinbox->setButtonSymbols(QAbstractSpinBox::NoButtons);
+
+    connect(m_slider, SIGNAL(valueChanged(int)), m_currentFrameSpinbox, SLOT(setValue(int)));
+
+    spinnerLayout->addWidget(m_currentFrameSpinbox);
+    spinnerLayout->addWidget(m_spinbox_timeStart);
+    spinnerLayout->addWidget(m_spinbox_timeEnd);
 
     connect(playBtn, SIGNAL(pressed()), this, SLOT(play()));
-    connect(stopBtn, SIGNAL(pressed()), m_timeline, SLOT(stop()));
+    connect(stopBtn, SIGNAL(pressed()), this, SLOT(stop()));
     connect(rewindBtn, SIGNAL(pressed()), this, SLOT(rewind()));
-    connect(prevBtn, SIGNAL(pressed()), this, SLOT(prevFrame()));
-    connect(nextBtn, SIGNAL(pressed()), this, SLOT(nextFrame()));
+    connect(prevBtn, SIGNAL(pressed()), this, SLOT(gotoPrevFrame()));
+    connect(nextBtn, SIGNAL(pressed()), this, SLOT(gotoNextFrame()));
 
-    ///@todo Fix draggable time slider
     connect(m_slider, SIGNAL(valueChanged(int)), this, SLOT(updateTime(int)));
-//    connect(m_timeline, SIGNAL(frameChanged(int)), this, SLOT(updateSlider(int)));
 
-    connect(m_timeline, SIGNAL(frameChanged(int)), this, SLOT(emitTime(int)));
 
     connect(m_spinbox_timeStart, SIGNAL(valueChanged(int)), this, SLOT( setRangeMin(int) ));
     connect(m_spinbox_timeEnd, SIGNAL(valueChanged(int)), this, SLOT( setRangeMax(int) ));
@@ -91,10 +112,9 @@ QAnimatedTimeline::QAnimatedTimeline(QWidget *parent) : QWidget(parent)
 
     layout->addLayout(buttonLayout);
     layout->addWidget(m_slider);
-    layout->addWidget(m_spinbox_timeStart);
-    layout->addWidget(m_spinbox_timeEnd);
+    layout->addLayout(spinnerLayout);
 
-    setFPS(10);
+    setFPS(30);
 }
 
 void QAnimatedTimeline::timerUpdate()
@@ -110,18 +130,36 @@ void QAnimatedTimeline::timerUpdate()
 
     m_lastFrameTime.start();
 
-//    int newtime =
+    int newtime = getTime() + m_direction;
 
+    if(newtime > getEndFrame())
+    {
+        newtime = getStartFrame();
+    }
+    else if(newtime < getStartFrame())
+    {
+        newtime = getEndFrame();
+    }
+
+    setTime(newtime);
+
+}
+
+void QAnimatedTimeline::setTime(int _f)
+{
+    m_slider->setValue(_f);
+    m_currentFrameSpinbox->setValue(_f);
+}
+
+int QAnimatedTimeline::getTime()
+{
+    return static_cast<int>(m_currentFrameSpinbox->value());
 }
 
 void QAnimatedTimeline::setFPS(int _f)
 {
     m_fps = _f;
     const float fps_ms = (1.0f / m_fps) * 1000.0f;
-    if(m_timeline)
-    {
-        m_timeline->setUpdateInterval( fps_ms );
-    }
 }
 
 void QAnimatedTimeline::setStartFrame(int _x)
@@ -136,71 +174,66 @@ void QAnimatedTimeline::setEndFrame(int _x)
 
 void QAnimatedTimeline::updateSlider(int _x)
 {
-    qDebug() << "Updating slider";
-    m_slider->setValue(_x / m_fps);
+
 }
 
 void QAnimatedTimeline::updateTime(int _x)
 {
-    qDebug() << "Updating time"  << _x / m_fps;
-    m_timeline->setCurrentTime( _x );
+    emit timeUpdated(_x);
 }
 
 void QAnimatedTimeline::emitTime(int _x)
 {
-    qDebug() << m_timeline->frameForTime( m_timeline->currentTime() ) / m_fps;// / m_fps;
-    m_slider->setValue(_x / m_fps);
-    emit timeUpdated( _x / m_fps );
+
 }
 
 int QAnimatedTimeline::getStartFrame()
 {
-    if(!m_timeline)
+    if(!m_spinbox_timeStart)
     {
-        assert(0 && "Timeline pointer invalid");
+        assert(0 && "Spinbox start pointer invalid");
     }
-    return m_timeline->startFrame();
+    return m_spinbox_timeStart->value();
 }
 
 int QAnimatedTimeline::getEndFrame()
 {
-    if(!m_timeline)
+    if(!m_spinbox_timeEnd)
     {
-        assert(0 && "Timeline pointer invalid");
+        assert(0 && "Spinbox end pointer invalid");
     }
-    return m_timeline->endFrame();
+    return m_spinbox_timeEnd->value();
 }
 
 void QAnimatedTimeline::play()
 {
-    m_timeline->setDirection(QTimeLine::Forward);
+    m_direction = Direction::Forward;
+    m_timer->start();
+    m_lastFrameTime.start();
+}
 
-    if(m_timeline->state() ==  QTimeLine::Running )
-    {
-        m_timeline->resume();
-    } else {
-        m_timeline->start();
-    }
+void QAnimatedTimeline::stop()
+{
+    m_timer->stop();
 }
 
 void QAnimatedTimeline::rewind()
 {
-    m_timeline->setDirection(QTimeLine::Backward);
-    m_timeline->start();
+    m_direction = Direction::Backward;
+    m_timer->start();
+    m_lastFrameTime.start();
 }
 
-void QAnimatedTimeline::nextFrame()
+void QAnimatedTimeline::gotoNextFrame()
 {
-//    m_slider->setValue(m_slider->value() + 1);
-//    m_timeline->setCurrentTime( m_timeline->currentFrame()+ 1 );
-//    qDebug() << m_timeline->valueForTime( m_timeline->currentFrame()+ 1);
-
+    int frame = getTime();
+    setTime( frame + 1);
 }
 
-void QAnimatedTimeline::prevFrame()
+void QAnimatedTimeline::gotoPrevFrame()
 {
-//    m_slider->setValue(m_slider->value() - 1);
-//    m_timeline->setCurrentTime( m_timeline->valueForTime( m_slider->value() - 1) );
+    int frame = getTime();
+    setTime( frame - 1);
 }
 
 void QAnimatedTimeline::setRangeMin(int x)
@@ -213,13 +246,10 @@ void QAnimatedTimeline::setRangeMin(int x)
 
     if(m_slider)
     {
-        m_slider->setMinimum(x * m_fps);
+        m_slider->setMinimum(x);
     }
 
-    m_timeline->setStartFrame(x * m_fps);
 
-    unsigned int difference = m_timeline->endFrame() - m_timeline->startFrame();
-    m_timeline->setDuration( difference + 1);
 }
 
 void QAnimatedTimeline::setRangeMax(int x)
@@ -232,16 +262,12 @@ void QAnimatedTimeline::setRangeMax(int x)
 
     if(m_slider)
     {
-        m_slider->setMaximum(x * m_fps);
+        m_slider->setMaximum(x);
     }
 
-    m_timeline->setEndFrame(x * m_fps);
-
-    unsigned int difference = m_timeline->endFrame() - m_timeline->startFrame();
-    m_timeline->setDuration( difference + 1);
 }
 
 void QAnimatedTimeline::setRange(int a, int b)
 {
-    m_timeline->setFrameRange(a,b);
+
 }
