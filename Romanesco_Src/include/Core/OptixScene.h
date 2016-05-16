@@ -41,9 +41,18 @@ public:
 
     void setOutputBuffer(std::string _name);
 
-    float* mapBuffer(std::string _name);
+    ///
+    /// \brief getBufferContents
+    /// \param _name
+    /// \return a copy of the buffer contents or null if the buffer doesn't exist
+    ///
+    float* getBufferContents(std::string _name, RTsize *_elementSize, RTsize *_width, RTsize *_height);
+
+    float* getBufferContents(std::string _name);
 
     bool saveBuffersToDisk(std::string _filename);
+
+    std::string outputBuffer();
 
     void setTime(float _t);
 

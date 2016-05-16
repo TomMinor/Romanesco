@@ -15,11 +15,11 @@ class QFramebuffer : public QMainWindow
 public:
     explicit QFramebuffer(QWidget *parent = 0);
 
-    void addFrame(const QImage& _frame);
+    int addFrame(const QImage& _frame);
     void clearFrames();
-
-private:
     void setFrame(int _f);
+
+    void setBufferSize(unsigned int _width, unsigned int _height);
 
 private:
     QAnimatedTimeline* m_timeline;

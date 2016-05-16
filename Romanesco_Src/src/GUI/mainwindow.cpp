@@ -42,8 +42,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent)
 {
-    framebuffer = new QFramebuffer;
-    framebuffer->resize(800, 600);
+    m_framebuffer = new QFramebuffer;
+    m_framebuffer->resize(800, 600);
+
+    connect(m_framebuffer, SIGNAL(destroyed(QObject*)), this, SLOT(cancelFlipbook()));
 
     QAction *quitAct = new QAction(tr("&Quit"), this);
     quitAct->setShortcuts(QKeySequence::Quit);
@@ -77,9 +79,15 @@ MainWindow::MainWindow(QWidget *parent) :
     addAct->setStatusTip(tr("Flipbook a preview animation"));
     connect(flipbookAct, SIGNAL(triggered()), this, SLOT(startFlipbook()));
 
+    m_cancelFlipbookAct = new QAction(tr("&Cancel Flipbook"), this);
+    addAct->setStatusTip(tr("Cancel running flipbook"));
+    connect(m_cancelFlipbookAct , SIGNAL(triggered()), this, SLOT(cancelFlipbook()));
+
+    m_cancelFlipbookAct->setEnabled(false);
+
     renderMenu = menuBar()->addMenu(tr("&Render"));
     renderMenu->addAction(flipbookAct);
-
+    renderMenu->addAction(m_cancelFlipbookAct );
 
     setWindowTitle(tr("Node Editor"));
 
@@ -126,37 +134,122 @@ MainWindow::MainWindow(QWidget *parent) :
     // Add right hand side
     splitter->addWidget(view);
 
-    QAnimatedTimeline* timeline = new QAnimatedTimeline;
-    timeline->setStartFrame(0);
-    timeline->setEndFrame(200);
+    m_timeline = new QAnimatedTimeline;
+    m_timeline->setStartFrame(0);
+    m_timeline->setEndFrame(200);
 
-    connect(timeline, SIGNAL(timeUpdated(float)), m_glViewport, SLOT(updateTime(float)));
+    connect(m_timeline, SIGNAL(timeUpdated(float)), m_glViewport, SLOT(updateTime(float)));
 
     layout->addWidget(splitter);
-    layout->addWidget(timeline);
+    layout->addWidget(m_timeline);
     window->setLayout(layout);
 
     setCentralWidget(window);
 
     m_updateTimer = startTimer(30);
     m_drawTimer = startTimer(30);
+
+    m_flipbooking = false;
 }
 
 void MainWindow::initializeGL()
 {
     OptixScene* optixscene = m_glViewport->m_optixScene;
-    connect(optixscene, SIGNAL(frameReady()), this, SLOT(test()));
+    connect(optixscene, SIGNAL(frameReady()), this, SLOT(dumpFrame()));
+}
+
+void MainWindow::dumpFrame()
+{
+    int currentFrame = m_timeline->getTime();
+
+//    if(currentFrame == m_timeline->getEndFrame())
+//    {
+//        qDebug() << "Finished";
+//        m_flipbooking = false;
+//        return;
+//    }
+
+    // Cancel if the framebuffer was closed
+    if(!m_framebuffer->isVisible())
+    {
+        m_flipbooking = false;
+        m_cancelFlipbookAct->setEnabled(false);
+    }
+
+    if(m_flipbooking)
+    {
+        m_timeline->setTime( currentFrame + 1 );
+
+        OptixScene* optixscene = m_glViewport->m_optixScene;
+        unsigned long elementSize, width, height;
+        float* buffer = optixscene->getBufferContents( optixscene->outputBuffer(), &elementSize, &width, &height );
+
+        unsigned int totalbytes = width * height * elementSize;
+        uchar* bufferbytes = new uchar[totalbytes];
+        for(int i = 0; i < totalbytes; i++)
+        {
+            bufferbytes[i] = static_cast<uchar>(buffer[i] * 255);
+        }
+
+        QImage imageFrame;
+
+        switch(elementSize / sizeof(float))
+        {
+        case 1:
+            imageFrame = QImage(bufferbytes, width, height, QImage::Format_Grayscale8);
+            break;
+        case 3:
+            imageFrame = QImage(bufferbytes, width, height, QImage::Format_RGB32);
+            break;
+        case 4:
+            imageFrame = QImage(bufferbytes, width, height, QImage::Format_RGBA8888);
+            break;
+        default:
+            qWarning("Invalid QImage type");
+            return;
+        }
+
+        QTransform flipY;
+        flipY.scale(1, -1);
+//        flipY.rotate(90, Qt::Axis::YAxis);
+        imageFrame = imageFrame.transformed(flipY);
+
+        QImage finalImage(imageFrame.size(), imageFrame.format());
+        finalImage.fill( Qt::black );
+
+        QPainter p(&finalImage);
+        p.drawImage(0, 0, imageFrame);
+
+        // Set current frame to this one
+        int currentFrame = m_framebuffer->addFrame( finalImage );
+        m_framebuffer->setFrame( currentFrame );
+
+        m_framebuffer->setBufferSize( imageFrame.width(), imageFrame.height() );
+
+        m_cancelFlipbookAct->setEnabled(true);
+    }
 }
 
 void MainWindow::startFlipbook()
 {
     // Reuse existing window
-    if(framebuffer->isVisible())
+    if(m_framebuffer->isVisible())
     {
-        framebuffer->clearFrames();
+        m_framebuffer->clearFrames();
     }
 
-    framebuffer->show();
+    m_framebuffer->show();
+
+    m_timeline->setTime( m_timeline->getStartFrame() );
+    m_glViewport->updateTime( m_timeline->getTime() ); // Force update
+    m_flipbooking = true;
+}
+
+void MainWindow::cancelFlipbook()
+{
+    m_flipbooking = false;
+
+    m_cancelFlipbookAct->setEnabled(false);
 }
 
 void MainWindow::keyPressEvent(QKeyEvent* _event)
