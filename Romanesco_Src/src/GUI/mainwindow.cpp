@@ -118,7 +118,7 @@ MainWindow::MainWindow(QWidget *parent) :
     m_glViewport->setMinimumWidth(640);
     m_glViewport->setMinimumHeight(480);
 
-//    connect(m_glViewport, SIGNAL(initializedGL()), this, SLOT(initializeGL()));
+    connect(m_glViewport, SIGNAL(initializedGL()), this, SLOT(initializeGL()));
 
     // Add Viewport
     splitter->addWidget(m_glViewport);
