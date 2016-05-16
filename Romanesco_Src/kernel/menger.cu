@@ -203,6 +203,8 @@ RT_PROGRAM void pathtrace_camera()
     float3 pixel_color_world = world/(sqrt_num_samples*sqrt_num_samples);
     float pixel_color_depth = depth/(sqrt_num_samples*sqrt_num_samples);
 
+    pixel_color_normal = normalize(pixel_color_normal);
+
     // Smoothly blend with previous frames value
     if (frame_number > 1){
         float a = 1.0f / (float)frame_number;
