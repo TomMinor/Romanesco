@@ -311,6 +311,9 @@ void OptixScene::updateBufferSize(unsigned int _width, unsigned int _height)
             m_context[bufferName]->getBuffer()->setSize(_width, _height);
         }
     }
+
+    m_frame = 1;
+    m_frameDone = false;
 }
 
 
@@ -723,8 +726,9 @@ void OptixScene::drawToBuffer()
 
     if(m_frame < m_progressiveTimeout)
     {
-        m_frame++;
         m_context["frame_number"]->setUint(m_frame);
+        m_frame++;
+//        m_context["frame_number"]->setUint( m_frame++ );
 
         RTsize buffer_width, buffer_height;
         m_context["output_buffer"]->getBuffer()->getSize( buffer_width, buffer_height );
