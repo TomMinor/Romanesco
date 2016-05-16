@@ -56,28 +56,30 @@ private slots:
     void timeUpdated(float _t);
 
     void startFlipbook();
+    void cancelFlipbook();
 
-    void test()
-    {
-        qDebug() << "Frame ready";
-    }
+    void dumpFrame();
 
-     void initializeGL();
+    void initializeGL();
+
+
 
 private:
-    QFramebuffer *framebuffer;
+    QFramebuffer *m_framebuffer;
     QNodeGraph *nodeEditor;
 
     QMenu *fileMenu;
     QMenu *renderMenu;
+    QAction *m_cancelFlipbookAct;
 
     QGraphicsView *view;
     QGraphicsScene *scene;
 
     TestGLWidget* m_glViewport;
+    QAnimatedTimeline* m_timeline;
 
 
-
+    bool m_flipbooking;
     bool m_update_pending;
     bool m_animating;
     int m_updateTimer, m_drawTimer;

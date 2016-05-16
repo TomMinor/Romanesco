@@ -140,7 +140,7 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height, QObject *_pare
     const optix::float3 default_color = optix::make_float3(1.0f, 1.0f, 1.0f);
 //    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/i7245143/src/optix/SDK/tutorial/data/CedarCity.hdr", default_color) );
 //    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/tom/src/Fragmentarium/Fragmentarium-Source/Examples/Include/Ditch-River_2k.hdr", default_color) );
-    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/tom/Downloads/Milkyway/Milkyway_small.hdr", default_color) );
+    m_context["envmap"]->setTextureSampler( loadTexture( m_context,  qgetenv("HOME").toStdString() + "/Downloads/Milkyway/Milkyway_small.hdr", default_color) );
 
 
     m_rr_begin_depth = 1u;
@@ -566,7 +566,7 @@ __device__ float distancehit_hook(float3 p, float3* test)
     gi->setGeometry(julia);
 
     //@todo Critical : Fix this :|
-    std::string ptx_path = "/home/tom/src/optix/build/lib/ptx/path_tracer_generated_parallelogram.cu.ptx";
+    std::string ptx_path = qgetenv("OPTIX_PATH").toStdString() + "/build/lib/ptx/path_tracer_generated_parallelogram.cu.ptx";
     auto m_pgram_bounding_box = m_context->createProgramFromPTXFile( ptx_path, "bounds" );
     auto m_pgram_intersection = m_context->createProgramFromPTXFile( ptx_path, "intersect" );
 
@@ -644,12 +644,16 @@ OptixScene::~OptixScene()
 
 }
 
-float* OptixScene::mapBuffer(std::string _name)
+float* OptixScene::getBufferContents(std::string _name, RTsize* _elementSize, RTsize* _width, RTsize* _height)
 {
     // Calculate the buffer byte size etc from it's optix buffer properties
     optix::Buffer buffer = m_context[_name]->getBuffer();
     RTsize buffer_width, buffer_height;
     buffer->getSize(buffer_width, buffer_height);
+
+    (*_elementSize) = buffer->getElementSize();
+    (*_width) = buffer_width;
+    (*_height) = buffer_height;
 
     RTsize bufferSize = buffer_width * buffer_height;
     float* hostPtr = new float[buffer->getElementSize() * bufferSize];
@@ -659,12 +663,23 @@ float* OptixScene::mapBuffer(std::string _name)
     return hostPtr;
 }
 
+float* OptixScene::getBufferContents(std::string _name)
+{
+    RTsize ignore, width, height;
+    return getBufferContents(_name, &ignore, &width, &height);
+}
+
+std::string OptixScene::outputBuffer()
+{
+    return m_outputBuffer;
+}
+
 bool OptixScene::saveBuffersToDisk(std::string _filename)
 {
-    float* diffuse = mapBuffer("output_buffer");
-    float* normal = mapBuffer("output_buffer_nrm");
-    float* world = mapBuffer("output_buffer_world");
-    float* depth = mapBuffer("output_buffer_depth");
+    float* diffuse = getBufferContents("output_buffer");
+    float* normal = getBufferContents("output_buffer_nrm");
+    float* world = getBufferContents("output_buffer_world");
+    float* depth = getBufferContents("output_buffer_depth");
 
     RTsize buffer_width, buffer_height;
     m_context["output_buffer"]->getBuffer()->getSize(buffer_width, buffer_height);

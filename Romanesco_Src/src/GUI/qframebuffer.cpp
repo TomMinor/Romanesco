@@ -18,22 +18,11 @@ QFramebuffer::QFramebuffer(QWidget *parent) : QMainWindow(parent)
 
     m_timeline = new QAnimatedTimeline;
     m_timeline->setStartFrame(0);
-    m_timeline->setEndFrame(3);
-
-    addFrame( QImage("/home/tom/test/1.png") );
-    addFrame( QImage("/home/tom/test/2.png") );
-    addFrame( QImage("/home/tom/test/3.png") );
-    addFrame( QImage("/home/tom/test/4.png") );
-    addFrame( QImage("/home/tom/test/5.png") );
-
-    QImage& image = m_frames[0];
+    m_timeline->setEndFrame(0);
 
     m_view = new QGraphicsView;
 
     m_scene = new QGraphicsScene;
-
-    QRectF tmp(0, 0, image.width(), image.height());
-    m_scene->setSceneRect(tmp);
 
     setFrame(0);
 
@@ -43,8 +32,14 @@ QFramebuffer::QFramebuffer(QWidget *parent) : QMainWindow(parent)
     layout->addWidget(m_timeline);
 
     widget->setLayout(layout);
+    QPalette pal( m_scene->palette() );
+    pal.setColor(QPalette::Background, Qt::black);
+    m_scene->setPalette(pal);
 
     this->setCentralWidget(widget);
+
+    this->setMinimumWidth( 40 );
+    this->setMinimumHeight( 40 );
 
     connect(m_timeline, SIGNAL(timeUpdated(float)), this, SLOT(updateFrame(float)));
 
@@ -52,10 +47,22 @@ QFramebuffer::QFramebuffer(QWidget *parent) : QMainWindow(parent)
 //    this->setLayout( layout );
 }
 
-void QFramebuffer::addFrame(const QImage& _frame)
+void QFramebuffer::setBufferSize(unsigned int _width, unsigned int _height)
+{
+    QRectF tmp(0, 0, _width, _height);
+    m_scene->setSceneRect(tmp);
+
+    this->setSizePolicy( QSizePolicy::Expanding, QSizePolicy::Expanding );
+}
+
+int QFramebuffer::addFrame(const QImage& _frame)
 {
     m_frames.push_back( _frame );
     m_timeline->setEndFrame( m_frames.size() - 1);
+
+    setBufferSize(_frame.width(), _frame.height());
+
+    return m_frames.size() - 1;
 }
 
 void QFramebuffer::updateFrame(float _f)

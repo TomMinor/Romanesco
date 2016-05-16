@@ -28,6 +28,7 @@ public:
     void setEndFrame(int _x);
 
     void setTime(int _f);
+    int getTime();
     void setFPS(int _f);
 
 signals:
@@ -54,8 +55,6 @@ private slots:
 
     void updateFPS(int _f);
 
-private:
-    int getTime();
 
 private:
     QSpinBox* m_spinbox_timeStart;
