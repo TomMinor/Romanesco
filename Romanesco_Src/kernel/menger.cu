@@ -361,9 +361,9 @@ struct JuliaSet
   float operator()( float3 x ) const
   {
   //Warp space around the particle to get the blob-effect.
-    const float part_dist = length( particle - x );
-    const float force = smoothstep( 0.0f, 1.0f, 0.1f / (part_dist*part_dist) ) * 0.2f;
-    const float3 weg = (x - particle) / max(0.01f,part_dist);
+//    const float part_dist = length( particle - x );
+//    const float force = smoothstep( 0.0f, 1.0f, 0.1f / (part_dist*part_dist) ) * 0.2f;
+//    const float3 weg = (x - particle) / max(0.01f,part_dist);
 //    x -= weg * force;
 
     // Iterated values.
@@ -414,8 +414,8 @@ struct JuliaSet
     //const float norm = length( zn );
 
     //float a = length(x) - 1.0f;
-    float a = dist;
-    float b = sdBox(x, make_float3(1.0f) );
+//    float a = dist;
+//    float b = sdBox(x, make_float3(1.0f) );
 
     return dist;
 
