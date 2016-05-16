@@ -190,8 +190,12 @@ RT_PROGRAM void pathtrace_camera()
         Ray ray = make_Ray(ray_origin, ray_direction, pathtrace_ray_type, scene_epsilon, RT_DEFAULT_MAX);
         rtTrace(top_object, ray, prd);
 
+//        prd.result_nrm.x = abs(prd.result_nrm.x);
+//        prd.result_nrm.y = abs(prd.result_nrm.y);
+//        prd.result_nrm.z = abs(prd.result_nrm.z);
+
         result += prd.result;
-        normal += prd.result_nrm;
+        normal = prd.result_nrm;
         world += prd.result_world;
         depth += prd.result_depth;
 
@@ -202,8 +206,6 @@ RT_PROGRAM void pathtrace_camera()
     float3 pixel_color_normal = normal/(sqrt_num_samples*sqrt_num_samples);
     float3 pixel_color_world = world/(sqrt_num_samples*sqrt_num_samples);
     float pixel_color_depth = depth/(sqrt_num_samples*sqrt_num_samples);
-
-    pixel_color_normal = normalize(pixel_color_normal);
 
     // Smoothly blend with previous frames value
     if (frame_number > 1){
@@ -695,7 +697,7 @@ RT_PROGRAM void diffuse()
   }
 
   current_prd.result = make_float4(result, 1.0);
-  current_prd.result_nrm = ffnormal;
+  current_prd.result_nrm = geometric_normal;
   current_prd.result_world = hitpoint;
   current_prd.result_depth = t_hit;
   current_prd.done = true;

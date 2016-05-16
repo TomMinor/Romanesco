@@ -292,22 +292,22 @@ void TestGLWidget::keyPressEvent(QKeyEvent *_event)
     {
         case Qt::Key_1:
             {
-                m_optixScene->setOutputBuffer("output_buffer"); m_updateCamera = true;
+                m_optixScene->setOutputBuffer("output_buffer");
                 break;
             }
         case Qt::Key_2:
             {
-                m_optixScene->setOutputBuffer("output_buffer_nrm"); m_updateCamera = true;
+                m_optixScene->setOutputBuffer("output_buffer_nrm");
                 break;
             }
         case Qt::Key_3:
             {
-                m_optixScene->setOutputBuffer("output_buffer_world"); m_updateCamera = true;
+                m_optixScene->setOutputBuffer("output_buffer_world");
                 break;
             }
         case Qt::Key_4:
             {
-                m_optixScene->setOutputBuffer("output_buffer_depth"); m_updateCamera = true;
+                m_optixScene->setOutputBuffer("output_buffer_depth");
                 break;
             }
 
