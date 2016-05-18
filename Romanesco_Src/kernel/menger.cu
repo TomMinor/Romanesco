@@ -77,6 +77,7 @@ rtDeclareVariable(float3,        bad_color, , );
 rtDeclareVariable(float,         scene_epsilon, , );
 
 rtDeclareVariable(rtObject,                         top_object, , );
+rtDeclareVariable(rtObject,                         top_shadower, , );
 rtDeclareVariable(float, isect_t, rtIntersectionDistance, );
 //rtDeclareVariable(PerRayData_radiance, prd_radiance, rtPayload, );
 //rtDeclareVariable(PerRayData_shadow,   prd_shadow,   rtPayload, );
@@ -163,8 +164,10 @@ RT_PROGRAM void pathtrace_camera()
     float3 world = make_float3(0.0f);
     float depth = 0.0f;
 
-    unsigned int seed = tea<4>(screen.x*launch_index.y+launch_index.x, frame_number);
-    do {
+    // Bounce GI
+    unsigned int seed = tea<4>(screen.x * launch_index.y + launch_index.x, frame_number);
+    do
+    {
         unsigned int x = samples_per_pixel%sqrt_num_samples;
         unsigned int y = samples_per_pixel/sqrt_num_samples;
         float2 jitter = make_float2(x-rnd(seed), y-rnd(seed));
@@ -195,7 +198,7 @@ RT_PROGRAM void pathtrace_camera()
 //        prd.result_nrm.z = abs(prd.result_nrm.z);
 
         result += prd.result;
-        normal = prd.result_nrm;
+        normal += prd.result_nrm;
         world += prd.result_world;
         depth += prd.result_depth;
 
@@ -504,6 +507,8 @@ RT_PROGRAM void intersect(int primIdx)
   normal = make_float3(0,0,0);
 
   float tmin, tmax;
+
+  // Push hit to nearest point on sphere
   if( intersectBoundingSphere(ray.origin, ray.direction, tmin, tmax) )
   {
     JuliaSet distance( max_iterations );
@@ -603,27 +608,54 @@ RT_PROGRAM void shadow()
 }
 
 
+__device__ float hash(float _seed)
+{
+    return fract(sin(_seed) * 43758.5453 );
+}
+
+//https://www.shadertoy.com/view/MsdGzl
+__device__ float3 cosineDirection(float _seed, float3 _n)
+{
+    // compute basis from normal
+    // see http://orbit.dtu.dk/fedora/objects/orbit:113874/datastreams/file_75b66578-222e-4c7d-abdf-f7e255100209/content
+
+
+    float3 tc = make_float3( 1.0f + _n.z - (_n.x*_n.x),
+                             1.0f + _n.z - (_n.y*_n.y),
+                             -_n.x * _n.y);
+    tc = tc / (1.0f + _n.z);
+    float3 uu = make_float3( tc.x, tc.z, -_n.x );
+    float3 vv = make_float3( tc.z, tc.y, -_n.y );
+
+    float u = hash( 78.233 + _seed);
+    float v = hash( 10.873 + _seed);
+    float a = 6.283185 * v;
+
+    return sqrt(u) * (cos(a) * uu + sin(a) * vv) + sqrt(1.0 - u) * _n;
+}
+
 rtDeclareVariable(float3,        diffuse_color, , );
 
 RT_PROGRAM void diffuse()
 {
-  float3 world_shading_normal   = shading_normal;// normalize( rtTransformNormal( RT_OBJECT_TO_WORLD, shading_normal ) );
-  float3 world_geometric_normal = shading_normal;// normalize( rtTransformNormal( RT_OBJECT_TO_WORLD, geometric_normal ) );
+  float3 world_shading_normal   = normalize( rtTransformNormal( RT_OBJECT_TO_WORLD, shading_normal ) );
+  float3 world_geometric_normal = normalize( rtTransformNormal( RT_WORLD_TO_OBJECT, geometric_normal ) );
 
   float3 ffnormal = faceforward( world_shading_normal, -ray.direction, world_geometric_normal );
 
-  float3 hitpoint = ray.origin + t_hit * ray.direction;
+  float3 hitpoint = ray.origin + ( t_hit * ray.direction);
 
-  float z1 = rnd(current_prd.seed);
-  float z2 = rnd(current_prd.seed);
+//  float z1 = rnd(current_prd.seed);
+//  float z2 = rnd(current_prd.seed);
   float3 p;
 
-  cosine_sample_hemisphere(z1, z2, p);
+//  cosine_sample_hemisphere(z1, z2, p);
 
-  float3 v1, v2;
-  createONB(ffnormal, v1, v2);
+//  float3 v1, v2;
+//  createONB(ffnormal, v1, v2);
 
-  current_prd.direction = v1 * p.x + v2 * p.y + ffnormal * p.z;
+//  current_prd.direction = v1 * p.x + v2 * p.y + ffnormal * p.z;
+  current_prd.direction = cosineDirection(current_prd.seed, world_geometric_normal);
   current_prd.attenuation = current_prd.attenuation * diffuse_color; // use the diffuse_color as the diffuse response
   current_prd.countEmitted = false;
 
@@ -642,13 +674,15 @@ RT_PROGRAM void diffuse()
   for(int i = 0; i < num_lights; ++i)
   {
     ParallelogramLight light = lights[i];
+
+    // Sample random point on geo light
     float z1 = rnd(current_prd.seed);
     float z2 = rnd(current_prd.seed);
     float3 light_pos = light.corner + light.v1 * z1 + light.v2 * z2;
 
     float Ldist = length(light_pos - hitpoint);
     float3 L = normalize(light_pos - hitpoint);
-    float nDl = dot( ffnormal, L );
+    float nDl = dot( shading_normal, L );
     float LnDl = dot( light.normal, L );
     float A = length(cross(light.v1, light.v2));
 
@@ -658,8 +692,63 @@ RT_PROGRAM void diffuse()
       PerRayData_pathtrace_shadow shadow_prd;
       shadow_prd.inShadow = false;
 
-      Ray shadow_ray = make_Ray( hitpoint, L, pathtrace_shadow_ray_type, scene_epsilon, Ldist );
-      rtTrace(top_object, shadow_ray, shadow_prd);
+      Ray shadow_ray = make_Ray( hitpoint - (shading_normal * 0.0001), L, pathtrace_shadow_ray_type, scene_epsilon, Ldist );
+      rtTrace(top_shadower, shadow_ray, shadow_prd);
+
+//      {
+//          float tmin, tmax;
+
+//          float3 rayOrigin = hitpoint + (shading_normal * 0.00001);
+
+//          // Push hit to nearest point on sphere
+//          if( intersectBoundingSphere(rayOrigin, L, tmin, tmax) )
+//          {
+//            JuliaSet distance( max_iterations );
+//            //distance.m_max_iterations = 64;
+
+//            // === Raymarching (Sphere Tracing) Procedure ===
+
+//            // XXX inline the sphere tracing procedure here because nvcc isn't
+//            //     generating the right code i guess
+//            const float epsilon = 0.00001;
+//            float3 ray_direction = L;
+//            float3 x = rayOrigin + tmin * ray_direction;
+
+//            float dist_from_origin = tmin;
+
+//            // Compute epsilon using equation (16) of [1].
+//            //float epsilon = max(0.000001f, alpha * powf(dist_from_origin, delta));
+//            //const float epsilon = 1e-3f;
+
+//            //http://blog.hvidtfeldts.net/index.php/2011/09/distance-estimated-3d-fractals-v-the-mandelbulb-different-de-approximations/
+//            float fudgeFactor = 0.7;
+
+//            // float t = tmin;//0.0;
+//            // const int maxSteps = 128;
+//            float dist = 0;
+
+//            for( unsigned int i = 0; i < 800; ++i )
+//            {
+//              dist = distance(x);
+
+//              // Step along the ray and accumulate the distance from the origin.
+//              x += dist * ray_direction;
+//              dist_from_origin += dist * fudgeFactor;
+
+//              // Check if we're close enough or too far.
+//              if( dist < epsilon || dist_from_origin > tmax  )
+//              {
+//                  break;
+//              }
+//            }
+
+//            // Found intersection?
+//            if( dist < epsilon )
+//            {
+//                shadow_prd.inShadow = true;
+//            }
+//          }
+//      }
 
       if(!shadow_prd.inShadow)
       {
@@ -667,7 +756,7 @@ RT_PROGRAM void diffuse()
         result += light.emission * weight;
       }
 
-      result = shadow_prd.inShadow ? make_float3(0,0,1) : make_float3(1,0,0);
+      result += shadow_prd.inShadow ? make_float3(0,0,1) : make_float3(1,0,0);
     }
   }
 
