@@ -64,7 +64,7 @@ inline float2 fmod(float2 _p, float _s)
 /// \return
 ///
 __host__ __device__
-inline float frac(float x)
+inline float fract(float x)
 {
     return x - floorf(x);
 }

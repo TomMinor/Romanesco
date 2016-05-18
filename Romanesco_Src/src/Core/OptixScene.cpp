@@ -591,7 +591,7 @@ __device__ float distancehit_hook(float3 p, float3* test)
     // Create shadow group (no light)
     GeometryGroup shadow_group = m_context->createGeometryGroup(gis.begin(), gis.end());
     shadow_group->setAcceleration( m_context->createAcceleration("NoAccel","NoAccel") );
-    m_context["top_shadower"]->set( shadow_group );
+//    m_context["top_shadower"]->set( shadow_group );
 
     // Light
     gis.push_back( createParallelogram( &m_context,
