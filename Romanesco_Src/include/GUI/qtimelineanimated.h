@@ -34,6 +34,8 @@ public:
 signals:
     void timeUpdated(float);
 
+    void paused();
+
 public slots:
     void setRangeMin(int x);
     void setRangeMax(int x);

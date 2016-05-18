@@ -46,6 +46,7 @@ public:
 
     void keyPressEvent(QKeyEvent* _event);
 
+    void setGlobalStyleSheet(const QString& _styleSheet);
 
 
 private slots:

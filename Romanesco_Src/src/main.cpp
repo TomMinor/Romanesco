@@ -137,6 +137,14 @@ int main(int argc, char *argv[])
   //ShaderWindow window;
   MainWindow window;
   //window.setFormat(format);
+
+  // Load and set stylesheet
+  QFile file("styles/romanesco.qss");
+  file.open(QFile::ReadOnly);
+  QString stylesheet = QLatin1String(file.readAll());
+  window.setGlobalStyleSheet(stylesheet);
+
+  window.setWindowTitle("Romanesco");
   window.resize(1280, 800);
   window.show();
 
