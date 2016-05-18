@@ -325,8 +325,11 @@ __device__ float DE(float3 _p)
                                 );
 
     float3 z = _p;
+
+
+
     z = fabs( 1.0 - fmod(z, 2.0));
-    z.x = fabs(z.x + Offset.x) - Offset.x;
+    z.z = fabs(z.z + Offset.z) - Offset.z;
 
     float d = 1000.0f;
     for(int n = 0; n < Iterations; ++n)
@@ -604,22 +607,27 @@ rtDeclareVariable(float3,        diffuse_color, , );
 
 RT_PROGRAM void diffuse()
 {
-  float3 world_shading_normal   = normalize( rtTransformNormal( RT_OBJECT_TO_WORLD, shading_normal ) );
-  float3 world_geometric_normal = normalize( rtTransformNormal( RT_OBJECT_TO_WORLD, geometric_normal ) );
+  float3 world_shading_normal   = shading_normal;// normalize( rtTransformNormal( RT_OBJECT_TO_WORLD, shading_normal ) );
+  float3 world_geometric_normal = shading_normal;// normalize( rtTransformNormal( RT_OBJECT_TO_WORLD, geometric_normal ) );
 
   float3 ffnormal = faceforward( world_shading_normal, -ray.direction, world_geometric_normal );
 
   float3 hitpoint = ray.origin + t_hit * ray.direction;
-  float z1=rnd(current_prd.seed);
-  float z2=rnd(current_prd.seed);
+
+  float z1 = rnd(current_prd.seed);
+  float z2 = rnd(current_prd.seed);
   float3 p;
+
   cosine_sample_hemisphere(z1, z2, p);
+
   float3 v1, v2;
   createONB(ffnormal, v1, v2);
+
   current_prd.direction = v1 * p.x + v2 * p.y + ffnormal * p.z;
-  float3 normal_color = (normalize(world_shading_normal)*0.5f + 0.5f)*0.9;
   current_prd.attenuation = current_prd.attenuation * diffuse_color; // use the diffuse_color as the diffuse response
   current_prd.countEmitted = false;
+
+  float3 normal_color = (normalize(world_shading_normal)*0.5f + 0.5f)*0.9;
 
   // @Todo, trace back from the hit to calculate a new sample point?
 //  PerRayData_pathtrace backwards_prd;
@@ -631,7 +639,8 @@ RT_PROGRAM void diffuse()
   unsigned int num_lights = lights.size();
   float3 result = make_float3(0.0f);
 
-  for(int i = 0; i < num_lights; ++i) {
+  for(int i = 0; i < num_lights; ++i)
+  {
     ParallelogramLight light = lights[i];
     float z1 = rnd(current_prd.seed);
     float z2 = rnd(current_prd.seed);
@@ -644,21 +653,26 @@ RT_PROGRAM void diffuse()
     float A = length(cross(light.v1, light.v2));
 
     // cast shadow ray
-    if ( nDl > 0.0f && LnDl > 0.0f ) {
+    if ( nDl > 0.0f && LnDl > 0.0f )
+    {
       PerRayData_pathtrace_shadow shadow_prd;
       shadow_prd.inShadow = false;
-      Ray shadow_ray = make_Ray( hitpoint, L, pathtrace_shadow_ray_type, scene_epsilon, RT_DEFAULT_MAX /*Ldist*/ );
+
+      Ray shadow_ray = make_Ray( hitpoint, L, pathtrace_shadow_ray_type, scene_epsilon, Ldist );
       rtTrace(top_object, shadow_ray, shadow_prd);
 
-      if(!shadow_prd.inShadow){
-        float weight=nDl * LnDl * A / (M_PIf*Ldist*Ldist);
+      if(!shadow_prd.inShadow)
+      {
+        float weight= nDl * LnDl * A / (M_PIf*Ldist*Ldist);
         result += light.emission * weight;
       }
+
+      result = shadow_prd.inShadow ? make_float3(0,0,1) : make_float3(1,0,0);
     }
   }
 
   current_prd.result = make_float4(result, 1.0);
-  current_prd.result_nrm = geometric_normal;
+  current_prd.result_nrm = shading_normal;
   current_prd.result_world = hitpoint;
   current_prd.result_depth = t_hit;
   current_prd.done = true;
