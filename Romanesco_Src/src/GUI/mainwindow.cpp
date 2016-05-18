@@ -138,7 +138,7 @@ MainWindow::MainWindow(QWidget *parent) :
     m_timeline->setStartFrame(0);
     m_timeline->setEndFrame(200);
 
-    connect(m_timeline, SIGNAL(timeUpdated(float)), m_glViewport, SLOT(updateTime(float)));
+    connect(m_timeline, SIGNAL(timeUpdated(float)), m_glViewport, SLOT(updateTime(float))) ;
     connect(m_timeline, SIGNAL(paused()), this, SLOT(cancelFlipbook()));
 
     layout->addWidget(splitter);
