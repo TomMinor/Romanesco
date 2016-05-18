@@ -83,13 +83,13 @@ MainWindow::MainWindow(QWidget *parent) :
     addAct->setStatusTip(tr("Cancel running flipbook"));
     connect(m_cancelFlipbookAct , SIGNAL(triggered()), this, SLOT(cancelFlipbook()));
 
+
+
     m_cancelFlipbookAct->setEnabled(false);
 
     renderMenu = menuBar()->addMenu(tr("&Render"));
     renderMenu->addAction(flipbookAct);
     renderMenu->addAction(m_cancelFlipbookAct );
-
-    setWindowTitle(tr("Node Editor"));
 
     QWidget* window = new QWidget(this);
     QVBoxLayout* layout = new QVBoxLayout(window);
@@ -139,6 +139,7 @@ MainWindow::MainWindow(QWidget *parent) :
     m_timeline->setEndFrame(200);
 
     connect(m_timeline, SIGNAL(timeUpdated(float)), m_glViewport, SLOT(updateTime(float)));
+    connect(m_timeline, SIGNAL(paused()), this, SLOT(cancelFlipbook()));
 
     layout->addWidget(splitter);
     layout->addWidget(m_timeline);
@@ -156,6 +157,12 @@ void MainWindow::initializeGL()
 {
     OptixScene* optixscene = m_glViewport->m_optixScene;
     connect(optixscene, SIGNAL(frameReady()), this, SLOT(dumpFrame()));
+}
+
+void MainWindow::setGlobalStyleSheet(const QString& _styleSheet)
+{
+    setStyleSheet(_styleSheet);
+    m_framebuffer->setStyleSheet(_styleSheet);
 }
 
 void MainWindow::dumpFrame()

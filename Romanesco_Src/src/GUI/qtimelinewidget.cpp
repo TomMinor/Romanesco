@@ -233,6 +233,7 @@ void QAnimatedTimeline::play()
 void QAnimatedTimeline::stop()
 {
     m_timer->stop();
+    emit paused();
 }
 
 void QAnimatedTimeline::rewind()

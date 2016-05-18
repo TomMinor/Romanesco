@@ -317,6 +317,20 @@ __device__ float sdCross(float3 _p)
 }
 
 
+__device__ float3 rotateX(float a, float3 v)
+{
+   return make_float3(v.x,
+                      cos(a) * v.y + sin(a) * v.z,
+                      cos(a) * v.z - sin(a) * v.y);
+}
+
+__device__ float3 rotateY(float a, float3 v)
+{
+   return make_float3(cos(a) * v.x + sin(a) * v.z,
+                      v.y,
+                      cos(a) * v.z - sin(a) * v.x);
+}
+
 __device__ float map(float3 _p)
 {
     float d = sdBox(_p, make_float3(1.0f));
@@ -324,7 +338,12 @@ __device__ float map(float3 _p)
     float s = 1.0;
     for(int m=0; m<5; m++)
     {
-        float3 a = fmod(_p * s, 2.0f) - make_float3(1.0f);
+        float z = sin(global_t / 32.0f );
+
+        _p = rotateX(z, _p);
+        _p = rotateY(z, _p);
+
+        float3 a = fmod(_p * s, 2.0f) - make_float3(1.0);
         s *= 3.0;
 
         float3 r = ( make_float3(1.0) - ( make_float3(3.0) * fabs(a)));
@@ -366,49 +385,49 @@ struct JuliaSet
 //    const float3 weg = (x - particle) / max(0.01f,part_dist);
 //    x -= weg * force;
 
-    // Iterated values.
-    float3 zn  = x;//make_float3( x, 0 );
-    float4 fp_n = make_float4( 1, 0, 0, 0 );  // start derivative at real 1 (see [2]).
+//    // Iterated values.
+//    float3 zn  = x;//make_float3( x, 0 );
+//    float4 fp_n = make_float4( 1, 0, 0, 0 );  // start derivative at real 1 (see [2]).
 
-    const float sq_threshold = 2.0f;   // divergence threshold
+//    const float sq_threshold = 2.0f;   // divergence threshold
 
-    float oscillatingTime = sin(global_t / 128.0f );
-    float p = (4.0f * abs(oscillatingTime)) + 4.0f; //7.5
-    float rad = 0.0f;
-    float dist = 0.0f;
-    float d = 1.0;
+//    float oscillatingTime = sin(global_t / 128.0f );
+//    float p = (4.0f * abs(oscillatingTime)) + 4.0f; //7.5
+//    float rad = 0.0f;
+//    float dist = 0.0f;
+//    float d = 1.0;
 
-    // Iterate to compute f_n and fp_n for the distance estimator.
-    int i = m_max_iterations;
-    while( i-- )
-    {
-//      fp_n = 2.0f * mul( make_float4(zn), fp_n );   // z prime in [2]
-//      zn = square( make_float4(zn) ) + c4;         // equation (1) in [1]
+//    // Iterate to compute f_n and fp_n for the distance estimator.
+//    int i = m_max_iterations;
+//    while( i-- )
+//    {
+////      fp_n = 2.0f * mul( make_float4(zn), fp_n );   // z prime in [2]
+////      zn = square( make_float4(zn) ) + c4;         // equation (1) in [1]
 
-      // Stop when we know the point diverges.
-      // TODO: removing this condition burns 2 less registers and results in
-      //       in a big perf improvement. Can we do something about it?
+//      // Stop when we know the point diverges.
+//      // TODO: removing this condition burns 2 less registers and results in
+//      //       in a big perf improvement. Can we do something about it?
 
-      rad = length(zn);
+//      rad = length(zn);
 
-      if( rad > sq_threshold )
-      {
-        dist = 0.5f * rad * logf( rad ) / d;
-      }
-      else
-      {
-        float th = atan2( length( make_float3(zn.x, zn.y, 0.0f) ), zn.z );
-        float phi = atan2( zn.y, zn.x );
-        float rado = pow(rad, p);
-        d = pow(rad, p - 1) * (p-1) * d + 1.0;
+//      if( rad > sq_threshold )
+//      {
+//        dist = 0.5f * rad * logf( rad ) / d;
+//      }
+//      else
+//      {
+//        float th = atan2( length( make_float3(zn.x, zn.y, 0.0f) ), zn.z );
+//        float phi = atan2( zn.y, zn.x );
+//        float rado = pow(rad, p);
+//        d = pow(rad, p - 1) * (p-1) * d + 1.0;
 
-        float sint = sin(th * p);
-        zn.x = rado * sint * cos(phi * p);
-        zn.y = rado * sint * sin(phi * p);
-        zn.z = rado * cos(th * p);
-        zn += x;
-      }
-    }
+//        float sint = sin(th * p);
+//        zn.x = rado * sint * cos(phi * p);
+//        zn.y = rado * sint * sin(phi * p);
+//        zn.z = rado * cos(th * p);
+//        zn += x;
+//      }
+//    }
 
     // Distance estimation. Equation (8) from [1], with correction mentioned in [2].
     //const float norm = length( zn );
@@ -417,31 +436,11 @@ struct JuliaSet
 //    float a = dist;
 //    float b = sdBox(x, make_float3(1.0f) );
 
-    return dist;
+//    return dist;
 
-//      float3 p = x;
+    float d = map(x);
 
-//    p = pMod(p, 1.0);
-
-//    float d1 = sdBox(p, make_float3(1.0f));
-
-//    float d = sdBox(p, make_float3(1.0f));
-
-//    float s = 1.0f;
-//    for(int i = 0; i < 3; i++)
-//    {
-//        float3 a = myfmod(p * s, 2.0) - 1.0;
-//        s *= 3.0;
-
-//        float3 r = 1.0f - 3.0 * myfabs(a);
-
-//        float c = sdCross(r) / s;
-//        d = max(d, -c);
-//    }
-
-//    float d = map(x);
-
-//    return d;
+    return d;
 
 //    float d1 = sdBox(p, make_float3(1.0f) );
 //    float d2 = sdBox(p - make_float3(0.6f), make_float3(1.1f) );
