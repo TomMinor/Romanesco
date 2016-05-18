@@ -15,6 +15,12 @@
 
 #include "qframebuffer.h"
 
+///
+/// \brief The GrapherExpr class
+///
+/// \todo File saving/loading for scene metadata and node description
+///
+
 class GrapherExpr:public SeExpression
 {
 public:

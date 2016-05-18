@@ -29,7 +29,7 @@
 #include "path_tracer.h"
 #include "random.h"
 
-#include "DistanceFieldUtils.h"
+#include "GLSL_Functions.h"
 
 using namespace optix;
 
@@ -233,37 +233,29 @@ RT_PROGRAM void pathtrace_camera()
     }
 }
 
-static __device__ inline float3 powf(float3 a, float exp)
-{
-  return make_float3(powf(a.x, exp), powf(a.y, exp), powf(a.z, exp));
-}
 
-
-
-
-
-// Quaternion helpers.
-static __host__ __device__ float4 mul( float4 a, float4 b )
-{
-  const float3 a2 = make_float3( a.y, a.z, a.w );
-  const float3 b2 = make_float3( b.y, b.z, b.w );
-  float3 r;
-  r = a.x*b2 + b.x*a2 + cross( a2, b2 );
-  return make_float4(
-                      a.x*b.x - dot( a2, b2 ),
-                      r.x, 
-                      r.y, 
-                      r.z );
-}
-static __host__ __device__ float4 square( float4 a )
-{
-  float3 a2 = make_float3( a.y, a.z, a.w );
-  float3 r;
-  r = 2*a.x*a2;
-  return make_float4(
-    a.x*a.x - dot( a2,a2 ),
-    r.x, r.y, r.z );
-}
+//// Quaternion helpers.
+//static __host__ __device__ float4 mul( float4 a, float4 b )
+//{
+//  const float3 a2 = make_float3( a.y, a.z, a.w );
+//  const float3 b2 = make_float3( b.y, b.z, b.w );
+//  float3 r;
+//  r = a.x*b2 + b.x*a2 + cross( a2, b2 );
+//  return make_float4(
+//                      a.x*b.x - dot( a2, b2 ),
+//                      r.x,
+//                      r.y,
+//                      r.z );
+//}
+//static __host__ __device__ float4 square( float4 a )
+//{
+//  float3 a2 = make_float3( a.y, a.z, a.w );
+//  float3 r;
+//  r = 2*a.x*a2;
+//  return make_float4(
+//    a.x*a.x - dot( a2,a2 ),
+//    r.x, r.y, r.z );
+//}
 
 // Intersect the bounding sphere of the Julia set.
 static __host__ __device__ bool intersectBoundingSphere( float3 o, float3 d, float& tmin, float &tmax )
@@ -316,39 +308,87 @@ __device__ float sdCross(float3 _p)
     return min(da, min(db, dc));
 }
 
+__device__ float2 rotate(float2 v, float a) {
+    return make_float2(cos(a)*v.x + sin(a)*v.y, -sin(a)*v.x + cos(a)*v.y);
+}
 
-__device__ float map(float3 _p)
+
+#define Iterations 32
+#define Scale 2.0
+#define Offset make_float3(0.92858,0.92858,0.32858)
+#define FudgeFactor 0.7
+__device__ float DE(float3 _p)
 {
-    float d = sdBox(_p, make_float3(1.0f));
+    float3 offset = make_float3(1.0 + 0.2f * cos(global_t / 5.7f),
+                                1.0,
+                                0.3 + 0.1f * (cos(global_t / 1.7f))
+                                );
 
-    float s = 1.0;
-    for(int m=0; m<5; m++)
+    float3 z = _p;
+    //z = abs( 1.0 - mod(z, 2.0));
+
+    float d = 1000.0f;
+    for(int n = 0; n < Iterations; ++n)
     {
-        float3 a = fmod(_p * s, 2.0f) - make_float3(1.0f);
-        s *= 3.0;
+        ///@todo rotate
 
-        float3 r = ( make_float3(1.0) - ( make_float3(3.0) * fabs(a)));
+        // y
+        if(z.x + z.y < 0.0){ float3 tmp = z; z.x = -tmp.y; z.y = -tmp.x; }
+        z = fabs(z);
 
-        float c = (float)sdCross(r) / (float)s;
+        // z
+        if(z.x + z.z < 0.0){ float3 tmp = z; z.x = -tmp.z; z.z = -tmp.x; }
+        z = fabs(z);
 
-        d = max(d, c);
+        // y
+        if(z.x - z.y < 0.0){ float3 tmp = z; z.x = tmp.y; z.y = tmp.x; }
+        z = fabs(z);
+
+        // z
+        if(z.x - z.z < 0.0){ float3 tmp = z; z.x = tmp.z; z.z = tmp.x; }
+        z = fabs(z);
+
+        z = z * Scale - offset * (Scale - 1.0);
+
+        float2 tmp = make_float2(z.y, z.z);
+        float2 r = rotate(tmp, -global_t / 18.0f);
+        z.y = r.x;
+        z.z = r.y;
+
+        d = min(d, length(z) * powf(Scale, -float(n+1)));
     }
 
     return d;
 }
 
 
-__device__ float fracf(float x)
+__device__ float map(float3 _p)
 {
-    return x - floorf(x);
+    float a = DE(_p) * FudgeFactor;
+    return a;
+
+//    float d = sdBox(_p, make_float3(1.0f));
+
+//    float s = 1.0;
+//    for(int m=0; m<5; m++)
+//    {
+//        float3 a = fmod(_p * s, 2.0f) - make_float3(1.0f);
+//        s *= 3.0;
+
+//        float3 r = ( make_float3(1.0) - ( make_float3(3.0) * fabs(a)));
+
+//        float c = (float)sdCross(r) / (float)s;
+
+//        d = max(d, c);
+//    }
+
+//    return d;
 }
 
-__device__ float3 fracf(float3 p)
-{
-    return make_float3( p.x - floorf(p.x),
-                        p.x - floorf(p.y),
-                        p.z - floorf(p.z) );
-}
+
+
+
+
 
 struct JuliaSet
 {
@@ -366,58 +406,58 @@ struct JuliaSet
 //    const float3 weg = (x - particle) / max(0.01f,part_dist);
 //    x -= weg * force;
 
-    // Iterated values.
-    float3 zn  = x;//make_float3( x, 0 );
-    float4 fp_n = make_float4( 1, 0, 0, 0 );  // start derivative at real 1 (see [2]).
+//    // Iterated values.
+//    float3 zn  = x;//make_float3( x, 0 );
+//    float4 fp_n = make_float4( 1, 0, 0, 0 );  // start derivative at real 1 (see [2]).
 
-    const float sq_threshold = 2.0f;   // divergence threshold
+//    const float sq_threshold = 2.0f;   // divergence threshold
 
-    float oscillatingTime = sin(global_t / 128.0f );
-    float p = (4.0f * abs(oscillatingTime)) + 4.0f; //7.5
-    float rad = 0.0f;
-    float dist = 0.0f;
-    float d = 1.0;
+//    float oscillatingTime = sin(global_t / 128.0f );
+//    float p = (4.0f * abs(oscillatingTime)) + 4.0f; //7.5
+//    float rad = 0.0f;
+//    float dist = 0.0f;
+//    float d = 1.0;
 
-    // Iterate to compute f_n and fp_n for the distance estimator.
-    int i = m_max_iterations;
-    while( i-- )
-    {
-//      fp_n = 2.0f * mul( make_float4(zn), fp_n );   // z prime in [2]
-//      zn = square( make_float4(zn) ) + c4;         // equation (1) in [1]
+//    // Iterate to compute f_n and fp_n for the distance estimator.
+//    int i = m_max_iterations;
+//    while( i-- )
+//    {
+////      fp_n = 2.0f * mul( make_float4(zn), fp_n );   // z prime in [2]
+////      zn = square( make_float4(zn) ) + c4;         // equation (1) in [1]
 
-      // Stop when we know the point diverges.
-      // TODO: removing this condition burns 2 less registers and results in
-      //       in a big perf improvement. Can we do something about it?
+//      // Stop when we know the point diverges.
+//      // TODO: removing this condition burns 2 less registers and results in
+//      //       in a big perf improvement. Can we do something about it?
 
-      rad = length(zn);
+//      rad = length(zn);
 
-      if( rad > sq_threshold )
-      {
-        dist = 0.5f * rad * logf( rad ) / d;
-      }
-      else
-      {
-        float th = atan2( length( make_float3(zn.x, zn.y, 0.0f) ), zn.z );
-        float phi = atan2( zn.y, zn.x );
-        float rado = pow(rad, p);
-        d = pow(rad, p - 1) * (p-1) * d + 1.0;
+//      if( rad > sq_threshold )
+//      {
+//        dist = 0.5f * rad * logf( rad ) / d;
+//      }
+//      else
+//      {
+//        float th = atan2( length( make_float3(zn.x, zn.y, 0.0f) ), zn.z );
+//        float phi = atan2( zn.y, zn.x );
+//        float rado = pow(rad, p);
+//        d = pow(rad, p - 1) * (p-1) * d + 1.0;
 
-        float sint = sin(th * p);
-        zn.x = rado * sint * cos(phi * p);
-        zn.y = rado * sint * sin(phi * p);
-        zn.z = rado * cos(th * p);
-        zn += x;
-      }
-    }
+//        float sint = sin(th * p);
+//        zn.x = rado * sint * cos(phi * p);
+//        zn.y = rado * sint * sin(phi * p);
+//        zn.z = rado * cos(th * p);
+//        zn += x;
+//      }
+//    }
 
-    // Distance estimation. Equation (8) from [1], with correction mentioned in [2].
-    //const float norm = length( zn );
+//    // Distance estimation. Equation (8) from [1], with correction mentioned in [2].
+//    //const float norm = length( zn );
 
-    //float a = length(x) - 1.0f;
-//    float a = dist;
-//    float b = sdBox(x, make_float3(1.0f) );
+//    //float a = length(x) - 1.0f;
+////    float a = dist;
+////    float b = sdBox(x, make_float3(1.0f) );
 
-    return dist;
+//    return dist;
 
 //      float3 p = x;
 
@@ -439,9 +479,9 @@ struct JuliaSet
 //        d = max(d, -c);
 //    }
 
-//    float d = map(x);
+    float d = map(x);
 
-//    return d;
+    return d;
 
 //    float d1 = sdBox(p, make_float3(1.0f) );
 //    float d2 = sdBox(p - make_float3(0.6f), make_float3(1.1f) );
@@ -481,7 +521,7 @@ RT_PROGRAM void intersect(int primIdx)
     const float epsilon = 0.00001;
 
     //http://blog.hvidtfeldts.net/index.php/2011/09/distance-estimated-3d-fractals-v-the-mandelbulb-different-de-approximations/
-    float fudgeFactor = 0.99f;
+    float fudgeFactor = 0.99;
 
     // float t = tmin;//0.0;
     // const int maxSteps = 128;
@@ -532,86 +572,6 @@ RT_PROGRAM void bounds (int, float result[6])
 //
 
 rtBuffer<ParallelogramLight>     lights;
-
-//RT_PROGRAM void julia_ch_radiance()
-//{
-//    if (current_prd.depth > 5){
-//        current_prd.done = true;
-//        return;
-
-//    }
-//    float3 world_shading_normal   = normalize( rtTransformNormal( RT_OBJECT_TO_WORLD, shading_normal ) );
-//    float3 world_geometric_normal = normalize( rtTransformNormal( RT_OBJECT_TO_WORLD, geometric_normal ) );
-
-//    float3 ffnormal = faceforward( world_shading_normal, -ray.direction, world_geometric_normal );
-
-//    float3 hitpoint = ray.origin + t_hit * ray.direction;
-
-//    float z1=rnd(current_prd.seed);
-//    float z2=rnd(current_prd.seed);
-//    float3 p;
-//    cosine_sample_hemisphere(z1, z2, p);
-//    float3 v1, v2;
-//    createONB(ffnormal, v1, v2);
-//    float3 ray_origin = hitpoint;
-//    float3 ray_direction = v1 * p.x + v2 * p.y + ffnormal * p.z;
-
-//    // Compute attenuation
-//    current_prd.attenuation = current_prd.attenuation;
-//    // Compute radiance
-//    // Compute direct lighting for environment map
-
-//    float3 result = make_float3(0.0f);
-
-//    unsigned int num_lights = lights.size();
-
-//    for(int i = 0; i < num_lights; ++i)
-//    {
-//      ParallelogramLight light = lights[i];
-//      float z1 = rnd(current_prd.seed);
-//      float z2 = rnd(current_prd.seed);
-//      float3 light_pos = light.corner + light.v1 * z1 + light.v2 * z2;
-
-//      float Ldist = length(light_pos - hitpoint);
-//      float3 L = normalize(light_pos - hitpoint);
-//      float nDl = dot( ffnormal, L );
-//      float LnDl = dot( light.normal, L );
-//      float LnDlinverse = dot(-light.normal, L);
-//      float A = length(cross(light.v1, light.v2));
-
-//      // cast shadow ray
-//      if ( nDl > 0.0f && LnDl > 0.0f )
-//      {
-//        PerRayData_pathtrace_shadow shadow_prd;
-//        shadow_prd.inShadow = false;
-//        Ray shadow_ray = make_Ray( hitpoint, L, pathtrace_shadow_ray_type, scene_epsilon, Ldist );
-//        rtTrace(top_object, shadow_ray, shadow_prd);
-
-//        if(!shadow_prd.inShadow)
-//        {
-//          float weight=nDl * LnDl * A / (M_PIf*Ldist*Ldist);
-//          result += light.emission * weight;
-//        }
-//      }
-
-//      // cast shadow ray for other side of light
-//      if ( nDl > 0.0f && LnDlinverse > 0.0f )
-//      {
-//        PerRayData_pathtrace_shadow shadow_prd;
-//        shadow_prd.inShadow = false;
-//        Ray shadow_ray = make_Ray( hitpoint, L, pathtrace_shadow_ray_type, scene_epsilon, Ldist );
-//        rtTrace(top_object, shadow_ray, shadow_prd);
-
-//        if(!shadow_prd.inShadow)
-//        {
-//          float weight=nDl * LnDlinverse * A / (M_PIf*Ldist*Ldist);
-//          result += light.emission * weight;
-//        }
-//      }
-//    }
-
-//    current_prd.done = true; // end the ray comming in
-//}
 
 RT_PROGRAM void julia_ah_shadow()
 {
