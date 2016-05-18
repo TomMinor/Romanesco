@@ -143,7 +143,8 @@ HEADERS += include/Core/*.h \
                        include/SDFOps/DistOp/*.h \
                        include/SDFOps/DomainOp/*.h \
                        include/SDFOps/DomainDeformer/*.h \
-                       include/SDFOps/Primitive/*.h
+                       include/SDFOps/Primitive/*.h \
+                      kernel/*.h
 
 OTHER_FILES += shaders/*
 
