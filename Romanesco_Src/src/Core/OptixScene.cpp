@@ -30,6 +30,8 @@
 #include "OptixScene.h"
 #include "RuntimeCompiler.h"
 
+#define USE_DEBUG_EXCEPTIONS 1
+
 ///@todo
 /// * Split this into a simple base class and derive from that, OptixScene -> OptixSceneAdaptive -> OptixScenePathTracer
 /// * All camera stuff should be moved into it's own, simpler class
@@ -153,7 +155,7 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height, QObject *_pare
     m_context["frame_number"]->setUint(1);
 
     // Index of sampling_stategy (BSDF, light, MIS)
-    m_sampling_strategy = 2;
+    m_sampling_strategy = 0;
     m_context["sampling_stategy"]->setInt(m_sampling_strategy);
 
 
@@ -187,6 +189,9 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height, QObject *_pare
     // Create scene geom
     createGeometry();
 
+    optix::Program testcallable = m_context->createProgramFromPTXFile("kernel/test.ptx", "test");
+    m_context["do_work"]->set(testcallable);
+
 //    m_camera = new MyPinholeCamera( camera_data.eye,
 //                                  camera_data.lookat,
 //                                  camera_data.up,
@@ -202,6 +207,13 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height, QObject *_pare
     setOutputBuffer("output_buffer");
 
     //ray_gen_program["draw_color"]->setFloat( optix::make_float3(0.462f, 0.725f, 0.0f) );
+
+#if USE_DEBUG_EXCEPTIONS
+    // Disable this by default for performance, otherwise the stitched PTX code will have lots of exception handling inside.
+    m_context->setPrintEnabled(true);
+    m_context->setPrintLaunchIndex(256, 256); // Launch index (0,0) at lower left.
+    m_context->setExceptionEnabled(RT_EXCEPTION_ALL, true);
+#endif
 
     m_context->validate();
     m_context->compile();
