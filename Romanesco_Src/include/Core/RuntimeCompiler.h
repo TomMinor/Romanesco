@@ -2,6 +2,8 @@
 #define RUNTIMECOMPILER_H
 
 #include <string>
+#include <vector>
+
 #include <QDebug>
 
 #include <cuda.h>
@@ -40,6 +42,8 @@ public:
                     std::vector<std::string> _includeFiles = std::vector<std::string>());
     ~RuntimeCompiler();
 
+    void compile();
+
     char* getResult() { return m_result; }
 
 private:
@@ -48,6 +52,7 @@ private:
 #endif
 
     char* m_result;
+    std::vector<const char*> m_opts;
 };
 
 #endif // RUNTIMECOMPILER_H

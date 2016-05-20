@@ -32,6 +32,13 @@
 
 #define USE_DEBUG_EXCEPTIONS 1
 
+#include <algorithm>
+#include "Base_SDFOP.h"
+#include "Primitive/Sphere_SDFOP.h"
+#include "DomainOp/Transform_SDFOP.h"
+#include <glm/gtc/matrix_transform.hpp>
+#include "path_tracer/path_tracer.h"
+
 ///@todo
 /// * Split this into a simple base class and derive from that, OptixScene -> OptixSceneAdaptive -> OptixScenePathTracer
 /// * All camera stuff should be moved into it's own, simpler class
@@ -189,9 +196,6 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height, QObject *_pare
     // Create scene geom
     createGeometry();
 
-    optix::Program testcallable = m_context->createProgramFromPTXFile("kernel/test.ptx", "test");
-    m_context["do_work"]->set(testcallable);
-
 //    m_camera = new MyPinholeCamera( camera_data.eye,
 //                                  camera_data.lookat,
 //                                  camera_data.up,
@@ -329,124 +333,7 @@ void OptixScene::updateBufferSize(unsigned int _width, unsigned int _height)
 }
 
 
-bool findFunction(std::vector<std::string>& _lines,
-                  const std::string& _funcName,
-                  std::vector<std::string>::iterator* o_start,
-                  std::vector<std::string>::iterator* o_end )
-{
-    bool isExtern = false;
-    bool found = false;
-
-    for(auto line = _lines.begin(); line != _lines.end(); ++line)
-    {
-        if ( line->find(".func") != std::string::npos)
-        {
-            if ( line->find(_funcName) != std::string::npos)
-            {
-                if ( line->find(".extern") != std::string::npos) { isExtern = true; }
-
-                found = true;
-                *o_start = line;
-                break;
-            }
-        }
-    }
-
-    if(found)
-    {
-        for(auto line = *o_start; line != _lines.end(); ++line)
-        {
-            if( (isExtern && (line->find(";") != std::string::npos)) ||
-               (!isExtern && (line->find("}") != std::string::npos)) )
-            {
-                        *o_end = line + 1;
-                        return true;
-            }
-        }
-    }
-
-    return false;
-}
-
-#include <algorithm>
-
-bool hookPtxFunction(  const std::string& _ptxPath,
-                                      const std::string& _functionName,
-                                      const std::string& _functionSource,
-                                      std::string& _result)
-{
-    // Compile function source to ptx
-    RuntimeCompiler program(_functionName, _functionSource);
-    qDebug() << program.getResult();
-    // Convert the runtime compiled ptx to a vector of strings
-    std::vector<std::string> hit_ptx = StringToVector( program.getResult() );
-
-    // Convert the optix ptx to a vector of strings
-    std::vector<std::string> ptx = FileToVector(_ptxPath);
-
-
-    /* Process ptx code to be patched into the optix ptx */
-
-    // This particular function (seems to be related to the CUDA runtime API) always seems to be the last of the API stuff,
-    // so we can (hopefully) safely ignore anything prior to it and only copy the functions defined after it.
-    {
-        std::vector<std::string>::iterator CUDAAPI_StartIterator;
-        std::vector<std::string>::iterator CUDAAPI_EndIterator;
-        if( !findFunction( hit_ptx, "cudaOccupancyMaxActiveBlocksPerMultiprocessorWithFlags", &CUDAAPI_StartIterator, &CUDAAPI_EndIterator) )
-        {
-            qWarning("Unable to find CUDA API function definitions, copying every function definition");
-
-            // If no cuda runtime functions were found, remove the compiler info and copy over every function definition anyway
-            if(!findString(hit_ptx, ".address_size 64", &CUDAAPI_EndIterator))
-            {
-                throw std::runtime_error("Can't find .address_size, ptx string must be invalid");
-                return false;
-            }
-        }
-
-        // Remove the unnecessary lines, leaving just the code we need for the patch function
-        hit_ptx.erase(hit_ptx.begin(), CUDAAPI_EndIterator);
-    }
-
-
-    std::vector<std::string>::iterator ptxInsertionIterator;
-    /* Process the optix ptx ready for patching, search for the function we're patching and delete it so the new code can be copied over */
-    {
-        std::vector<std::string>::iterator hookFunction_StartIterator;
-        std::vector<std::string>::iterator hookFunction_EndIterator;
-        if( !findFunction( ptx, _functionName, &hookFunction_StartIterator, &hookFunction_EndIterator) )
-        {
-            qWarning("Unable to find function to patch");
-            return false;
-        }
-
-        // Remove the current function definition so we can replace it with the new one
-        ptxInsertionIterator = ptx.erase(hookFunction_StartIterator, hookFunction_EndIterator);
-    }
-
-    // Replace with our actual function ptx
-    ptx.insert(ptxInsertionIterator, hit_ptx.begin(), hit_ptx.end());
-
-    // Join the list into a string
-    std::string concatptx = boost::algorithm::join(ptx, "\n");
-
-    // Return the string result
-    _result = concatptx;
-
-//    qDebug() << _result.c_str();
-
-    return true;
-}
-
-
-#include "Base_SDFOP.h"
-#include "Primitive/Sphere_SDFOP.h"
-#include "DomainOp/Transform_SDFOP.h"
-#include <glm/gtc/matrix_transform.hpp>
-
-#include "path_tracer/path_tracer.h"
-
-GeometryInstance createParallelogram( optix::Context* m_context,
+GeometryInstance createAreaLight( optix::Context* m_context,
                                       optix::Program* m_pgram_bounding_box,
                                       optix::Program* m_pgram_intersection,
                                       const float3& anchor,
@@ -484,72 +371,109 @@ void setMaterial( GeometryInstance& gi,
   gi[color_name]->setFloat(color);
 }
 
-#define DEMO
+//#define DEMO
 
-void OptixScene::createGeometry(std::string _hit_src)
+void OptixScene::setGeometryHitProgram(std::string _hit_src)
+{
+    static std::string geometryhook_src = R"(
+#include "cutil_math.h"
+
+__device__ __noinline__ float3 distancehit_hook()
+{
+     return make_float3(1,0,0);
+}
+
+)";
+
+    std::string hit_src = (_hit_src == "") ? geometryhook_src : _hit_src;
+
+    // Compile function source to ptx
+    RuntimeCompiler program("distancehit_hook", _hit_src);
+    try
+    {
+        program.compile();
+    }
+    catch(std::runtime_error& e)
+    {
+        qWarning() << e.what();
+        return;
+    }
+
+    const char* ptx = program.getResult();
+    if(!ptx)
+    {
+        qWarning() << "Ptx source is empty";
+        return;
+    }
+
+    try
+    {
+        optix::Program testcallable = m_context->createProgramFromPTXString(ptx, "distancehit_hook");
+        m_context["do_work"]->set(testcallable);
+    } catch(Exception &e)
+    {
+        qWarning("Failed to create program from ptx");
+        return;
+    }
+}
+
+void OptixScene::setShadingProgram(std::string _hit_src)
+{
+    static std::string shadinghook_src = R"(
+#include "cutil_math.h"
+
+__device__ __noinline__ float3 shade_hook()
+{
+     return make_float3(1,1,1);
+}
+
+)";
+
+    std::string hit_src = (_hit_src == "") ? shadinghook_src : _hit_src;
+
+    // Compile function source to ptx
+    RuntimeCompiler program("shade_hook", _hit_src);
+    try
+    {
+        program.compile();
+    }
+    catch(std::runtime_error& e)
+    {
+        qWarning() << e.what();
+        return;
+    }
+
+    const char* ptx = program.getResult();
+    if(!ptx)
+    {
+        qWarning() << "Ptx source is empty";
+        return;
+    }
+
+    try
+    {
+        optix::Program testcallable = m_context->createProgramFromPTXString(ptx, "distancehit_hook");
+        m_context["do_work"]->set(testcallable);
+    } catch(Exception &e)
+    {
+        qWarning("Failed to create program from ptx");
+        return;
+    }
+}
+
+void OptixScene::createGeometry()
 {
     optix::Program ray_gen_program = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "pathtrace_camera" );
     optix::Program exception_program = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "exception" );
     m_context->setRayGenerationProgram( 0, ray_gen_program );
     m_context->setExceptionProgram( 0, exception_program );
 
-#ifndef DEMO
-//    std::string sphere_hit_src =
-//            "#include \"cutil_math.h\" \n"
-//            "extern \"C\" {\n "
-//            "__device__ float distancehit_hook("
-//                    "float3 x, float3* test"
-//                    ")\n"
-//            "{"
-//                "return length(x) - 1.0f;\n"
-//            "}\n"
-//            "}\n";
-
-    std::string sphere_hit_src = R"(
-#include "cutil_math.h"
-extern "C" {
-__device__ float distancehit_hook(float3 p, float3* test)
-{
-            float3 arse = test[0];
-
-            return length(p) - 1.0f;
-}
-}
-)";
-
-
-    std::string hit_src = (_hit_src == "") ? sphere_hit_src : _hit_src;
-
-    std::string ptx;
-//    hookPtxFunction("ptx/raymarch.cu.ptx", "shade_hook", _hit_src, ptx);
-
-//    qDebug() << mandelbulb_hit_src.c_str();
-//    qDebug() << hit_src.c_str();
-
-    if(!hookPtxFunction("ptx/raymarch.cu.ptx", "distancehit_hook", hit_src, ptx))
-    {
-        qWarning("Patching failed");
-        return;
-    }
-#endif
-
     ///@todo Optix error checking
     optix::Geometry julia = m_context->createGeometry();
     julia->setPrimitiveCount( 1u );
 
-#ifndef DEMO
-    julia->setBoundingBoxProgram( m_context->createProgramFromPTXString( ptx, "bounds" ) );
-    julia->setIntersectionProgram( m_context->createProgramFromPTXString( ptx, "intersect" ) );
-
-    optix::Program julia_ch = m_context->createProgramFromPTXString( ptx, "radiance" );
-    optix::Program julia_ah = m_context->createProgramFromPTXString( ptx, "shadow" );
-#else
     julia->setBoundingBoxProgram( m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "bounds" ) );
     julia->setIntersectionProgram( m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "intersect" ) );
-
-//    optix::Program julia_ch = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "julia_ch_radiance" );
-//    optix::Program julia_ah = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "julia_ah_shadow" );
-#endif
 
     m_context["Ka"]->setFloat(0.5f,0.0f,0.0f);
     m_context["Kd"]->setFloat(.6f, 0.1f, 0.1f);
@@ -606,7 +530,7 @@ __device__ float distancehit_hook(float3 p, float3* test)
 //    m_context["top_shadower"]->set( shadow_group );
 
     // Light
-    gis.push_back( createParallelogram( &m_context,
+    gis.push_back( createAreaLight( &m_context,
                                         &m_pgram_bounding_box,
                                         &m_pgram_intersection,
                                         make_float3( -2500, 2000.0, -2500),

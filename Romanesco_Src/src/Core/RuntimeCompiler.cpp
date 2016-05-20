@@ -33,18 +33,24 @@ RuntimeCompiler::RuntimeCompiler(const std::string &_name, const std::string _so
                                  std::vector<std::string> _includeFiles)
     : m_result(nullptr)
 {
-    std::vector<const char*> opts;
-    opts.push_back("--define-macro=ROMANESCO_RUNTIME_COMPILE");
-    opts.push_back("--gpu-architecture=compute_20");
-    opts.push_back("-rdc=true");
-    opts.push_back("-I./kernel");
+    m_opts.push_back("--define-macro=ROMANESCO_RUNTIME_COMPILE");
+    m_opts.push_back("--gpu-architecture=compute_20");
+    m_opts.push_back("-rdc=true");
+    m_opts.push_back("-I./kernel");
     // CUDA_INCLUDE_PATH include folder is set in the .pro file at compile time for now
-    opts.push_back("-I" MACROTOSTRING(CUDA_INCLUDE_PATH)); // compiler automatically concatenates the string and macro
+    m_opts.push_back("-I" MACROTOSTRING(CUDA_INCLUDE_PATH)); // compiler automatically concatenates the string and macro
+
+    m_result = nullptr;
 
 #ifdef NVRTC_AVAILABLE
     NVRTC_SAFE_CALL( nvrtcCreateProgram(&m_prog, _source.c_str(), _name.c_str(), 0, NULL, NULL) );
+#endif
+}
 
-    nvrtcResult compileResult = nvrtcCompileProgram(m_prog, opts.size(), opts.data());
+void RuntimeCompiler::compile()
+{
+#ifdef NVRTC_AVAILABLE
+    nvrtcResult compileResult = nvrtcCompileProgram(m_prog, m_opts.size(), m_opts.data());
 
     size_t logSize;
     NVRTC_SAFE_CALL( nvrtcGetProgramLogSize(m_prog, &logSize) );
@@ -57,7 +63,7 @@ RuntimeCompiler::RuntimeCompiler(const std::string &_name, const std::string _so
 
     if (compileResult != NVRTC_SUCCESS)
     {
-        exit(1);
+        throw std::runtime_error("Failed to compile CUDA program.");
     }
 
     // Obtain PTX from the program.
@@ -91,6 +97,7 @@ RuntimeCompiler::RuntimeCompiler(const std::string &_name, const std::string _so
     catch( std::runtime_error e)
     {
         qCritical() << e.what();
+        throw e;
     }
 
     m_result = new char[result.length()];

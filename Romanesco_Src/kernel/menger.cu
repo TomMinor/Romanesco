@@ -138,6 +138,10 @@ rtDeclareVariable(PerRayData_pathtrace, prd_radiance, rtPayload, );
 //};
 
 
+#define MANDELBULB
+//#define MENGERSPONGE
+//#define SHADERTOYTEST
+
 
 
 RT_PROGRAM void exception()
@@ -179,7 +183,7 @@ RT_PROGRAM void pathtrace_camera()
         float2 jitter = make_float2(x-rnd(seed), y-rnd(seed));
         float2 d = pixel + jitter*jitter_scale;
         float3 ray_origin = eye;
-        float3 ray_direction = normalize(d.x*U + d.y*V + W);
+        float3 ray_direction = normalize(d.x*U + d.y*V + (W*0.7));
 
         ray_direction = make_float3((make_float4(ray_direction, 1.0) * normalmatrix));
 //        ray_direction = normalize(ray_direction);
@@ -377,25 +381,31 @@ __device__ float DE(float3 _p)
 
 __device__ float map(float3 _p)
 {
+#ifdef SHADERTOYTEST
     float a = DE(_p) * FudgeFactor;
-    return a;
+    _p.y += 1;
+    float b = sdBox(_p, make_float3(1, 1, 1));
+    return max(a,b);
+#endif
 
-//    float d = sdBox(_p, make_float3(1.0f));
+#ifdef MENGERSPONGE
+    float d = sdBox(_p, make_float3(1.0f));
 
-//    float s = 1.0;
-//    for(int m=0; m<5; m++)
-//    {
-//        float3 a = fmod(_p * s, 2.0f) - make_float3(1.0f);
-//        s *= 3.0;
+    float s = 1.0;
+    for(int m=0; m<5; m++)
+    {
+        float3 a = fmod(_p * s, 2.0f) - make_float3(1.0f);
+        s *= 3.0;
 
-//        float3 r = ( make_float3(1.0) - ( make_float3(3.0) * fabs(a)));
+        float3 r = ( make_float3(1.0) - ( make_float3(3.0) * fabs(a)));
 
-//        float c = (float)sdCross(r) / (float)s;
+        float c = (float)sdCross(r) / (float)s;
 
-//        d = max(d, c);
-//    }
+        d = max(d, c);
+    }
 
-//    return d;
+    return d;
+#endif
 }
 
 
@@ -413,20 +423,16 @@ struct JuliaSet
   __host__ __device__ __forceinline__
   float operator()( float3 x ) const
   {
-  //Warp space around the particle to get the blob-effect.
-//    const float part_dist = length( particle - x );
-//    const float force = smoothstep( 0.0f, 1.0f, 0.1f / (part_dist*part_dist) ) * 0.2f;
-//    const float3 weg = (x - particle) / max(0.01f,part_dist);
-//    x -= weg * force;
 
+#ifdef MANDELBULB
     // Iterated values.
     float3 zn  = x;//make_float3( x, 0 );
     float4 fp_n = make_float4( 1, 0, 0, 0 );  // start derivative at real 1 (see [2]).
 
     const float sq_threshold = 2.0f;   // divergence threshold
 
-    float oscillatingTime = sin(global_t / 128.0f );
-    float p = (4.0f * abs(oscillatingTime)) + 4.0f; //7.5
+    float oscillatingTime = sin(global_t / 40.0f );
+    float p = (2.0f * oscillatingTime) + 4.0f; //7.5
     float rad = 0.0f;
     float dist = 0.0f;
     float d = 1.0;
@@ -463,39 +469,21 @@ struct JuliaSet
       }
     }
 
-    // Distance estimation. Equation (8) from [1], with correction mentioned in [2].
-    //const float norm = length( zn );
-
-    //float a = length(x) - 1.0f;
-//    float a = dist;
-//    float b = sdBox(x, make_float3(1.0f) );
-
     return dist;
+#endif
 
-//      float3 p = x;
 
-//    p = pMod(p, 1.0);
+#ifdef MENGERSPONGE
+    float d = map(x);
 
-//    float d1 = sdBox(p, make_float3(1.0f));
+    return d;
+#endif
 
-//    float d = sdBox(p, make_float3(1.0f));
+#ifdef SHADERTOYTEST
+    float d = map(x);
 
-//    float s = 1.0f;
-//    for(int i = 0; i < 3; i++)
-//    {
-//        float3 a = myfmod(p * s, 2.0) - 1.0;
-//        s *= 3.0;
-
-//        float3 r = 1.0f - 3.0 * myfabs(a);
-
-//        float c = sdCross(r) / s;
-//        d = max(d, -c);
-//    }
-
-//    float box = sdBox(x, make_float3(4));
-//    float d = map(x);
-
-//    return d;
+    return d;
+#endif
 
 //    float d1 = sdBox(p, make_float3(1.0f) );
 //    float d2 = sdBox(p - make_float3(0.6f), make_float3(1.1f) );
@@ -560,7 +548,9 @@ RT_PROGRAM void intersect(int primIdx)
     //     generating the right code i guess
 
     float3 ray_direction = ray.direction;
-    float3 x = (ray.origin ) + tmin * ray_direction;
+    float3 eye = ray.origin;
+//    eye.z -= global_t / 40.0f;
+    float3 x = eye + tmin * ray_direction;
 
     float dist_from_origin = tmin;
 
@@ -645,6 +635,7 @@ rtDeclareVariable(PerRayData_pathtrace_shadow, current_prd_shadow, rtPayload, );
 RT_PROGRAM void shadow()
 {
   current_prd_shadow.inShadow = true;
+
   rtTerminateRay();
 }
 
@@ -759,10 +750,8 @@ RT_PROGRAM void diffuse()
       PerRayData_pathtrace_shadow shadow_prd;
       shadow_prd.inShadow = false;
 
-//      rtPrintf("(%f, %f, %f) at (%d, %d)\n", L.x, L.y, L.z, launch_index.x, launch_index.y);
-
       Ray shadow_ray = make_Ray(hitpoint + (shading_normal * 0.01), L, pathtrace_shadow_ray_type, scene_epsilon, Ldist );
-      rtTrace(top_object, shadow_ray, shadow_prd);
+      rtTrace(top_shadower, shadow_ray, shadow_prd);
 
       if(!shadow_prd.inShadow)
       {
@@ -770,7 +759,6 @@ RT_PROGRAM void diffuse()
         result += light.emission * weight;
       }
 
-//      result += shadow_prd.inShadow ? make_float3(0,0,1) : make_float3(1,0,0);
     }
   }
 

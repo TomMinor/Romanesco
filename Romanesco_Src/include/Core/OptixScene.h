@@ -29,7 +29,9 @@ public:
 
     virtual void updateBufferSize(unsigned int _width, unsigned int _height);
     virtual void drawToBuffer();
-    virtual void createGeometry(std::string _hit_src = "");
+    virtual void createGeometry();
+    virtual void setGeometryHitProgram(std::string _hit_src);
+    virtual void setShadingProgram(std::string _hit_src);
 
     optix::Buffer createGLOutputBuffer(RTformat _format, unsigned int _width, unsigned int _height);
     optix::Buffer createOutputBuffer(RTformat _format, unsigned int _width, unsigned int _height);
