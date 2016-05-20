@@ -280,7 +280,7 @@ void MainWindow::graphUpdated()
 {
     std::string src = nodeEditor->parseGraph().c_str();
     qDebug() << src.c_str();
-    m_glViewport->m_optixScene->createGeometry( src );
+    m_glViewport->m_optixScene->setGeometryHitProgram(src);
 }
 
 void MainWindow::timeUpdated(float _t)
