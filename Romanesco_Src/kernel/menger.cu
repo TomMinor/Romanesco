@@ -481,6 +481,42 @@ __device__ bool insideSphere(float3 _point, float3 _center, float _radiusSqr, fl
     return false;
 }
 
+class OrbitTrap
+{
+public:
+    OrbitTrap() {;}
+
+    __device__ virtual void trap( float3 _p ) = 0;
+
+    __device__ virtual float getTrapValue() = 0;
+
+private:
+
+};
+
+class CrossTrap
+{
+public:
+    CrossTrap(float _size = 0.05f)
+        : m_dist(_size)
+    {;}
+
+    __device__ void trap( float3 _p )
+    {
+            if( fabs( _p.x ) < m_dist) {  m_dist = fabs( _p.x ); }
+       else if( fabs( _p.y ) < m_dist) {  m_dist = fabs( _p.y ); }
+       else if( fabs( _p.z ) < m_dist) {  m_dist = fabs( _p.z ); }
+    }
+
+    __device__ float getTrapValue()
+    {
+        return sqrt(m_dist);
+    }
+
+private:
+    float m_dist;
+};
+
 RT_PROGRAM void intersect(int primIdx)
 {
   normal = make_float3(0,0,0);
@@ -529,7 +565,8 @@ RT_PROGRAM void intersect(int primIdx)
     float dist_from_origin = tmin;
 
     const float3 point = make_float3(.0f);
-    float orbitdist = 0.05;
+
+    OrbitTrap* trap = new CrossTrap;
 
     // Compute epsilon using equation (16) of [1].
     //float epsilon = max(0.000001f, alpha * powf(dist_from_origin, delta));
@@ -560,11 +597,11 @@ RT_PROGRAM void intersect(int primIdx)
       }
 
 //      orbitdist = min( orbitdist, lengthSqr(x - point) );
-           if( abs( x.x ) < orbitdist) {  orbitdist = abs( x.x ); }
-      else if( abs( x.y ) < orbitdist) {  orbitdist = abs( x.y ); }
-      else if( abs( x.z ) < orbitdist) {  orbitdist = abs( x.z ); }
+      trap->trap(x);
 
     }
+
+    delete trap;
 
     // Found intersection?
     if( dist < epsilon )
@@ -576,7 +613,7 @@ RT_PROGRAM void intersect(int primIdx)
         normal = estimate_normal(distance, x, 0.00001 /*DEL*/);
         geometric_normal = normal;
         shading_normal = normal;
-        smallestdistance = sqrt(orbitdist);
+        smallestdistance = trap->getTrapValue();
         rtReportIntersection( 0 );
       }
     }
