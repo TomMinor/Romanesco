@@ -5,3 +5,14 @@
 	+ Step Total
 	+ Surface Estimation Accuracy
 * 
+
+
+
+
+
+Goal: Frames out by tuesday
++ Port shadertoy thing
++ Orbit traps for colouring
++ Fix aspect ratio
++ Render out EXRs of any size
++ 
