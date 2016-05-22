@@ -98,100 +98,7 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height, QObject *_pare
     m_context->setEntryPointCount( 1 );
     m_context->setStackSize( 1800 );
 
-    m_context["max_depth"]->setInt( 5 );
-//    m_context["radiance_ray_type"]->setUint( 0u );
-//    m_context["shadow_ray_type"]->setUint( 1u );
-    m_context["scene_epsilon"]->setFloat( 1.e-4f );
-    m_context["color_t"]->setFloat( 0.0f );
-    m_context["shadowsActive"]->setUint( 0u );
-    m_context["global_t"]->setFloat( 0u );
-
-    m_context["scene_epsilon"]->setFloat( 1.e-3f );
-    m_context["pathtrace_ray_type"]->setUint(0u);
-    m_context["pathtrace_shadow_ray_type"]->setUint(1u);
-    m_context["pathtrace_bsdf_shadow_ray_type"]->setUint(2u);
-    m_context["rr_begin_depth"]->setUint(m_rr_begin_depth);
-
     updateBufferSize(_width, _height);
-
-//    camera_data = InitialCameraData( optix::make_float3( 3.0f, 2.0f, -3.0f ), // eye
-//                                     optix::make_float3( 0.0f, 0.3f,  0.0f ), // lookat
-//                                     optix::make_float3( 0.0f, 1.0f,  0.0f ), // up
-//                                     60.0f );                          // vfov
-
-    // Declare camera variables.  The values do not matter, they will be overwritten in trace.
-    m_context["eye"]->setFloat( optix::make_float3( 0.0f, 0.0f, 0.0f ) );
-    m_context["U"]->setFloat( optix::make_float3( 0.0f, 0.0f, 0.0f ) );
-    m_context["V"]->setFloat( optix::make_float3( 0.0f, 0.0f, 0.0f ) );
-    m_context["W"]->setFloat( optix::make_float3( 0.0f, 0.0f, 0.0f ) );
-
-//    setCamera( optix::make_float3( 3.0f, 2.0f, -3.0f ), // eye
-//               optix::make_float3( 0.0f, 0.3f,  0.0f ), // lookat
-//               60.f // fov
-//               );
-
-    //sprintf( path_to_ptx, "%s/%s", "ptx", "draw.cu.ptx" );
-//    std::string ptx_path_str(  );
-//    optix::Program ray_gen_program = m_context->createProgramFromPTXFile( "ptx/pinhole_camera.cu.ptx", "pinhole_camera" );
-    optix::Program ray_gen_program = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "pathtrace_camera" );
-    optix::Program exception_program = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "exception" );
-    m_context->setRayGenerationProgram( 0, ray_gen_program );
-    m_context->setExceptionProgram( 0, exception_program );
-
-    m_context["bad_color"]->setFloat( 1.0f, 1.0f, 0.0f );
-
-    // Miss program
-    //m_context->setMissProgram( 0, m_context->createProgramFromPTXFile( "ptx/constantbg.cu.ptx", "miss" ) );
-    m_context["bg_color"]->setFloat( optix::make_float3(108.0f/255.0f, 166.0f/255.0f, 205.0f/255.0f) * 0.5f );
-
-    m_context->setMissProgram( 0, m_context->createProgramFromPTXFile( "ptx/raymarch.cu.ptx", "envmap_miss" ) );
-
-    const optix::float3 default_color = optix::make_float3(1.0f, 1.0f, 1.0f);
-//    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/i7245143/src/optix/SDK/tutorial/data/CedarCity.hdr", default_color) );
-//    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/tom/src/Fragmentarium/Fragmentarium-Source/Examples/Include/Ditch-River_2k.hdr", default_color) );
-    m_context["envmap"]->setTextureSampler( loadTexture( m_context,  qgetenv("HOME").toStdString() + "/Downloads/Milkyway/Milkyway_small.hdr", default_color) );
-
-
-    m_rr_begin_depth = 1u;
-    m_sqrt_num_samples = 1u;
-    m_camera_changed = true;
-
-
-    // Setup path tracer
-    m_context["sqrt_num_samples"]->setUint( m_sqrt_num_samples );
-    m_context["frame_number"]->setUint(1);
-
-    // Index of sampling_stategy (BSDF, light, MIS)
-    m_sampling_strategy = 0;
-    m_context["sampling_stategy"]->setInt(m_sampling_strategy);
-
-
-    // Setup lights
-    m_context["ambient_light_color"]->setFloat(0.1f,0.1f,0.3f);
-    BasicLight lights[] = {
-      { { 0.0f, 8.0f, -5.0f }, { .8f, .8f, .6f }, 1 },
-    };
-
-    optix::Buffer light_buffer = m_context->createBuffer(RT_BUFFER_INPUT);
-    light_buffer->setFormat(RT_FORMAT_USER);
-    light_buffer->setElementSize(sizeof(BasicLight));
-    light_buffer->setSize( sizeof(lights)/sizeof(lights[0]) );
-    memcpy(light_buffer->map(), lights, sizeof(lights));
-    light_buffer->unmap();
-
-    m_context["lights"]->set(light_buffer);
-
-    float3 test_data[] = {
-        { 1.0f, 0.0f, 0.0f },
-        { 0.0f, 1.0f, 0.0f },
-        { 0.0f, 0.0f, 1.0f }
-    };
-
-    optix::Buffer test_buffer = m_context->createBuffer(RT_BUFFER_INPUT, RT_FORMAT_FLOAT3, sizeof(test_data)/sizeof(test_data[0]) );
-    memcpy( test_buffer->map(), test_data, sizeof(test_data) );
-    test_buffer->unmap();
-
-    m_context["test"]->set(test_buffer);
 
     // Create scene geom
     createGeometry();
@@ -463,6 +370,74 @@ __device__ __noinline__ float3 shade_hook()
 
 void OptixScene::createGeometry()
 {
+    m_context["max_depth"]->setInt( 5 );
+//    m_context["radiance_ray_type"]->setUint( 0u );
+//    m_context["shadow_ray_type"]->setUint( 1u );
+    m_context["scene_epsilon"]->setFloat( 1.e-4f );
+    m_context["color_t"]->setFloat( 0.0f );
+    m_context["shadowsActive"]->setUint( 0u );
+    m_context["global_t"]->setFloat( 0u );
+
+    m_context["scene_epsilon"]->setFloat( 1.e-3f );
+    m_context["pathtrace_ray_type"]->setUint(0u);
+    m_context["pathtrace_shadow_ray_type"]->setUint(1u);
+    m_context["pathtrace_bsdf_shadow_ray_type"]->setUint(2u);
+    m_context["rr_begin_depth"]->setUint(m_rr_begin_depth);
+
+//    camera_data = InitialCameraData( optix::make_float3( 3.0f, 2.0f, -3.0f ), // eye
+//                                     optix::make_float3( 0.0f, 0.3f,  0.0f ), // lookat
+//                                     optix::make_float3( 0.0f, 1.0f,  0.0f ), // up
+//                                     60.0f );                          // vfov
+
+    // Declare camera variables.  The values do not matter, they will be overwritten in trace.
+    m_context["eye"]->setFloat( optix::make_float3( 0.0f, 0.0f, 0.0f ) );
+    m_context["U"]->setFloat( optix::make_float3( 0.0f, 0.0f, 0.0f ) );
+    m_context["V"]->setFloat( optix::make_float3( 0.0f, 0.0f, 0.0f ) );
+    m_context["W"]->setFloat( optix::make_float3( 0.0f, 0.0f, 0.0f ) );
+
+
+    m_context["bad_color"]->setFloat( 1.0f, 1.0f, 0.0f );
+
+    // Miss program
+    //m_context->setMissProgram( 0, m_context->createProgramFromPTXFile( "ptx/constantbg.cu.ptx", "miss" ) );
+    m_context["bg_color"]->setFloat( optix::make_float3(108.0f/255.0f, 166.0f/255.0f, 205.0f/255.0f) * 0.5f );
+
+    m_context->setMissProgram( 0, m_context->createProgramFromPTXFile( "ptx/raymarch.cu.ptx", "envmap_miss" ) );
+
+    const optix::float3 default_color = optix::make_float3(1.0f, 1.0f, 1.0f);
+//    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/i7245143/src/optix/SDK/tutorial/data/CedarCity.hdr", default_color) );
+//    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/tom/src/Fragmentarium/Fragmentarium-Source/Examples/Include/Ditch-River_2k.hdr", default_color) );
+    m_context["envmap"]->setTextureSampler( loadTexture( m_context,  qgetenv("HOME").toStdString() + "/Downloads/Milkyway/Milkyway_small.hdr", default_color) );
+
+
+    m_rr_begin_depth = 1u;
+    m_sqrt_num_samples = 1u;
+    m_camera_changed = true;
+
+
+    // Setup path tracer
+    m_context["sqrt_num_samples"]->setUint( m_sqrt_num_samples );
+    m_context["frame_number"]->setUint(1);
+
+    // Index of sampling_stategy (BSDF, light, MIS)
+    m_sampling_strategy = 0;
+    m_context["sampling_stategy"]->setInt(m_sampling_strategy);
+
+    // Setup lights
+    m_context["ambient_light_color"]->setFloat(0.1f,0.1f,0.3f);
+
+    float3 test_data[] = {
+        { 1.0f, 0.0f, 0.0f },
+        { 0.0f, 1.0f, 0.0f },
+        { 0.0f, 0.0f, 1.0f }
+    };
+
+    optix::Buffer test_buffer = m_context->createBuffer(RT_BUFFER_INPUT, RT_FORMAT_FLOAT3, sizeof(test_data)/sizeof(test_data[0]) );
+    memcpy( test_buffer->map(), test_data, sizeof(test_data) );
+    test_buffer->unmap();
+
+    m_context["test"]->set(test_buffer);
+
     optix::Program ray_gen_program = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "pathtrace_camera" );
     optix::Program exception_program = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "exception" );
     m_context->setRayGenerationProgram( 0, ray_gen_program );

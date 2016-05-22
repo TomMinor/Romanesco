@@ -33,7 +33,7 @@
 
 using namespace optix;
 
-#define USE_DEBUG_EXCEPTIONS 1
+#define USE_DEBUG_EXCEPTIONS 0
 
 // References:
 // [1] Hart, J. C., Sandin, D. J., and Kauffman, L. H. 1989. Ray tracing deterministic 3D fractals
@@ -55,6 +55,8 @@ rtDeclareVariable(optix::Ray, ray, rtCurrentRay, );
 
 // julia set object outputs this
 rtDeclareVariable(float3, normal, attribute normal, );
+rtDeclareVariable(unsigned int, iterations, attribute iterations, );
+rtDeclareVariable(float, smallestdistance, attribute smallestdistance, );
 
 // sphere outputs this
 rtDeclareVariable(float3, shading_normal, attribute shading_normal, );
@@ -120,6 +122,7 @@ struct PerRayData_pathtrace
   int done;
   int inside;
 
+  unsigned int iteration;
 };
 
 struct PerRayData_pathtrace_shadow
@@ -130,19 +133,15 @@ struct PerRayData_pathtrace_shadow
 rtDeclareVariable(PerRayData_pathtrace, current_prd, rtPayload, );
 rtDeclareVariable(PerRayData_pathtrace, prd_radiance, rtPayload, );
 
-
 //struct PerRayData_shadow
 //{
 //  float3 attenuation;
 //  bool inShadow;
 //};
 
-
-#define MANDELBULB
+//#define MANDELBULB
 //#define MENGERSPONGE
-//#define SHADERTOYTEST
-
-
+#define SHADERTOYTEST
 
 RT_PROGRAM void exception()
 {
@@ -199,6 +198,7 @@ RT_PROGRAM void pathtrace_camera()
         prd.done = false;
         prd.seed = seed;
         prd.depth = 0;
+        prd.iteration = 0;
 
         Ray ray = make_Ray(ray_origin, ray_direction, pathtrace_ray_type, scene_epsilon, RT_DEFAULT_MAX);
         rtTrace(top_object, ray, prd);
@@ -246,29 +246,6 @@ RT_PROGRAM void pathtrace_camera()
     }
 }
 
-
-//// Quaternion helpers.
-//static __host__ __device__ float4 mul( float4 a, float4 b )
-//{
-//  const float3 a2 = make_float3( a.y, a.z, a.w );
-//  const float3 b2 = make_float3( b.y, b.z, b.w );
-//  float3 r;
-//  r = a.x*b2 + b.x*a2 + cross( a2, b2 );
-//  return make_float4(
-//                      a.x*b.x - dot( a2, b2 ),
-//                      r.x,
-//                      r.y,
-//                      r.z );
-//}
-//static __host__ __device__ float4 square( float4 a )
-//{
-//  float3 a2 = make_float3( a.y, a.z, a.w );
-//  float3 r;
-//  r = 2*a.x*a2;
-//  return make_float4(
-//    a.x*a.x - dot( a2,a2 ),
-//    r.x, r.y, r.z );
-//}
 
 // Intersect the bounding sphere of the Julia set.
 static __host__ __device__ bool intersectBoundingSphere( float3 o, float3 d, float sqRadius, float& tmin, float &tmax )
@@ -345,7 +322,7 @@ __device__ float DE(float3 _p)
     z.z = fabs(z.z + Offset.z) - Offset.z;
 
     float d = 1000.0f;
-    for(int n = 0; n < Iterations; ++n)
+    for(int n = 0; n < max_iterations; ++n)
     {
         ///@todo rotate
 
@@ -410,6 +387,10 @@ __device__ float map(float3 _p)
 
 
 
+inline __host__ __device__ float lengthSqr(float3 _v)
+{
+    return dot(_v, _v);
+}
 
 
 
@@ -432,7 +413,7 @@ struct JuliaSet
     const float sq_threshold = 2.0f;   // divergence threshold
 
     float oscillatingTime = sin(global_t / 40.0f );
-    float p = (2.0f * oscillatingTime) + 4.0f; //7.5
+    float p = (2.0f * oscillatingTime) + 6.0f; //7.5
     float rad = 0.0f;
     float dist = 0.0f;
     float d = 1.0;
@@ -484,14 +465,6 @@ struct JuliaSet
 
     return d;
 #endif
-
-//    float d1 = sdBox(p, make_float3(1.0f) );
-//    float d2 = sdBox(p - make_float3(0.6f), make_float3(1.1f) );
-
-//    return max(-d1, d2) / 9.0;
-
-    //return julia_dist;
-    //return fminf( julia_dist, part_dist - 0.2f );  // this "renders" the particle as well
   }
 
   unsigned int m_max_iterations;
@@ -537,6 +510,7 @@ RT_PROGRAM void intersect(int primIdx)
       }
   }
 
+
   if(shouldSphereTrace)
   {
     JuliaSet distance( max_iterations );
@@ -554,10 +528,13 @@ RT_PROGRAM void intersect(int primIdx)
 
     float dist_from_origin = tmin;
 
+    const float3 point = make_float3(.0f);
+    float orbitdist = 0.05;
+
     // Compute epsilon using equation (16) of [1].
     //float epsilon = max(0.000001f, alpha * powf(dist_from_origin, delta));
     //const float epsilon = 1e-3f;
-    const float epsilon = 0.00001;
+    const float epsilon = 0.001;
 
     //http://blog.hvidtfeldts.net/index.php/2011/09/distance-estimated-3d-fractals-v-the-mandelbulb-different-de-approximations/
     float fudgeFactor = 0.99;
@@ -577,9 +554,16 @@ RT_PROGRAM void intersect(int primIdx)
       // Check if we're close enough or too far.
       if( dist < epsilon || dist_from_origin > tmax  )
       {
+          iterations = i;
 //          rtPrintf("%f, %f, %f\n", ray.origin.x, ray.origin.y, ray.origin.z);
           break;
       }
+
+//      orbitdist = min( orbitdist, lengthSqr(x - point) );
+           if( abs( x.x ) < orbitdist) {  orbitdist = abs( x.x ); }
+      else if( abs( x.y ) < orbitdist) {  orbitdist = abs( x.y ); }
+      else if( abs( x.z ) < orbitdist) {  orbitdist = abs( x.z ); }
+
     }
 
     // Found intersection?
@@ -592,6 +576,7 @@ RT_PROGRAM void intersect(int primIdx)
         normal = estimate_normal(distance, x, 0.00001 /*DEL*/);
         geometric_normal = normal;
         shading_normal = normal;
+        smallestdistance = sqrt(orbitdist);
         rtReportIntersection( 0 );
       }
     }
@@ -762,8 +747,16 @@ RT_PROGRAM void diffuse()
     }
   }
 
+  float3 colourtrap = make_float3(iterations / float(max_iterations) );
+  colourtrap = make_float3(smallestdistance) * 1.0f;
 
-  current_prd.result = make_float4(result, 1.0);
+  float3 a = make_float3(1.0f, 0.2f, 0.2f);
+  float3 b = make_float3(0.5f, 0.5f, 0.55f);
+  colourtrap = lerp(a, b, powf(smallestdistance * 4.0f,0.5));
+
+  float3 ambient = make_float3(0.1f);
+
+  current_prd.result = make_float4(result * colourtrap + ambient, 1.0);
 //  current_prd.result = make_float4( do_work(), 1.0f );
   current_prd.result_nrm = shading_normal;
   current_prd.result_world = hitpoint;

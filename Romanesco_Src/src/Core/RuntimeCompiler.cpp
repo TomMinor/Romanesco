@@ -77,14 +77,14 @@ void RuntimeCompiler::compile()
     const std::string nvccflags= "--compiler-options -fno-strict-aliasing -use_fast_math --ptxas-options=-v -ptx";
 
     std::string nvcc_opts;
-    for(std::string opt : opts)
+    for(std::string opt : m_opts)
     {
         nvcc_opts += opt + " ";
     }
 
     static const std::string tmpFile = "/tmp/out.cu";
     std::ofstream cudaFile(tmpFile, std::ofstream::out );
-    cudaFile << _source;
+//    cudaFile << _source;
     cudaFile.close();
 
     const std::string nvcccall = nvccbin + " -m64 " + nvcc_opts + nvccflags + " " + " -o /dev/stdout " + tmpFile;
