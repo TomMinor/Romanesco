@@ -246,25 +246,25 @@ void TestGLWidget::keyPressEvent(QKeyEvent *_event)
     switch ( _event->key() )
     {
         case Qt::Key_1:
-            {
-                m_optixScene->setOutputBuffer("output_buffer");
-                break;
-            }
+        {
+            m_optixScene->setOutputBuffer("output_buffer");
+            break;
+        }
         case Qt::Key_2:
-            {
-                m_optixScene->setOutputBuffer("output_buffer_nrm");
-                break;
-            }
+        {
+            m_optixScene->setOutputBuffer("output_buffer_nrm");
+            break;
+        }
         case Qt::Key_3:
-            {
-                m_optixScene->setOutputBuffer("output_buffer_world");
-                break;
-            }
+        {
+            m_optixScene->setOutputBuffer("output_buffer_world");
+            break;
+        }
         case Qt::Key_4:
-            {
-                m_optixScene->setOutputBuffer("output_buffer_depth");
-                break;
-            }
+        {
+            m_optixScene->setOutputBuffer("output_buffer_depth");
+            break;
+        }
 
         case Qt::Key_A:
             {

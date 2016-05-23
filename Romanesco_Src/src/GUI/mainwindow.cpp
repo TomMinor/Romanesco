@@ -39,6 +39,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
 #include "qtimelineanimated.h"
 
+#include <boost/format.hpp>
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent)
 {
@@ -75,18 +77,32 @@ MainWindow::MainWindow(QWidget *parent) :
     fileMenu->addAction(quitAct);
 
 
-    QAction *flipbookAct = new QAction(tr("&Flipbook"), this);
+    m_flipbookAct = new QAction(tr("&Flipbook"), this);
     addAct->setStatusTip(tr("Flipbook a preview animation"));
-    connect(flipbookAct, SIGNAL(triggered()), this, SLOT(startFlipbook()));
+    connect(m_flipbookAct, SIGNAL(triggered()), this, SLOT(startFlipbook()));
 
     m_cancelFlipbookAct = new QAction(tr("&Cancel Flipbook"), this);
     addAct->setStatusTip(tr("Cancel running flipbook"));
     connect(m_cancelFlipbookAct , SIGNAL(triggered()), this, SLOT(cancelFlipbook()));
     m_cancelFlipbookAct->setEnabled(false);
 
+
+    m_renderAct = new QAction(tr("&Batch Render"), this);
+    addAct->setStatusTip(tr("Render frames to disk"));
+    connect(m_renderAct, SIGNAL(triggered()), this, SLOT(startRender()));
+
+    m_cancelRenderAct= new QAction(tr("&Cancel Batch Render"), this);
+    addAct->setStatusTip(tr("Cancel running batch render"));
+    connect(m_cancelRenderAct , SIGNAL(triggered()), this, SLOT(cancelRender()));
+    m_cancelRenderAct->setEnabled(false);
+
+
     renderMenu = menuBar()->addMenu(tr("&Render"));
-    renderMenu->addAction(flipbookAct);
+    renderMenu->addAction(m_flipbookAct);
     renderMenu->addAction(m_cancelFlipbookAct );
+    renderMenu->addAction(m_renderAct);
+    renderMenu->addAction(m_cancelRenderAct );
+
 
     QWidget* window = new QWidget(this);
     QVBoxLayout* layout = new QVBoxLayout(window);
@@ -146,14 +162,23 @@ MainWindow::MainWindow(QWidget *parent) :
 
 
     m_statusBar = new QStatusBar;
+    m_renderProgress = new QProgressBar;
+    m_renderProgress->setMinimum(0);
+    m_renderProgress->setMinimum(100);
+    m_renderProgress->setVisible(false);
+    m_renderProgress->setMaximumHeight(12);
+
+    m_statusBar->addPermanentWidget(m_renderProgress);
 
     setStatusBar(m_statusBar);
 
+//    connect( QAbstractEventDispatcher::instance(), SIGNAL(awake()), this, SLOT(update()) );
 
     m_updateTimer = startTimer(30);
     m_drawTimer = startTimer(30);
 
     m_flipbooking = false;
+    m_rendering = false;
 }
 
 void MainWindow::initializeGL()
@@ -170,15 +195,6 @@ void MainWindow::setGlobalStyleSheet(const QString& _styleSheet)
 
 void MainWindow::dumpFrame()
 {
-    int currentFrame = m_timeline->getTime();
-
-//    if(currentFrame == m_timeline->getEndFrame())
-//    {
-//        qDebug() << "Finished";
-//        m_flipbooking = false;
-//        return;
-//    }
-
     // Cancel if the framebuffer was closed
     if(!m_framebuffer->isVisible())
     {
@@ -186,58 +202,88 @@ void MainWindow::dumpFrame()
         m_cancelFlipbookAct->setEnabled(false);
     }
 
-    if(m_flipbooking)
+    if(m_rendering)
     {
-        m_timeline->setTime( currentFrame + 1 );
-
-        OptixScene* optixscene = m_glViewport->m_optixScene;
-        unsigned long elementSize, width, height;
-        float* buffer = optixscene->getBufferContents( optixscene->outputBuffer(), &elementSize, &width, &height );
-
-        unsigned int totalbytes = width * height * elementSize;
-        uchar* bufferbytes = new uchar[totalbytes];
-        for(int i = 0; i < totalbytes; i++)
-        {
-            bufferbytes[i] = static_cast<uchar>(buffer[i] * 255);
-        }
-
-        QImage imageFrame;
-
-        switch(elementSize / sizeof(float))
-        {
-        case 1:
-            imageFrame = QImage(bufferbytes, width, height, QImage::Format_Grayscale8);
-            break;
-        case 3:
-            imageFrame = QImage(bufferbytes, width, height, QImage::Format_RGB32);
-            break;
-        case 4:
-            imageFrame = QImage(bufferbytes, width, height, QImage::Format_RGBA8888);
-            break;
-        default:
-            qWarning("Invalid QImage type");
-            return;
-        }
-
-        QTransform flipY;
-        flipY.scale(1, -1);
-//        flipY.rotate(90, Qt::Axis::YAxis);
-        imageFrame = imageFrame.transformed(flipY);
-
-        QImage finalImage(imageFrame.size(), imageFrame.format());
-        finalImage.fill( Qt::black );
-
-        QPainter p(&finalImage);
-        p.drawImage(0, 0, imageFrame);
-
-        // Set current frame to this one
-        int currentFrame = m_framebuffer->addFrame( finalImage );
-        m_framebuffer->setFrame( currentFrame );
-
-        m_framebuffer->setBufferSize( imageFrame.width(), imageFrame.height() );
-
-        m_cancelFlipbookAct->setEnabled(true);
+        m_statusBar->showMessage("Starting batch render");
+        dumpRenderedFrame();
     }
+    else if(m_flipbooking)
+    {
+        dumpFlipbookFrame();
+    }
+}
+
+void MainWindow::dumpRenderedFrame()
+{
+    int currentFrame = m_timeline->getTime();
+    m_cancelRenderAct->setEnabled(true);// Enable render cancel button
+
+    m_timeline->setTime( currentFrame + 1 );
+    unsigned int currentRelativeFrame = currentFrame;
+    unsigned int frameRange = m_timeline->getStartFrame() - m_timeline->getStartFrame();
+
+    std::string statusMessage = boost::str( boost::format("Rendering frame %d of %d") % currentRelativeFrame % frameRange );
+    m_statusBar->showMessage( statusMessage.c_str() );
+
+    std::string filepath = "./test_%04d.exr";
+    std::string imagePath = boost::str(boost::format(filepath) % currentFrame);
+
+    OptixScene* optixscene = m_glViewport->m_optixScene;
+    optixscene->saveBuffersToDisk(imagePath);
+}
+
+void MainWindow::dumpFlipbookFrame()
+{
+    int currentFrame = m_timeline->getTime();
+    m_cancelFlipbookAct->setEnabled(true);// Enable flip cancel button
+
+    m_timeline->setTime( currentFrame + 1 );
+
+    OptixScene* optixscene = m_glViewport->m_optixScene;
+    unsigned long elementSize, width, height;
+    float* buffer = optixscene->getBufferContents( optixscene->outputBuffer(), &elementSize, &width, &height );
+
+    unsigned int totalbytes = width * height * elementSize;
+    uchar* bufferbytes = new uchar[totalbytes];
+    for(int i = 0; i < totalbytes; i++)
+    {
+        bufferbytes[i] = static_cast<uchar>(buffer[i] * 255);
+    }
+
+    QImage imageFrame;
+
+    switch(elementSize / sizeof(float))
+    {
+    case 1:
+        imageFrame = QImage(bufferbytes, width, height, QImage::Format_Grayscale8);
+        break;
+    case 3:
+        imageFrame = QImage(bufferbytes, width, height, QImage::Format_RGB32);
+        break;
+    case 4:
+        imageFrame = QImage(bufferbytes, width, height, QImage::Format_RGBA8888);
+        break;
+    default:
+        qWarning("Invalid QImage type");
+        return;
+    }
+
+    QTransform flipY;
+    flipY.scale(1, -1);
+//        flipY.rotate(90, Qt::Axis::YAxis);
+    imageFrame = imageFrame.transformed(flipY);
+
+    QImage finalImage(imageFrame.size(), imageFrame.format());
+    finalImage.fill( Qt::black );
+
+    QPainter p(&finalImage);
+    p.drawImage(0, 0, imageFrame);
+
+    // Set current frame to this one
+    int newCurrentFrame = m_framebuffer->addFrame( finalImage );
+    m_framebuffer->setFrame( newCurrentFrame );
+
+    m_framebuffer->setBufferSize( imageFrame.width(), imageFrame.height() );
 }
 
 void MainWindow::startFlipbook()
@@ -260,6 +306,26 @@ void MainWindow::cancelFlipbook()
     m_flipbooking = false;
 
     m_cancelFlipbookAct->setEnabled(false);
+}
+
+void MainWindow::startRender()
+{
+    m_timeline->setTime( m_timeline->getStartFrame() );
+    m_glViewport->updateTime( m_timeline->getTime() ); // Force update
+    m_rendering = true;
+
+    m_renderProgress->setVisible(true);
+    m_renderProgress->setValue( m_timeline->getStartFrame() );
+    m_renderProgress->setRange( m_timeline->getStartFrame(), m_timeline->getEndFrame());
+}
+
+void MainWindow::cancelRender()
+{
+    m_rendering = false;
+    m_cancelFlipbookAct->setEnabled(false);
+
+    m_statusBar->showMessage("Cancelled batch render");
+    m_renderProgress->setVisible(false);
 }
 
 void MainWindow::keyPressEvent(QKeyEvent* _event)

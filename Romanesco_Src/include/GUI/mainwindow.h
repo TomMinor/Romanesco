@@ -59,7 +59,12 @@ private slots:
     void startFlipbook();
     void cancelFlipbook();
 
+    void startRender();
+    void cancelRender();
+
     void dumpFrame();
+    void dumpRenderedFrame();
+    void dumpFlipbookFrame();
 
     void initializeGL();
 
@@ -72,7 +77,13 @@ private:
     QMenu *fileMenu;
     QMenu *renderMenu;
     QAction *m_cancelFlipbookAct;
+    QAction *m_cancelRenderAct;
+    QAction *m_flipbookAct;
+    QAction *m_renderAct;
+
+
     QStatusBar *m_statusBar;
+    QProgressBar *m_renderProgress;
 
     QGraphicsView *view;
     QGraphicsScene *scene;
@@ -82,6 +93,8 @@ private:
 
 
     bool m_flipbooking;
+    bool m_rendering;
+
     bool m_update_pending;
     bool m_animating;
     int m_updateTimer, m_drawTimer;
