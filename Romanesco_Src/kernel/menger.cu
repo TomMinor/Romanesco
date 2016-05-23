@@ -42,17 +42,17 @@ using namespace optix;
 // [1] Hart, J. C., Sandin, D. J., and Kauffman, L. H. 1989. Ray tracing deterministic 3D fractals
 // [2] http://www.devmaster.net/forums/showthread.php?t=4448
 
+rtBuffer<float4, 2>              output_buffer;
+rtBuffer<float3, 2>              output_buffer_nrm;
+rtBuffer<float3, 2>              output_buffer_world;
+rtBuffer<float, 2>              output_buffer_depth;
 
 rtDeclareVariable( float3, eye, , );
-rtDeclareVariable( float4, c4 , , );                // parameter quaternion
 rtDeclareVariable( float,  alpha , , );
 rtDeclareVariable( float,  delta , , );
 rtDeclareVariable( float,  DEL , , );
-rtDeclareVariable( float,  color_t , , );           // 0,1,2 are full colors, in between is morph
 rtDeclareVariable( uint,   max_iterations , , );    // max iterations for divergence determination
-rtDeclareVariable( float3, particle , , );          // position of force particle
-rtDeclareVariable( float3, center , , );          // position of force particle
-rtDeclareVariable( float, global_t, , );          // position of force particle
+rtDeclareVariable( float, global_t, , );          // Global time
 
 rtDeclareVariable(optix::Ray, ray, rtCurrentRay, );
 
@@ -66,10 +66,6 @@ rtDeclareVariable(float3, shading_normal, attribute shading_normal, );
 rtDeclareVariable(float3, shading_normal2, attribute shading_normal2, );
 rtDeclareVariable(float3, geometric_normal, attribute geometric_normal, );
 
-rtBuffer<float4, 2>              output_buffer;
-rtBuffer<float3, 2>              output_buffer_nrm;
-rtBuffer<float3, 2>              output_buffer_world;
-rtBuffer<float, 2>              output_buffer_depth;
 
 rtDeclareVariable(uint2, launch_index, rtLaunchIndex, );
 rtDeclareVariable(uint2, launch_dim,   rtLaunchDim, );

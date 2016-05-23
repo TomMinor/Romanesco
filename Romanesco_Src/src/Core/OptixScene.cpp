@@ -43,7 +43,6 @@
 /// * All camera stuff should be moved into it's own, simpler class
 
 
-
 OptixScene::OptixScene(unsigned int _width, unsigned int _height, QObject *_parent)
     : QObject(_parent), m_time(0.0f)
 {
@@ -555,12 +554,10 @@ void OptixScene::createWorld()
     m_DEL = 0.0001f;
     m_max_iterations = 32;
 
-    m_context[ "c4" ]->setFloat( optix::make_float4( -0.5f, 0.1f, 0.2f, 0.3f) );
     m_context[ "alpha" ]->setFloat( m_alpha );
     m_context[ "delta" ]->setFloat( m_delta );
     m_context[ "max_iterations" ]->setUint( m_max_iterations );
     m_context[ "DEL" ]->setFloat( m_DEL );
-    m_context[ "particle" ]->setFloat( 0.5f, 0.5f, 0.4f );
 }
 
 

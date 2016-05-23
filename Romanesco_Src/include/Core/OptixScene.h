@@ -5,6 +5,7 @@
 #include <sutil.h>
 #include <optixu/optixu.h>
 #include <optixu/optixu_math_namespace.h>
+#include <optixu/optixu_matrix_namespace.h>
 #include <optixu/optixpp_namespace.h>
 
 using namespace optix;
