@@ -29,6 +29,7 @@
 #include "ImageWriter.h"
 #include "OptixScene.h"
 #include "RuntimeCompiler.h"
+#include "RenderMath.h"
 
 #define USE_DEBUG_EXCEPTIONS 1
 
@@ -156,11 +157,17 @@ void OptixScene::setCamera(optix::float3 _eye, /*optix::float3 _lookat, */float 
 
 //    optix::float3 eye, U, V, W;
 //    m_camera->setAspectRatio( static_cast<float>(_width)/static_cast<float>(_height) );
+    float aspectRatio = static_cast<float>(_width)/static_cast<float>(_height);
+    float inputAngle = atan( radians(_fov * 0.5) );
+    float outputAngle = degrees(2.0f * atanf(aspectRatio * tanf(radians(0.5f * (inputAngle)))) );
+
+    float focalLength = aspectRatio;
 
     m_context["eye"]->setFloat( _eye );
     m_context["U"]->setFloat( optix::make_float3(1, 0, 0) );
     m_context["V"]->setFloat( optix::make_float3(0, 1, 0) );
-    m_context["W"]->setFloat( optix::make_float3(0, 0, 1) );
+    m_context["W"]->setFloat( optix::make_float3(0, 0, 1) * focalLength );
+
 
     m_camera_changed = true;
 
@@ -337,7 +344,7 @@ void OptixScene::createLights()
         light.v1       = make_float3( v1.x, v1.y, v1.z );
         light.v2       = make_float3( v2.x, v2.y, v2.z );
         light.normal   = normalize( cross(light.v1, light.v2) );
-        light.emission = make_float3( 40.0f );
+        light.emission = make_float3( 20.0f );
 
         m_lights.push_back(light);
     }
@@ -359,7 +366,7 @@ void OptixScene::createLights()
         light.v1       = make_float3( v1.x, v1.y, v1.z );
         light.v2       = make_float3( v2.x, v2.y, v2.z );
         light.normal   = normalize( cross(light.v1, light.v2) );
-        light.emission = make_float3( 40.0f, 20.0f, 5.0f );
+        light.emission = make_float3( 20.0f, 10.0f, 2.5f );
 
         m_lights.push_back(light);
     }
@@ -384,17 +391,18 @@ void OptixScene::createCameras()
     m_context["pathtrace_bsdf_shadow_ray_type"]->setUint( static_cast<unsigned int>(PathTraceRay::PATHTRACE_BSDFRAY) );
     m_context["rr_begin_depth"]->setUint(m_rr_begin_depth);
 
-    //    camera_data = InitialCameraData( optix::make_float3( 3.0f, 2.0f, -3.0f ), // eye
-    //                                     optix::make_float3( 0.0f, 0.3f,  0.0f ), // lookat
-    //                                     optix::make_float3( 0.0f, 1.0f,  0.0f ), // up
-    //                                     60.0f );                          // vfov
+//    camera_data = InitialCameraData( optix::make_float3( 3.0f, 2.0f, -3.0f ), // eye
+//                                 optix::make_float3( 0.0f, 0.3f,  0.0f ), // lookat
+//                                 optix::make_float3( 0.0f, 1.0f,  0.0f ), // up
+//                                 60.0f );                          // vfov
 
-    //    m_camera = new MyPinholeCamera( camera_data.eye,
-    //                                  camera_data.lookat,
-    //                                  camera_data.up,
-    //                                  -1.0f, // hfov is ignored when using keep vertical
-    //                                  camera_data.vfov,
-    //                                  MyPinholeCamera::KeepVertical );
+//    m_camera = new PinholeCamera( camera_data.eye,
+//                              camera_data.lookat,
+//                              camera_data.up,
+//                              -1.0f, // hfov is ignored when using keep vertical
+//                              camera_data.vfov,
+//                              MyPinholeCamera::KeepVertical );
+
     //
     //    setCamera( camera_data.eye,
     //               camera_data.lookat,
