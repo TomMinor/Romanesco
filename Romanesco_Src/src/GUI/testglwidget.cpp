@@ -436,7 +436,7 @@ void TestGLWidget::keyPressEvent(QKeyEvent *_event)
             {
                 qDebug() << "Updating geo";
                 system("nvcc -m64 -gencode arch=compute_20,code=sm_20 --compiler-options -fno-strict-aliasing -use_fast_math --ptxas-options=-v -ptx -I$OPTIX_PATH/SDK/sutil -I$OPTIX_PATH/SDK -I$OPTIX_PATH/include kernel/menger.cu -o ptx/menger.cu.ptx");
-                m_optixScene->createGeometry();
+                m_optixScene->createWorld();
                 m_updateCamera = true;
             }
             break;

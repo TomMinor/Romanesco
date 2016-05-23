@@ -15,6 +15,16 @@
 #endif
 
 
+__host__ __device__ float degrees(float _radians)
+{
+    return (_radians * (180.0f / M_PI));
+}
+
+__host__ __device__ float radians(float _degrees)
+{
+    return (_degrees * (M_PI / 180.0f));
+}
+
 //------------------------------------- fmod ------------------------------------------------
 
  __host__ __device__

@@ -27,6 +27,7 @@ ImageWriter::ImageWriter(std::string _filename, unsigned int _width, unsigned in
 {
     m_spec = new OpenImageIO::ImageSpec(_width, _height, 11, OpenImageIO::TypeDesc::HALF);
     m_spec->channelnames.clear();
+    m_spec->attribute("compression", "zip");
 
     // Channel setup
     addChannelRGBA(OpenImageIO::TypeDesc::HALF);        // RGBA Channels

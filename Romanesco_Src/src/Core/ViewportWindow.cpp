@@ -327,7 +327,7 @@ void ShaderWindow::keyPressEvent(QKeyEvent* event)
   if( event->key() ==  Qt::Key_U )
   {
       qDebug() << "Updating geo";
-      m_optixScene->createGeometry();
+      m_optixScene->createWorld();
   }
   if( event->key() == Qt::Key_Escape )
     {

@@ -33,6 +33,9 @@
 
 using namespace optix;
 
+// Helper macro to convert to vec4 for the purpose of a rotation
+#define applyRotation(p,rot) make_float3(make_float4(p, 1.0f) * rot);
+
 #define USE_DEBUG_EXCEPTIONS 0
 
 // References:
@@ -94,16 +97,6 @@ rtDeclareVariable(unsigned int,  sqrt_num_samples, , );
 
 rtDeclareVariable(float,      t_hit,        rtIntersectionDistance, );
 
-//struct PerRayData_radiance
-//{
-//  float3 result;
-//  float3 result_nrm;
-//  float3 result_world;
-//  float result_depth;
-//  int depth;
-
-//  int iter;
-//};
 
 struct PerRayData_pathtrace
 {
@@ -128,6 +121,8 @@ struct PerRayData_pathtrace
 struct PerRayData_pathtrace_shadow
 {
   bool inShadow;
+  unsigned int depth;
+  float attenuation;
 };
 
 rtDeclareVariable(PerRayData_pathtrace, current_prd, rtPayload, );
@@ -315,11 +310,12 @@ __device__ float DE(float3 _p)
                                 );
 
     float3 z = _p;
-
-
+    z.y -= global_t * 0.1f;
+    z.y = fmod(z.y, 0.8f);
 
     z = fabs( 1.0 - fmod(z, 2.0));
     z.z = fabs(z.z + Offset.z) - Offset.z;
+
 
     float d = 1000.0f;
     for(int n = 0; n < max_iterations; ++n)
@@ -345,6 +341,9 @@ __device__ float DE(float3 _p)
         z = z * Scale - offset * (Scale - 1.0);
 
         float2 tmp = make_float2(z.y, z.z);
+//        Matrix4x4 rotation = Matrix4x4::rotate( radians(-global_t / 18.0f), make_float3(1, 0, 0) );
+//        float3 r = applyRotation( make_float3(z.y, z.z, 0.0f),  rotation);
+
         float2 r = rotate(tmp, -global_t / 18.0f);
         z.y = r.x;
         z.z = r.y;
@@ -361,7 +360,7 @@ __device__ float map(float3 _p)
 #ifdef SHADERTOYTEST
     float a = DE(_p) * FudgeFactor;
     _p.y += 1;
-    float b = sdBox(_p, make_float3(1, 1, 1));
+    float b = sdBox(_p, make_float3(2));
     return max(a,b);
 #endif
 
@@ -371,6 +370,14 @@ __device__ float map(float3 _p)
     float s = 1.0;
     for(int m=0; m<5; m++)
     {
+        Matrix4x4 rotX = Matrix4x4::rotate( radians( global_t ) , make_float3(1,0,0) );
+        Matrix4x4 rotY = Matrix4x4::rotate( radians( global_t ) , make_float3(0,1,0) );
+        Matrix4x4 rotZ = Matrix4x4::rotate( radians( global_t ) , make_float3(0,0,1) );
+
+        _p = applyRotation(_p, rotX);
+        _p = applyRotation(_p, rotY);
+        _p = applyRotation(_p, rotZ);
+
         float3 a = fmod(_p * s, 2.0f) - make_float3(1.0f);
         s *= 3.0;
 
@@ -484,7 +491,7 @@ __device__ bool insideSphere(float3 _point, float3 _center, float _radiusSqr, fl
 class OrbitTrap
 {
 public:
-    OrbitTrap() {;}
+    __device__ OrbitTrap() {;}
 
     __device__ virtual void trap( float3 _p ) = 0;
 
@@ -497,7 +504,7 @@ private:
 class CrossTrap
 {
 public:
-    CrossTrap(float _size = 0.05f)
+    __device__ CrossTrap(float _size = 0.05f)
         : m_dist(_size)
     {;}
 
@@ -517,6 +524,36 @@ private:
     float m_dist;
 };
 
+class SphereTrap
+{
+public:
+    __device__ SphereTrap(float _size = 0.5f)
+        : m_dist(1e20), m_size(_size)
+    {;}
+
+    __device__ void trap( float3 _p )
+    {
+        float3 tmp = make_float3(_p.x - m_size, _p.y, _p.z);
+        m_dist = dot(tmp,tmp);
+    }
+
+    __device__ float getTrapValue()
+    {
+        return sqrt(m_dist);
+    }
+
+private:
+    float m_dist, m_size;
+};
+
+//// Geometric orbit trap. Creates the 'cube' look.
+//float trap(vec3 p){
+//	return  length(p.x-0.5-0.5*sin(time/10.0)); // <- cube forms
+//	//return  length(p.x-1.0);
+//	//return length(p.xz-vec2(1.0,1.0))-0.05; // <- tube forms
+//	//return length(p); // <- no trap
+//}
+
 RT_PROGRAM void intersect(int primIdx)
 {
   normal = make_float3(0,0,0);
@@ -526,7 +563,7 @@ RT_PROGRAM void intersect(int primIdx)
   tmin = 0;
   tmax = RT_DEFAULT_MAX;
 
-  const float sqRadius = 8;
+  const float sqRadius = 100;
 
   float distance;
   if( insideSphere(ray.origin, make_float3(0,0,0), sqRadius, &distance) )
@@ -559,14 +596,14 @@ RT_PROGRAM void intersect(int primIdx)
 
     float3 ray_direction = ray.direction;
     float3 eye = ray.origin;
-//    eye.z -= global_t / 40.0f;
+//    eye.y -= global_t * 1.2f;
     float3 x = eye + tmin * ray_direction;
 
     float dist_from_origin = tmin;
 
     const float3 point = make_float3(.0f);
 
-    OrbitTrap* trap = new CrossTrap;
+    SphereTrap trap;
 
     // Compute epsilon using equation (16) of [1].
     //float epsilon = max(0.000001f, alpha * powf(dist_from_origin, delta));
@@ -597,11 +634,9 @@ RT_PROGRAM void intersect(int primIdx)
       }
 
 //      orbitdist = min( orbitdist, lengthSqr(x - point) );
-      trap->trap(x);
+      trap.trap(x);
 
     }
-
-    delete trap;
 
     // Found intersection?
     if( dist < epsilon )
@@ -610,10 +645,10 @@ RT_PROGRAM void intersect(int primIdx)
       {
         // color HACK
         distance.m_max_iterations = 14;  // more iterations for normal estimate, to fake some more detail
-        normal = estimate_normal(distance, x, 0.00001 /*DEL*/);
+        normal = estimate_normal(distance, x, DEL);
         geometric_normal = normal;
         shading_normal = normal;
-        smallestdistance = trap->getTrapValue();
+        smallestdistance = trap.getTrapValue();
         rtReportIntersection( 0 );
       }
     }
@@ -771,6 +806,8 @@ RT_PROGRAM void diffuse()
     {
       PerRayData_pathtrace_shadow shadow_prd;
       shadow_prd.inShadow = false;
+      shadow_prd.depth = 0;
+      shadow_prd.attenuation = 1.0f;
 
       Ray shadow_ray = make_Ray(hitpoint + (shading_normal * 0.01), L, pathtrace_shadow_ray_type, scene_epsilon, Ldist );
       rtTrace(top_shadower, shadow_ray, shadow_prd);
@@ -785,11 +822,11 @@ RT_PROGRAM void diffuse()
   }
 
   float3 colourtrap = make_float3(iterations / float(max_iterations) );
-  colourtrap = make_float3(smallestdistance) * 1.0f;
+//  colourtrap = make_float3(smallestdistance) * 1.0f;
 
   float3 a = make_float3(1.0f, 0.2f, 0.2f);
   float3 b = make_float3(0.5f, 0.5f, 0.55f);
-  colourtrap = lerp(a, b, powf(smallestdistance * 4.0f,0.5));
+  colourtrap = lerp(a, b, powf(smallestdistance, 1.0f) );
 
   float3 ambient = make_float3(0.1f);
 
