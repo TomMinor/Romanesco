@@ -120,62 +120,24 @@ bool AreSame(QVector3D a, QVector3D b)
                 fabs(a.z() - b.z()) < EPSILON );
 }
 
+float degrees(float _radians)
+{
+    return (_radians * (180.0f / M_PI));
+}
+
+float radians(float _degrees)
+{
+    return (_degrees * (M_PI / 180.0f));
+}
+
 void TestGLWidget::paintGL()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    optix::Matrix4x4 normalmatrix = optix::Matrix4x4::identity();
-    optix::Matrix4x4 rotX = optix::Matrix4x4::identity();
-    optix::Matrix4x4 rotY = optix::Matrix4x4::identity();
-    optix::Matrix4x4 rotZ = optix::Matrix4x4::identity();
-
-    { // X
-        float angle = m_camRot.x();
-        QVector3D axis = QVector3D(1, 0, 0);
-        axis.normalize();
-        float s = sin(angle);
-        float c = cos(angle);
-        float oc = 1.0 - c;
-
-
-        rotX.setRow(0, optix::make_float4(oc * axis.x() * axis.x() + c,             oc * axis.x() * axis.y() - axis.z() * s,    oc * axis.z() * axis.x() + axis.y() * s,  0.0) );
-        rotX.setRow(1, optix::make_float4(oc * axis.x() * axis.y() + axis.z() * s,  oc * axis.y() * axis.y() + c,               oc * axis.y() * axis.z() - axis.x() * s,  0.0) );
-        rotX.setRow(2, optix::make_float4(oc * axis.z() * axis.x() - axis.y() * s,  oc * axis.y() * axis.z() + axis.x() * s,    oc * axis.z() * axis.z() + c,             0.0) );
-        rotX.setRow(3, optix::make_float4(0.0,                                      0.0,                                        0.0,                                      1.0) );
-
-    }
-
-    { // Y
-        float angle = m_camRot.y();
-        QVector3D axis = QVector3D(0, 1, 0);
-        axis.normalize();
-        float s = sin(angle);
-        float c = cos(angle);
-        float oc = 1.0 - c;
-
-        rotY.setRow(0, optix::make_float4(oc * axis.x() * axis.x() + c,             oc * axis.x() * axis.y() - axis.z() * s,    oc * axis.z() * axis.x() + axis.y() * s,  0.0) );
-        rotY.setRow(1, optix::make_float4(oc * axis.x() * axis.y() + axis.z() * s,  oc * axis.y() * axis.y() + c,               oc * axis.y() * axis.z() - axis.x() * s,  0.0) );
-        rotY.setRow(2, optix::make_float4(oc * axis.z() * axis.x() - axis.y() * s,  oc * axis.y() * axis.z() + axis.x() * s,    oc * axis.z() * axis.z() + c,             0.0) );
-        rotY.setRow(3, optix::make_float4(0.0,                                      0.0,                                        0.0,                                      1.0) );
-    }
-
-    { // Z
-        float angle = m_camRot.z();
-        QVector3D axis = QVector3D(0, 0, 1);
-        axis.normalize();
-        float s = sin(angle);
-        float c = cos(angle);
-        float oc = 1.0 - c;
-
-        rotZ.setRow(0, optix::make_float4(oc * axis.x() * axis.x() + c,             oc * axis.x() * axis.y() - axis.z() * s,    oc * axis.z() * axis.x() + axis.y() * s,  0.0) );
-        rotZ.setRow(1, optix::make_float4(oc * axis.x() * axis.y() + axis.z() * s,  oc * axis.y() * axis.y() + c,               oc * axis.y() * axis.z() - axis.x() * s,  0.0) );
-        rotZ.setRow(2, optix::make_float4(oc * axis.z() * axis.x() - axis.y() * s,  oc * axis.y() * axis.z() + axis.x() * s,    oc * axis.z() * axis.z() + c,             0.0) );
-        rotZ.setRow(3, optix::make_float4(0.0,                                      0.0,                                        0.0,                                      1.0) );
-    }
-
-    normalmatrix = rotX * rotY * rotZ;
-
-
+    optix::Matrix4x4 rotX = rotX.rotate( m_camRot.x(), make_float3(1,0,0));
+    optix::Matrix4x4 rotY = rotY.rotate( m_camRot.y(), make_float3(0,1,0));
+    optix::Matrix4x4 rotZ = rotZ.rotate( m_camRot.z(), make_float3(0,0,1));
+    optix::Matrix4x4 normalmatrix = rotX * rotY * rotZ;
 
 //    m_camPos.setX( FInterpTo( m_camPos.x(), m_desiredCamPos.x(), m_frame, 0.0001) );
 //    m_camPos.setY( FInterpTo( m_camPos.y(), m_desiredCamPos.y(), m_frame, 0.0001) );

@@ -145,7 +145,6 @@ HEADERS += include/Core/*.h \
                        include/SDFOps/DomainDeformer/*.h \
                        include/SDFOps/Primitive/*.h \
                       kernel/*.h
-
 OTHER_FILES += shaders/*
 
 RESOURCES += \
