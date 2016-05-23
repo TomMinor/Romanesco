@@ -72,6 +72,7 @@ private:
     QMenu *fileMenu;
     QMenu *renderMenu;
     QAction *m_cancelFlipbookAct;
+    QStatusBar *m_statusBar;
 
     QGraphicsView *view;
     QGraphicsScene *scene;

@@ -297,7 +297,7 @@ __device__ float2 rotate(float2 v, float a) {
 #define Iterations 32
 #define Scale 2.0
 #define Offset make_float3(0.92858,0.92858,0.32858)
-#define FudgeFactor 0.7
+#define FudgeFactor 0.8
 __device__ float DE(float3 _p)
 {
     float3 offset = make_float3(1.0 + 0.2f * cos(global_t / 5.7f),
@@ -306,11 +306,11 @@ __device__ float DE(float3 _p)
                                 );
 
     float3 z = _p;
-    z.y -= global_t * 0.1f;
-    z.y = fmod(z.y, 0.8f);
+    z.x -= global_t * 0.04f;
+    z.x = fmod(z.x, 1.0f);
 
     z = fabs( 1.0 - fmod(z, 2.0));
-    z.z = fabs(z.z + Offset.z) - Offset.z;
+    z.x = fabs(z.x + Offset.x) - Offset.x;
 
 
     float d = 1000.0f;

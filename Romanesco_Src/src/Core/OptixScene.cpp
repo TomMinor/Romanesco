@@ -95,7 +95,7 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height, QObject *_pare
     m_context->validate();
     m_context->compile();
 
-    m_progressiveTimeout = 20;
+    m_progressiveTimeout = 500;
 }
 
 void OptixScene::createBuffers()
@@ -158,9 +158,11 @@ void OptixScene::setCamera(optix::float3 _eye, /*optix::float3 _lookat, */float 
 //    optix::float3 eye, U, V, W;
 //    m_camera->setAspectRatio( static_cast<float>(_width)/static_cast<float>(_height) );
     float aspectRatio = static_cast<float>(_width)/static_cast<float>(_height);
-    float inputAngle = atan( radians(_fov * 0.5) );
-    float outputAngle = degrees(2.0f * atanf(aspectRatio * tanf(radians(0.5f * (inputAngle)))) );
+//    float inputAngle = atan( radians(_fov * 0.5) );
+//    float outputAngle = degrees(2.0f * atanf(aspectRatio * tanf(radians(0.5f * (inputAngle)))) );
 
+    ///@todo Make this more physically accurate
+    /// http://www.scratchapixel.com/lessons/3d-basic-rendering/3d-viewing-pinhole-camera/how-pinhole-camera-works-part-2
     float focalLength = aspectRatio;
 
     m_context["eye"]->setFloat( _eye );
@@ -168,15 +170,7 @@ void OptixScene::setCamera(optix::float3 _eye, /*optix::float3 _lookat, */float 
     m_context["V"]->setFloat( optix::make_float3(0, 1, 0) );
     m_context["W"]->setFloat( optix::make_float3(0, 0, 1) * focalLength );
 
-
     m_camera_changed = true;
-
-//    m_camera->getEyeUVW( eye, U, V, W );
-
-//    m_context["eye"]->setFloat( eye );
-//    m_context["U"]->setFloat( U );
-//    m_context["V"]->setFloat( V );
-//    m_context["W"]->setFloat( W );
 }
 
 void OptixScene::setOutputBuffer(std::string _name)
@@ -344,29 +338,51 @@ void OptixScene::createLights()
         light.v1       = make_float3( v1.x, v1.y, v1.z );
         light.v2       = make_float3( v2.x, v2.y, v2.z );
         light.normal   = normalize( cross(light.v1, light.v2) );
-        light.emission = make_float3( 20.0f );
+        light.emission = make_float3( 10.0f );
 
         m_lights.push_back(light);
     }
 
+//    {
+//        glm::mat4 rot = glm::mat4(1.0f);
+//        glm::rotate(rot, 180.0f, glm::vec3(1,0,0));
+
+//        glm::vec3 v1(-130.0f, 0.0f, 0.0f);
+////        v1 = glm::vec3(glm::vec4(v1, 1.0) * rot);
+//        glm::vec3 v2( 0.0f, 0.0f, 105.0f);
+////        v2 = glm::vec3(glm::vec4(v2, 1.0) * rot);
+
+//        ParallelogramLight light;
+////        light.corner   = make_float3( 343.0f, -148.6f, 227.0f);
+//            light.corner   = make_float3( 0.0f, -300.0f, 0.0f);
+//        //    light.v1       = make_float3( -130.0f, 0.0f, 0.0f);
+//        //    light.v2       = make_float3( 0.0f, 0.0f, 105.0f);
+//        light.v1       = make_float3( v1.x, v1.y, v1.z );
+//        light.v2       = make_float3( v2.x, v2.y, v2.z );
+//        light.normal   = normalize( cross(light.v1, light.v2) );
+//        light.emission = make_float3( 20.0f, 10.0f, 2.5f );
+
+//        m_lights.push_back(light);
+//    }
+
     {
         glm::mat4 rot = glm::mat4(1.0f);
-        glm::rotate(rot, 180.0f, glm::vec3(1,0,0));
+        glm::rotate(rot, 30.0f, glm::vec3(1,0,0));
 
-        glm::vec3 v1(-130.0f, 0.0f, 0.0f);
+        glm::vec3 v1(0.0f, 0.0f, -130.0f);
 //        v1 = glm::vec3(glm::vec4(v1, 1.0) * rot);
-        glm::vec3 v2( 0.0f, 0.0f, 105.0f);
+        glm::vec3 v2( 0.0f, 105.0f, 0.0f);
 //        v2 = glm::vec3(glm::vec4(v2, 1.0) * rot);
 
         ParallelogramLight light;
-//        light.corner   = make_float3( 343.0f, -148.6f, 227.0f);
-            light.corner   = make_float3( 0.0f, -300.0f, 0.0f);
+//        light.corner   = make_float3( 343.0f, 548.6f, 227.0f);
+            light.corner   = make_float3( 100.0f, -50.0f, 50.0f);
         //    light.v1       = make_float3( -130.0f, 0.0f, 0.0f);
         //    light.v2       = make_float3( 0.0f, 0.0f, 105.0f);
         light.v1       = make_float3( v1.x, v1.y, v1.z );
         light.v2       = make_float3( v2.x, v2.y, v2.z );
         light.normal   = normalize( cross(light.v1, light.v2) );
-        light.emission = make_float3( 20.0f, 10.0f, 2.5f );
+        light.emission = make_float3( 5.5f );
 
         m_lights.push_back(light);
     }
