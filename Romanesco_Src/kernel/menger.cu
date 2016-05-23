@@ -300,13 +300,13 @@ __device__ float2 rotate(float2 v, float a) {
 #define FudgeFactor 0.8
 __device__ float DE(float3 _p)
 {
-    float3 offset = make_float3(1.0 + 0.2f * cos(global_t / 5.7f),
+    float3 offset = make_float3(1.0 + 0.2f * cos( 1.0f * (global_t / 5.7f)),
                                 1.0,
-                                0.3 + 0.1f * (cos(global_t / 1.7f))
+                                0.3 + 0.1f * (cos( 1.0f * (global_t / 1.7f)))
                                 );
 
     float3 z = _p;
-    z.x -= global_t * 0.04f;
+    z.x -= global_t * 0.01f;
     z.x = fmod(z.x, 1.0f);
 
     z = fabs( 1.0 - fmod(z, 2.0));

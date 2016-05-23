@@ -28,9 +28,9 @@ class OptixScene : public QObject
 
     enum class PathTraceRay : unsigned int
     {
-        CAMERA = 0u,
-        SHADOW = 1u,
-        PATHTRACE_BSDFRAY   = 2u
+        CAMERA   = 0u,
+        SHADOW   = 1u,
+        BSDF  = 2u
     };
 
 public:

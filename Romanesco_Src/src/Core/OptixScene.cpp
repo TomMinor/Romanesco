@@ -31,7 +31,7 @@
 #include "RuntimeCompiler.h"
 #include "RenderMath.h"
 
-#define USE_DEBUG_EXCEPTIONS 1
+#define USE_DEBUG_EXCEPTIONS 0
 
 #include <algorithm>
 #include "Base_SDFOP.h"
@@ -95,7 +95,7 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height, QObject *_pare
     m_context->validate();
     m_context->compile();
 
-    m_progressiveTimeout = 500;
+    m_progressiveTimeout = 20;
 }
 
 void OptixScene::createBuffers()
@@ -404,7 +404,7 @@ void OptixScene::createCameras()
 
     m_context["pathtrace_ray_type"]->setUint( static_cast<unsigned int>(PathTraceRay::CAMERA) );
     m_context["pathtrace_shadow_ray_type"]->setUint( static_cast<unsigned int>(PathTraceRay::SHADOW) );
-    m_context["pathtrace_bsdf_shadow_ray_type"]->setUint( static_cast<unsigned int>(PathTraceRay::PATHTRACE_BSDFRAY) );
+    m_context["pathtrace_bsdf_shadow_ray_type"]->setUint( static_cast<unsigned int>(PathTraceRay::BSDF) );
     m_context["rr_begin_depth"]->setUint(m_rr_begin_depth);
 
 //    camera_data = InitialCameraData( optix::make_float3( 3.0f, 2.0f, -3.0f ), // eye

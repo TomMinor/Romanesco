@@ -1,6 +1,7 @@
 #ifndef RENDERCONTEXT_H
 #define RENDERCONTEXT_H
 
+#include <string>
 
 struct RenderContext
 {
@@ -10,6 +11,8 @@ struct RenderContext
     unsigned int m_outputHeight;
 
     unsigned int m_samples;
+
+    std::string m_framePath;
 };
 
 #endif // RENDERCONTEXT_H
