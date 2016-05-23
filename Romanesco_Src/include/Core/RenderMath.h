@@ -12,5 +12,15 @@ T clamp(const T& n, const T& lower, const T& upper) {
 
 float FInterpTo( float Current, float Target, float DeltaTime, float InterpSpeed );
 
+inline float degrees(float _radians)
+{
+    return (_radians * (180.0f / M_PI));
+}
+
+inline float radians(float _degrees)
+{
+    return (_degrees * (M_PI / 180.0f));
+}
+
 #endif // RENDERMATH_H
 

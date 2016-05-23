@@ -173,7 +173,7 @@ RT_PROGRAM void pathtrace_camera()
         float2 jitter = make_float2(x-rnd(seed), y-rnd(seed));
         float2 d = pixel + jitter*jitter_scale;
         float3 ray_origin = eye;
-        float3 ray_direction = normalize(d.x*U + d.y*V + (W*0.7));
+        float3 ray_direction = normalize(d.x*U + d.y*V + W);
 
         ray_direction = make_float3((make_float4(ray_direction, 1.0) * normalmatrix));
 //        ray_direction = normalize(ray_direction);
@@ -820,13 +820,13 @@ RT_PROGRAM void diffuse()
   float3 colourtrap = make_float3(iterations / float(max_iterations) );
 //  colourtrap = make_float3(smallestdistance) * 1.0f;
 
-  float3 a = make_float3(1.0f, 0.2f, 0.2f);
+  float3 a = make_float3(0.4f, 0.2f, 0.2f);
   float3 b = make_float3(0.5f, 0.5f, 0.55f);
-  colourtrap = lerp(a, b, powf(smallestdistance, 1.0f) );
+//  colourtrap = lerp(a, b, powf(smallestdistance, 1.0f) );
 
   float3 ambient = make_float3(0.1f);
 
-  current_prd.result = make_float4(result * colourtrap + ambient, 1.0);
+  current_prd.result = make_float4(result/* * colourtrap*/ + ambient, 1.0);
 //  current_prd.result = make_float4( do_work(), 1.0f );
   current_prd.result_nrm = shading_normal;
   current_prd.result_world = hitpoint;

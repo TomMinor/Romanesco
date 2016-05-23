@@ -120,16 +120,6 @@ bool AreSame(QVector3D a, QVector3D b)
                 fabs(a.z() - b.z()) < EPSILON );
 }
 
-float degrees(float _radians)
-{
-    return (_radians * (180.0f / M_PI));
-}
-
-float radians(float _degrees)
-{
-    return (_degrees * (M_PI / 180.0f));
-}
-
 void TestGLWidget::paintGL()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

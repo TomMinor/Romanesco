@@ -82,7 +82,7 @@ void PinholeCamera::setAspectRatio(float ratio)
     break;
   }
 
-  *outputAngle = RtoD(2.0f*atanf(realRatio*tanf(DtoR(0.5f*(*inputAngle)))));
+  *outputAngle = RtoD(2.0f * atanf(realRatio * tanf(DtoR(0.5f * (*inputAngle)))));
 
   setup();
 }
