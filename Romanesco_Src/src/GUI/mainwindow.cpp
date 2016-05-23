@@ -52,15 +52,15 @@ MainWindow::MainWindow(QWidget *parent) :
     quitAct->setStatusTip(tr("Quit the application"));
     connect(quitAct, SIGNAL(triggered()), qApp, SLOT(quit()));
 
-    QAction *loadAct = new QAction(tr("&Load"), this);
-    loadAct->setShortcuts(QKeySequence::Open);
-    loadAct->setStatusTip(tr("Open a file"));
-    connect(loadAct, SIGNAL(triggered()), this, SLOT(loadFile()));
+//    QAction *loadAct = new QAction(tr("&Load"), this);
+//    loadAct->setShortcuts(QKeySequence::Open);
+//    loadAct->setStatusTip(tr("Open a file"));
+//    connect(loadAct, SIGNAL(triggered()), this, SLOT(loadFile()));
 
-    QAction *saveAct = new QAction(tr("&Save"), this);
-    saveAct->setShortcuts(QKeySequence::Save);
-    saveAct->setStatusTip(tr("Save a file"));
-    connect(saveAct, SIGNAL(triggered()), this, SLOT(saveFile()));
+//    QAction *saveAct = new QAction(tr("&Save"), this);
+//    saveAct->setShortcuts(QKeySequence::Save);
+//    saveAct->setStatusTip(tr("Save a file"));
+//    connect(saveAct, SIGNAL(triggered()), this, SLOT(saveFile()));
 
     QAction *addAct = new QAction(tr("&Add"), this);
     addAct->setStatusTip(tr("Add a block"));
@@ -69,8 +69,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     fileMenu = menuBar()->addMenu(tr("&File"));
     fileMenu->addAction(addAct);
-    fileMenu->addAction(loadAct);
-    fileMenu->addAction(saveAct);
+//    fileMenu->addAction(loadAct);
+//    fileMenu->addAction(saveAct);
     fileMenu->addSeparator();
     fileMenu->addAction(quitAct);
 
@@ -82,9 +82,6 @@ MainWindow::MainWindow(QWidget *parent) :
     m_cancelFlipbookAct = new QAction(tr("&Cancel Flipbook"), this);
     addAct->setStatusTip(tr("Cancel running flipbook"));
     connect(m_cancelFlipbookAct , SIGNAL(triggered()), this, SLOT(cancelFlipbook()));
-
-
-
     m_cancelFlipbookAct->setEnabled(false);
 
     renderMenu = menuBar()->addMenu(tr("&Render"));
@@ -146,6 +143,12 @@ MainWindow::MainWindow(QWidget *parent) :
     window->setLayout(layout);
 
     setCentralWidget(window);
+
+
+    m_statusBar = new QStatusBar;
+
+    setStatusBar(m_statusBar);
+
 
     m_updateTimer = startTimer(30);
     m_drawTimer = startTimer(30);

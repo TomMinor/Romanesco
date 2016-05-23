@@ -8,8 +8,11 @@
 TestGLWidget::TestGLWidget(QWidget *parent)
   : QOpenGLWidget(parent), m_optixScene(0), m_program(0), m_frame(0), m_time(0), m_previousWidth(0), m_previousHeight(0)
 {
-    m_desiredCamPos = m_camPos = QVector3D(1.09475, 0.0750364, -1.00239);
-    m_desiredCamRot = m_camRot = QVector3D(-0.301546, 0.399876, 0);
+//    m_desiredCamPos = m_camPos = QVector3D(1.09475, 0.0750364, -1.00239);
+//    m_desiredCamRot = m_camRot = QVector3D(-0.301546, 0.399876, 0);
+
+    m_desiredCamPos = m_camPos = QVector3D(1.5f,0.0,0);
+    m_desiredCamRot = m_camRot = QVector3D(0,(0.5f * M_PI),0);
 
     m_updateCamera = true;
 }
