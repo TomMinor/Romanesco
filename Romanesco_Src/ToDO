@@ -1,0 +1,32 @@
+ToDO
+
+Critical
+	+ Save frames to EXR
+	+ Of any size
+	+ Fix aspect ratio
+	+ Port shadertoy fully
+	+ Fix lighting to use bounces
+
+* Mplay
+	- Export to mp4 using ffmpeg?
+* Render
+	+ Settings popup for timeout etc
+	+ Save frames to disk ( out_%04d.png )
+		- Any size
+* Global Settings
+	+ Timeout
+	+ Epsilon
+	+ DEL
+	+ Max steps
+* Camera
+	- Fix aspect ratio
+	- Basic keyframing, list of keyframes at certain frames? Store xform
+* Lights
+	+ Add lights to list
+	+ Control colour and intensity
+	+ Visibility?
+* Port over shadertoy test
+	+ Distance Field Header
+
+* Toggle between basic phong shading model and path tracing
+* 

@@ -17,11 +17,20 @@ using namespace optix;
 #include "commonStructs.h"
 #include "PinholeCamera.h"
 
+#include "path_tracer/path_tracer.h"
+
 #include <QObject>
 
 class OptixScene : public QObject
 {
     Q_OBJECT
+
+    enum class PathTraceRay : unsigned int
+    {
+        CAMERA = 0u,
+        SHADOW = 1u,
+        PATHTRACE_BSDFRAY   = 2u
+    };
 
 public:
     OptixScene(unsigned int _width, unsigned int _height, QObject *_parent = 0);
@@ -29,7 +38,16 @@ public:
 
     virtual void updateBufferSize(unsigned int _width, unsigned int _height);
     virtual void drawToBuffer();
-    virtual void createGeometry();
+
+    virtual void initialiseScene();
+    virtual void createCameras();
+    virtual void createWorld();
+    virtual void createBuffers();
+    virtual void createLights();
+    virtual void createLightGeo();
+
+//    virtual void addLight(  )
+
     virtual void setGeometryHitProgram(std::string _hit_src);
     virtual void setShadingProgram(std::string _hit_src);
 
@@ -85,11 +103,16 @@ public:
 
     bool m_camera_changed;
 
-private:
+protected:
     std::string m_outputBuffer;
+
+    std::vector<std::pair<std::string, RTformat>> m_glOutputBuffers;
+    std::vector<std::pair<std::string, RTformat>> m_outputBuffers;
 
     unsigned int m_progressiveTimeout;
     bool m_frameDone;
+
+    std::vector<ParallelogramLight> m_lights;
 
 signals:
     void frameReady();

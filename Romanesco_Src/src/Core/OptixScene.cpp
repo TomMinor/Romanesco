@@ -37,12 +37,79 @@
 #include "Primitive/Sphere_SDFOP.h"
 #include "DomainOp/Transform_SDFOP.h"
 #include <glm/gtc/matrix_transform.hpp>
-#include "path_tracer/path_tracer.h"
 
 ///@todo
 /// * Split this into a simple base class and derive from that, OptixScene -> OptixSceneAdaptive -> OptixScenePathTracer
 /// * All camera stuff should be moved into it's own, simpler class
-///
+
+
+
+OptixScene::OptixScene(unsigned int _width, unsigned int _height, QObject *_parent)
+    : QObject(_parent), m_time(0.0f)
+{
+    /// ================ Initialise Output Texture Buffer ======================
+    glGenTextures( 1, &m_texId );
+    glBindTexture( GL_TEXTURE_2D, m_texId);
+
+    // Change these to GL_LINEAR for super- or sub-sampling
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+    // GL_CLAMP_TO_EDGE for linear filtering, not relevant for nearest.
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    glBindTexture( GL_TEXTURE_2D, 0);
+    /// --------------------------------------------------------------
+
+    /// ================ Initialise Context ======================
+    m_context = optix::Context::create();
+    m_context->setRayTypeCount( 3 );
+    m_context->setEntryPointCount( 1 );
+    m_context->setStackSize( 1800 );
+
+#if USE_DEBUG_EXCEPTIONS
+    // Disable this by default for performance, otherwise the stitched PTX code will have lots of exception handling inside.
+    m_context->setPrintEnabled(true);
+    m_context->setPrintLaunchIndex(256, 256); // Launch index (0,0) at lower left.
+    m_context->setExceptionEnabled(RT_EXCEPTION_ALL, true);
+#endif
+    /// --------------------------------------------------------------
+
+    /// ===================== Initialise World ======================
+    initialiseScene();
+    createCameras();
+    // Create scene geo
+    createLights();
+    createWorld();
+//    createLightGeo();
+    /// --------------------------------------------------------------
+
+    /// ================ Initialise Output Buffers ======================
+    createBuffers();
+    updateBufferSize(_width, _height);
+    setOutputBuffer("output_buffer");
+    /// --------------------------------------------------------------
+
+
+    m_context->validate();
+    m_context->compile();
+
+    m_progressiveTimeout = 20;
+}
+
+void OptixScene::createBuffers()
+{
+    m_glOutputBuffers.clear();
+    m_glOutputBuffers.push_back( std::make_pair("output_buffer",         RT_FORMAT_FLOAT4) );
+    m_glOutputBuffers.push_back( std::make_pair("output_buffer_nrm",     RT_FORMAT_FLOAT3) );
+    m_glOutputBuffers.push_back( std::make_pair("output_buffer_world",   RT_FORMAT_FLOAT3) );
+    m_glOutputBuffers.push_back( std::make_pair("output_buffer_depth",   RT_FORMAT_FLOAT) );
+
+    // Everything is gl for the sake of visualisation right now, but maybe we'd want to add export only buffers later
+    m_outputBuffers.clear();
+}
+
 optix::Buffer OptixScene::createGLOutputBuffer(RTformat _format, unsigned int _width, unsigned int _height)
 {
     optix::Buffer buffer;
@@ -73,68 +140,9 @@ optix::Buffer OptixScene::createOutputBuffer(RTformat _format, unsigned int _wid
     return buffer;
 }
 
-OptixScene::OptixScene(unsigned int _width, unsigned int _height, QObject *_parent)
-    : QObject(_parent), m_time(0.0f)
-{
-    /// ================ Output Texture Buffer ======================
-
-    glGenTextures( 1, &m_texId );
-    glBindTexture( GL_TEXTURE_2D, m_texId);
-
-    // Change these to GL_LINEAR for super- or sub-sampling
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-    // GL_CLAMP_TO_EDGE for linear filtering, not relevant for nearest.
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-    glBindTexture( GL_TEXTURE_2D, 0);
-
-    /// =============================================================
-
-    m_context = optix::Context::create();
-    m_context->setRayTypeCount( 3 );
-    m_context->setEntryPointCount( 1 );
-    m_context->setStackSize( 1800 );
-
-    updateBufferSize(_width, _height);
-
-    // Create scene geom
-    createGeometry();
-
-//    m_camera = new MyPinholeCamera( camera_data.eye,
-//                                  camera_data.lookat,
-//                                  camera_data.up,
-//                                  -1.0f, // hfov is ignored when using keep vertical
-//                                  camera_data.vfov,
-//                                  MyPinholeCamera::KeepVertical );
-//
-//    setCamera( camera_data.eye,
-//               camera_data.lookat,
-//               60.0f,
-//               _width, _height);
-
-    setOutputBuffer("output_buffer");
-
-    //ray_gen_program["draw_color"]->setFloat( optix::make_float3(0.462f, 0.725f, 0.0f) );
-
-#if USE_DEBUG_EXCEPTIONS
-    // Disable this by default for performance, otherwise the stitched PTX code will have lots of exception handling inside.
-    m_context->setPrintEnabled(true);
-    m_context->setPrintLaunchIndex(256, 256); // Launch index (0,0) at lower left.
-    m_context->setExceptionEnabled(RT_EXCEPTION_ALL, true);
-#endif
-
-    m_context->validate();
-    m_context->compile();
-
-    m_progressiveTimeout = 20;
-}
-
 void OptixScene::setTime(float _t)
 {
-    m_time = (_t / 10.0f);
+    m_time = _t;
     m_context[ "global_t" ]->setFloat( m_time );
 }
 
@@ -165,14 +173,14 @@ void OptixScene::setCamera(optix::float3 _eye, /*optix::float3 _lookat, */float 
 //    m_context["W"]->setFloat( W );
 }
 
-void OptixScene::setVar(const std::string& _name, float _v)
-{
-    m_context[_name]->setFloat(_v);
-}
-
 void OptixScene::setOutputBuffer(std::string _name)
 {
     m_outputBuffer = _name;
+}
+
+void OptixScene::setVar(const std::string& _name, float _v)
+{
+    m_context[_name]->setFloat(_v);
 }
 
 void OptixScene::setVar(const std::string& _name, optix::float3 _v )
@@ -188,19 +196,8 @@ void OptixScene::setVar(const std::string& _name, optix::Matrix4x4 _v )
 
 void OptixScene::updateBufferSize(unsigned int _width, unsigned int _height)
 {
-    static std::vector<std::pair<std::string, RTformat>> glOutputBuffers = {
-        std::make_pair("output_buffer",         RT_FORMAT_FLOAT4),
-        std::make_pair("output_buffer_nrm",     RT_FORMAT_FLOAT3),
-        std::make_pair("output_buffer_world",   RT_FORMAT_FLOAT3),
-        std::make_pair("output_buffer_depth",   RT_FORMAT_FLOAT)
-    };
-
-    static std::vector<std::pair<std::string, RTformat>> outputBuffers = {
-
-    };
-
     // Update any GL bound Optix buffers
-    for( auto& buffer : glOutputBuffers )
+    for( auto& buffer : m_glOutputBuffers )
     {
         std::string bufferName = buffer.first;
         if(m_context[bufferName]->getType() == RT_OBJECTTYPE_UNKNOWN )
@@ -221,7 +218,7 @@ void OptixScene::updateBufferSize(unsigned int _width, unsigned int _height)
     }
 
     // Update regular Optix buffers
-    for( auto& buffer : outputBuffers )
+    for( auto& buffer : m_outputBuffers )
     {
         std::string bufferName = buffer.first;
         if(m_context[bufferName]->getType() == RT_OBJECTTYPE_UNKNOWN )
@@ -239,7 +236,16 @@ void OptixScene::updateBufferSize(unsigned int _width, unsigned int _height)
     m_frameDone = false;
 }
 
-
+///
+/// \brief createAreaLight Taken from the Optix path tracer demo
+/// \param m_context
+/// \param m_pgram_bounding_box
+/// \param m_pgram_intersection
+/// \param anchor
+/// \param offset1
+/// \param offset2
+/// \return
+///
 GeometryInstance createAreaLight( optix::Context* m_context,
                                       optix::Program* m_pgram_bounding_box,
                                       optix::Program* m_pgram_intersection,
@@ -277,6 +283,286 @@ void setMaterial( GeometryInstance& gi,
   gi->addMaterial(material);
   gi[color_name]->setFloat(color);
 }
+
+
+void OptixScene::initialiseScene()
+{
+    ///@todo How many of these are even used
+
+//    m_context["scene_epsilon"]->setFloat( 1.e-4f );
+    m_context["scene_epsilon"]->setFloat( 1.e-3f );
+    m_context["max_depth"]->setInt( 5 );
+    m_context["color_t"]->setFloat( 0.0f );
+    m_context["shadowsActive"]->setUint( 0u );
+
+    m_context["bad_color"]->setFloat( 1.0f, 1.0f, 0.0f );
+    // Miss program
+    //m_context->setMissProgram( 0, m_context->createProgramFromPTXFile( "ptx/constantbg.cu.ptx", "miss" ) );
+    m_context["bg_color"]->setFloat( optix::make_float3(108.0f/255.0f, 166.0f/255.0f, 205.0f/255.0f) * 0.5f );
+
+    setTime(0.0f);
+}
+
+void OptixScene::createLights()
+{
+    // Setup lights
+    m_context["ambient_light_color"]->setFloat(0.1f,0.1f,0.3f);
+
+    float3 test_data[] = {
+        { 1.0f, 0.0f, 0.0f },
+        { 0.0f, 1.0f, 0.0f },
+        { 0.0f, 0.0f, 1.0f }
+    };
+
+    optix::Buffer test_buffer = m_context->createBuffer(RT_BUFFER_INPUT, RT_FORMAT_FLOAT3, sizeof(test_data)/sizeof(test_data[0]) );
+    memcpy( test_buffer->map(), test_data, sizeof(test_data) );
+    test_buffer->unmap();
+
+    m_context["test"]->set(test_buffer);
+
+
+    {
+        glm::mat4 rot = glm::mat4(1.0f);
+        glm::rotate(rot, 30.0f, glm::vec3(1,0,0));
+
+        glm::vec3 v1(-130.0f, 0.0f, 0.0f);
+//        v1 = glm::vec3(glm::vec4(v1, 1.0) * rot);
+        glm::vec3 v2( 0.0f, 0.0f, 105.0f);
+//        v2 = glm::vec3(glm::vec4(v2, 1.0) * rot);
+
+        ParallelogramLight light;
+//        light.corner   = make_float3( 343.0f, 548.6f, 227.0f);
+            light.corner   = make_float3( 0.0f, 300.0f, 0.0f);
+        //    light.v1       = make_float3( -130.0f, 0.0f, 0.0f);
+        //    light.v2       = make_float3( 0.0f, 0.0f, 105.0f);
+        light.v1       = make_float3( v1.x, v1.y, v1.z );
+        light.v2       = make_float3( v2.x, v2.y, v2.z );
+        light.normal   = normalize( cross(light.v1, light.v2) );
+        light.emission = make_float3( 40.0f );
+
+        m_lights.push_back(light);
+    }
+
+    {
+        glm::mat4 rot = glm::mat4(1.0f);
+        glm::rotate(rot, 180.0f, glm::vec3(1,0,0));
+
+        glm::vec3 v1(-130.0f, 0.0f, 0.0f);
+//        v1 = glm::vec3(glm::vec4(v1, 1.0) * rot);
+        glm::vec3 v2( 0.0f, 0.0f, 105.0f);
+//        v2 = glm::vec3(glm::vec4(v2, 1.0) * rot);
+
+        ParallelogramLight light;
+//        light.corner   = make_float3( 343.0f, -148.6f, 227.0f);
+            light.corner   = make_float3( 0.0f, -300.0f, 0.0f);
+        //    light.v1       = make_float3( -130.0f, 0.0f, 0.0f);
+        //    light.v2       = make_float3( 0.0f, 0.0f, 105.0f);
+        light.v1       = make_float3( v1.x, v1.y, v1.z );
+        light.v2       = make_float3( v2.x, v2.y, v2.z );
+        light.normal   = normalize( cross(light.v1, light.v2) );
+        light.emission = make_float3( 40.0f, 20.0f, 5.0f );
+
+        m_lights.push_back(light);
+    }
+
+    Buffer light_buffer = m_context->createBuffer( RT_BUFFER_INPUT );
+    light_buffer->setFormat( RT_FORMAT_USER );
+    light_buffer->setElementSize( sizeof( ParallelogramLight ) );
+    light_buffer->setSize( m_lights.size() );
+    memcpy( light_buffer->map(), &m_lights[0], sizeof(ParallelogramLight) * m_lights.size() );
+    light_buffer->unmap();
+    m_context["lights"]->setBuffer( light_buffer );
+}
+
+void OptixScene::createCameras()
+{
+    m_rr_begin_depth = 1u;
+    m_sqrt_num_samples = 1u;
+    m_camera_changed = true;
+
+    m_context["pathtrace_ray_type"]->setUint( static_cast<unsigned int>(PathTraceRay::CAMERA) );
+    m_context["pathtrace_shadow_ray_type"]->setUint( static_cast<unsigned int>(PathTraceRay::SHADOW) );
+    m_context["pathtrace_bsdf_shadow_ray_type"]->setUint( static_cast<unsigned int>(PathTraceRay::PATHTRACE_BSDFRAY) );
+    m_context["rr_begin_depth"]->setUint(m_rr_begin_depth);
+
+    //    camera_data = InitialCameraData( optix::make_float3( 3.0f, 2.0f, -3.0f ), // eye
+    //                                     optix::make_float3( 0.0f, 0.3f,  0.0f ), // lookat
+    //                                     optix::make_float3( 0.0f, 1.0f,  0.0f ), // up
+    //                                     60.0f );                          // vfov
+
+    //    m_camera = new MyPinholeCamera( camera_data.eye,
+    //                                  camera_data.lookat,
+    //                                  camera_data.up,
+    //                                  -1.0f, // hfov is ignored when using keep vertical
+    //                                  camera_data.vfov,
+    //                                  MyPinholeCamera::KeepVertical );
+    //
+    //    setCamera( camera_data.eye,
+    //               camera_data.lookat,
+    //               60.0f,
+    //               _width, _height);
+
+    // Declare camera variables.  The values do not matter, they will be overwritten in trace.
+    m_context["eye"]->setFloat( optix::make_float3( 0.0f, 0.0f, 0.0f ) );
+    m_context["U"]->setFloat( optix::make_float3( 0.0f, 0.0f, 0.0f ) );
+    m_context["V"]->setFloat( optix::make_float3( 0.0f, 0.0f, 0.0f ) );
+    m_context["W"]->setFloat( optix::make_float3( 0.0f, 0.0f, 0.0f ) );
+
+    // Setup path tracer
+    m_context["sqrt_num_samples"]->setUint( m_sqrt_num_samples );
+    m_context["frame_number"]->setUint(1);
+
+    // Index of sampling_stategy (BSDF, light, MIS)
+    m_sampling_strategy = 0;
+    m_context["sampling_stategy"]->setInt(m_sampling_strategy);
+
+    optix::Program ray_gen_program = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "pathtrace_camera" );
+    optix::Program exception_program = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "exception" );
+    m_context->setRayGenerationProgram( 0, ray_gen_program );
+    m_context->setExceptionProgram( 0, exception_program );
+
+
+    // Miss programs
+    m_context->setMissProgram( 0, m_context->createProgramFromPTXFile( "ptx/raymarch.cu.ptx", "envmap_miss" ) );
+
+    const optix::float3 default_color = m_context["bg_color"]->getFloat3();
+//    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/i7245143/src/optix/SDK/tutorial/data/CedarCity.hdr", default_color) );
+//    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/tom/src/Fragmentarium/Fragmentarium-Source/Examples/Include/Ditch-River_2k.hdr", default_color) );
+    m_context["envmap"]->setTextureSampler( loadTexture( m_context,  qgetenv("HOME").toStdString() + "/Downloads/Milkyway/Milkyway_small.hdr", default_color) );
+}
+
+void OptixScene::createLightGeo()
+{
+    GeometryGroup geo = m_context["top_shadower"]->getGeometryGroup();
+
+    GeometryGroup lights = m_context->createGeometryGroup();
+
+    Program m_pgram_bounding_box = m_context->createProgramFromPTXFile( "ptx/parallelogram.cu.ptx", "bounds" );
+    Program m_pgram_intersection = m_context->createProgramFromPTXFile( "ptx/parallelogram.cu.ptx", "intersect" );
+
+    Material emissiveMat = m_context->createMaterial();
+    Program diffuse_emitter = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "diffuseEmitter" );
+    emissiveMat->setClosestHitProgram( static_cast<unsigned int>(PathTraceRay::CAMERA), diffuse_emitter );
+
+    const float3 light_em = make_float3( 15.0f, 15.0f, 5.0f );
+
+    std::vector<GeometryInstance> areaLights;
+
+    // Light
+    areaLights.push_back( createAreaLight( &m_context,
+                                        &m_pgram_bounding_box,
+                                        &m_pgram_intersection,
+                                        make_float3( -2500, 2000.0, -2500),
+                                        make_float3( 5000.0f, 0.0f, 0.0f),
+                                        make_float3( 0.0f, 0.0f, 5000.0f) ) );
+    setMaterial(areaLights.back(), emissiveMat, "emission_color", light_em);
+
+//    lights->setChildCount( areaLights.size() );
+    for(unsigned int i = 0; i < areaLights.size(); i++)
+    {
+//        lights->setChild(i, areaLights[i]);
+        geo->addChild( areaLights[i] );
+    }
+}
+
+void OptixScene::createWorld()
+{
+    ///@todo Optix error checking
+    optix::Geometry SDF_scene = m_context->createGeometry();
+    SDF_scene->setPrimitiveCount( 1u );
+    SDF_scene->setBoundingBoxProgram( m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "bounds" ) );
+    SDF_scene->setIntersectionProgram( m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "intersect" ) );
+
+    GeometryInstance geoInstance = m_context->createGeometryInstance();
+    geoInstance->setGeometry(SDF_scene);
+
+    const float3 white = make_float3( 0.8f, 0.8f, 0.8f );
+
+
+    Material diffuseMat = m_context->createMaterial();
+    Program diffuse_closestHit = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "diffuse" );
+    diffuseMat->setClosestHitProgram( static_cast<unsigned int>(PathTraceRay::CAMERA), diffuse_closestHit );
+
+    Program diffuse_anyHit = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "shadow" );
+    diffuseMat->setAnyHitProgram( static_cast<unsigned int>(PathTraceRay::SHADOW), diffuse_anyHit );
+
+
+    setMaterial(geoInstance, diffuseMat, "diffuse_color", white);
+
+    GeometryGroup m_geometrygroup = m_context->createGeometryGroup();
+    m_geometrygroup->addChild(geoInstance);
+
+
+
+    GeometryGroup lights = m_context->createGeometryGroup();
+
+    Program m_pgram_bounding_box = m_context->createProgramFromPTXFile( "ptx/parallelogram.cu.ptx", "bounds" );
+    Program m_pgram_intersection = m_context->createProgramFromPTXFile( "ptx/parallelogram.cu.ptx", "intersect" );
+
+    Material emissiveMat = m_context->createMaterial();
+    Program diffuse_emitter = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "diffuseEmitter" );
+    emissiveMat->setClosestHitProgram( static_cast<unsigned int>(PathTraceRay::CAMERA), diffuse_emitter );
+
+    const float3 light_em = make_float3( 15.0f, 15.0f, 5.0f );
+
+    std::vector<GeometryInstance> areaLights;
+
+    // Light
+//    areaLights.push_back( createAreaLight( &m_context,
+//                                        &m_pgram_bounding_box,
+//                                        &m_pgram_intersection,
+//                                        make_float3( -2500, 2000.0, -2500),
+//                                        make_float3( 5000.0f, 0.0f, 0.0f),
+//                                        make_float3( 0.0f, 0.0f, 5000.0f) ) );
+    for(ParallelogramLight light : m_lights)
+    {
+        areaLights.push_back( createAreaLight( &m_context,
+                                            &m_pgram_bounding_box,
+                                            &m_pgram_intersection,
+                                            light.corner,
+                                            light.v1,
+                                            light.v2 ) );
+        setMaterial(areaLights.back(), emissiveMat, "emission_color", light_em);
+    }
+
+//    lights->setChildCount( areaLights.size() );
+    for(unsigned int i = 0; i < areaLights.size(); i++)
+    {
+//        lights->setChild(i, areaLights[i]);
+        m_geometrygroup->addChild( areaLights[i] );
+    }
+
+
+
+
+
+    m_geometrygroup->setAcceleration( m_context->createAcceleration("NoAccel","NoAccel") );
+    m_context["top_object"]->set( m_geometrygroup );
+
+    // Create shadow group (no light)
+    GeometryGroup shadow_group = m_context->createGeometryGroup();
+    shadow_group->addChild(geoInstance);
+    shadow_group->setAcceleration( m_context->createAcceleration("NoAccel","NoAccel") );
+    m_context["top_shadower"]->set( shadow_group );
+
+    float  m_alpha;
+    float  m_delta;
+    float m_DEL;
+    unsigned int m_max_iterations;
+
+    m_alpha = 0.003f;
+    m_delta = 0.00001f;
+    m_DEL = 0.0001f;
+    m_max_iterations = 32;
+
+    m_context[ "c4" ]->setFloat( optix::make_float4( -0.5f, 0.1f, 0.2f, 0.3f) );
+    m_context[ "alpha" ]->setFloat( m_alpha );
+    m_context[ "delta" ]->setFloat( m_delta );
+    m_context[ "max_iterations" ]->setUint( m_max_iterations );
+    m_context[ "DEL" ]->setFloat( m_DEL );
+    m_context[ "particle" ]->setFloat( 0.5f, 0.5f, 0.4f );
+}
+
 
 //#define DEMO
 
@@ -366,188 +652,6 @@ __device__ __noinline__ float3 shade_hook()
         qWarning("Failed to create program from ptx");
         return;
     }
-}
-
-void OptixScene::createGeometry()
-{
-    m_context["max_depth"]->setInt( 5 );
-//    m_context["radiance_ray_type"]->setUint( 0u );
-//    m_context["shadow_ray_type"]->setUint( 1u );
-    m_context["scene_epsilon"]->setFloat( 1.e-4f );
-    m_context["color_t"]->setFloat( 0.0f );
-    m_context["shadowsActive"]->setUint( 0u );
-    m_context["global_t"]->setFloat( 0u );
-
-    m_context["scene_epsilon"]->setFloat( 1.e-3f );
-    m_context["pathtrace_ray_type"]->setUint(0u);
-    m_context["pathtrace_shadow_ray_type"]->setUint(1u);
-    m_context["pathtrace_bsdf_shadow_ray_type"]->setUint(2u);
-    m_context["rr_begin_depth"]->setUint(m_rr_begin_depth);
-
-//    camera_data = InitialCameraData( optix::make_float3( 3.0f, 2.0f, -3.0f ), // eye
-//                                     optix::make_float3( 0.0f, 0.3f,  0.0f ), // lookat
-//                                     optix::make_float3( 0.0f, 1.0f,  0.0f ), // up
-//                                     60.0f );                          // vfov
-
-    // Declare camera variables.  The values do not matter, they will be overwritten in trace.
-    m_context["eye"]->setFloat( optix::make_float3( 0.0f, 0.0f, 0.0f ) );
-    m_context["U"]->setFloat( optix::make_float3( 0.0f, 0.0f, 0.0f ) );
-    m_context["V"]->setFloat( optix::make_float3( 0.0f, 0.0f, 0.0f ) );
-    m_context["W"]->setFloat( optix::make_float3( 0.0f, 0.0f, 0.0f ) );
-
-
-    m_context["bad_color"]->setFloat( 1.0f, 1.0f, 0.0f );
-
-    // Miss program
-    //m_context->setMissProgram( 0, m_context->createProgramFromPTXFile( "ptx/constantbg.cu.ptx", "miss" ) );
-    m_context["bg_color"]->setFloat( optix::make_float3(108.0f/255.0f, 166.0f/255.0f, 205.0f/255.0f) * 0.5f );
-
-    m_context->setMissProgram( 0, m_context->createProgramFromPTXFile( "ptx/raymarch.cu.ptx", "envmap_miss" ) );
-
-    const optix::float3 default_color = optix::make_float3(1.0f, 1.0f, 1.0f);
-//    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/i7245143/src/optix/SDK/tutorial/data/CedarCity.hdr", default_color) );
-//    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/tom/src/Fragmentarium/Fragmentarium-Source/Examples/Include/Ditch-River_2k.hdr", default_color) );
-    m_context["envmap"]->setTextureSampler( loadTexture( m_context,  qgetenv("HOME").toStdString() + "/Downloads/Milkyway/Milkyway_small.hdr", default_color) );
-
-
-    m_rr_begin_depth = 1u;
-    m_sqrt_num_samples = 1u;
-    m_camera_changed = true;
-
-
-    // Setup path tracer
-    m_context["sqrt_num_samples"]->setUint( m_sqrt_num_samples );
-    m_context["frame_number"]->setUint(1);
-
-    // Index of sampling_stategy (BSDF, light, MIS)
-    m_sampling_strategy = 0;
-    m_context["sampling_stategy"]->setInt(m_sampling_strategy);
-
-    // Setup lights
-    m_context["ambient_light_color"]->setFloat(0.1f,0.1f,0.3f);
-
-    float3 test_data[] = {
-        { 1.0f, 0.0f, 0.0f },
-        { 0.0f, 1.0f, 0.0f },
-        { 0.0f, 0.0f, 1.0f }
-    };
-
-    optix::Buffer test_buffer = m_context->createBuffer(RT_BUFFER_INPUT, RT_FORMAT_FLOAT3, sizeof(test_data)/sizeof(test_data[0]) );
-    memcpy( test_buffer->map(), test_data, sizeof(test_data) );
-    test_buffer->unmap();
-
-    m_context["test"]->set(test_buffer);
-
-    optix::Program ray_gen_program = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "pathtrace_camera" );
-    optix::Program exception_program = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "exception" );
-    m_context->setRayGenerationProgram( 0, ray_gen_program );
-    m_context->setExceptionProgram( 0, exception_program );
-
-    ///@todo Optix error checking
-    optix::Geometry julia = m_context->createGeometry();
-    julia->setPrimitiveCount( 1u );
-
-    julia->setBoundingBoxProgram( m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "bounds" ) );
-    julia->setIntersectionProgram( m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "intersect" ) );
-
-    m_context["Ka"]->setFloat(0.5f,0.0f,0.0f);
-    m_context["Kd"]->setFloat(.6f, 0.1f, 0.1f);
-    m_context["Ks"]->setFloat(.6f, .2f, .1f);
-    m_context["phong_exp"]->setFloat(32);
-    m_context["reflectivity"]->setFloat(.4f, .4f, .4f);
-
-    ParallelogramLight light;
-    light.corner   = make_float3( 343.0f, 548.6f, 227.0f);
-    light.v1       = make_float3( -130.0f, 0.0f, 0.0f);
-    light.v2       = make_float3( 0.0f, 0.0f, 105.0f);
-    light.normal   = normalize( cross(light.v1, light.v2) );
-    light.emission = make_float3( 100.0f );
-
-    Buffer light_buffer = m_context->createBuffer( RT_BUFFER_INPUT );
-    light_buffer->setFormat( RT_FORMAT_USER );
-    light_buffer->setElementSize( sizeof( ParallelogramLight ) );
-    light_buffer->setSize( 1u );
-    memcpy( light_buffer->map(), &light, sizeof( light ) );
-    light_buffer->unmap();
-    m_context["lights"]->setBuffer( light_buffer );
-
-    std::vector<optix::GeometryInstance> gis;
-
-    GeometryInstance gi = m_context->createGeometryInstance();
-    gi->setGeometry(julia);
-
-    //@todo Critical : Fix this :|
-    std::string ptx_path = qgetenv("OPTIX_PATH").toStdString() + "/build/lib/ptx/path_tracer_generated_parallelogram.cu.ptx";
-    auto m_pgram_bounding_box = m_context->createProgramFromPTXFile( ptx_path, "bounds" );
-    auto m_pgram_intersection = m_context->createProgramFromPTXFile( ptx_path, "intersect" );
-
-    const float3 white = make_float3( 0.8f, 0.8f, 0.8f );
-    const float3 green = make_float3( 0.05f, 0.8f, 0.05f );
-    const float3 red   = make_float3( 0.8f, 0.05f, 0.05f );
-    const float3 light_em = make_float3( 15.0f, 15.0f, 5.0f );
-
-    Material diffuse = m_context->createMaterial();
-    Program diffuse_ch = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "diffuse" );
-    Program diffuse_ah = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "shadow" );
-    diffuse->setClosestHitProgram( 0, diffuse_ch );
-    diffuse->setAnyHitProgram( 1, diffuse_ah );
-
-    Material diffuse_light = m_context->createMaterial();
-    Program diffuse_em = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "diffuseEmitter" );
-    diffuse_light->setClosestHitProgram( 0, diffuse_em );
-
-    gis.push_back( gi );
-    setMaterial(gis.back(), diffuse, "diffuse_color", white);
-
-    // Create shadow group (no light)
-    GeometryGroup shadow_group = m_context->createGeometryGroup(gis.begin(), gis.end());
-    shadow_group->setAcceleration( m_context->createAcceleration("NoAccel","NoAccel") );
-//    m_context["top_shadower"]->set( shadow_group );
-
-    // Light
-    gis.push_back( createAreaLight( &m_context,
-                                        &m_pgram_bounding_box,
-                                        &m_pgram_intersection,
-                                        make_float3( -2500, 2000.0, -2500),
-                                        make_float3( 5000.0f, 0.0f, 0.0f),
-                                        make_float3( 0.0f, 0.0f, 5000.0f) ) );
-    setMaterial(gis.back(), diffuse_light, "emission_color", light_em);
-
-    GeometryGroup m_geometrygroup = m_context->createGeometryGroup();
-    m_geometrygroup->setChildCount( static_cast<unsigned int>(gis.size()) );
-    for(size_t i = 0; i < gis.size(); ++i)
-    {
-        m_geometrygroup->setChild( (int)i, gis[i] );
-    }
-    m_geometrygroup->setAcceleration( m_context->createAcceleration("NoAccel","NoAccel") );
-
-    // Top level group
-    Group topgroup = m_context->createGroup();
-    topgroup->setChildCount( 1 );
-    topgroup->setChild( 0, m_geometrygroup );
-    //topgroup->setChild( 1, floor_gg );
-    topgroup->setAcceleration( m_context->createAcceleration("Bvh","Bvh") );
-
-
-    m_context["top_object"]->set( m_geometrygroup );
-    m_context["top_shadower"]->set( m_geometrygroup );
-
-    float  m_alpha;
-    float  m_delta;
-    float m_DEL;
-    unsigned int m_max_iterations;
-
-    m_alpha = 0.003f;
-    m_delta = 0.00001f;
-    m_DEL = 0.0001f;
-    m_max_iterations = 32;
-
-    m_context[ "c4" ]->setFloat( optix::make_float4( -0.5f, 0.1f, 0.2f, 0.3f) );
-    m_context[ "alpha" ]->setFloat( m_alpha );
-    m_context[ "delta" ]->setFloat( m_delta );
-    m_context[ "max_iterations" ]->setUint( m_max_iterations );
-    m_context[ "DEL" ]->setFloat( m_DEL );
-    m_context[ "particle" ]->setFloat( 0.5f, 0.5f, 0.4f );
 }
 
 OptixScene::~OptixScene()
