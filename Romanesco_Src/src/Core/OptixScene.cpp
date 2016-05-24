@@ -157,13 +157,13 @@ void OptixScene::setCamera(optix::float3 _eye, /*optix::float3 _lookat, */float 
 
 //    optix::float3 eye, U, V, W;
 //    m_camera->setAspectRatio( static_cast<float>(_width)/static_cast<float>(_height) );
-    float aspectRatio = static_cast<float>(_width)/static_cast<float>(_height);
+    float aspectRatio = static_cast<float>(m_width)/static_cast<float>(m_height);
 //    float inputAngle = atan( radians(_fov * 0.5) );
 //    float outputAngle = degrees(2.0f * atanf(aspectRatio * tanf(radians(0.5f * (inputAngle)))) );
 
     ///@todo Make this more physically accurate
     /// http://www.scratchapixel.com/lessons/3d-basic-rendering/3d-viewing-pinhole-camera/how-pinhole-camera-works-part-2
-    float focalLength = aspectRatio;
+    float focalLength = 1.0f / aspectRatio;
 
     m_context["eye"]->setFloat( _eye );
     m_context["U"]->setFloat( optix::make_float3(1, 0, 0) );
@@ -196,6 +196,12 @@ void OptixScene::setVar(const std::string& _name, optix::Matrix4x4 _v )
 
 void OptixScene::updateBufferSize(unsigned int _width, unsigned int _height)
 {
+    _width = 1920;
+    _height = 1080;
+
+    m_width = _width;
+    m_height = _height;
+
     // Update any GL bound Optix buffers
     for( auto& buffer : m_glOutputBuffers )
     {

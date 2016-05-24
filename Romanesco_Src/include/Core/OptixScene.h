@@ -104,6 +104,9 @@ public:
 
     bool m_camera_changed;
 
+    unsigned int m_width;
+    unsigned int m_height;
+
 protected:
     std::string m_outputBuffer;
 
