@@ -580,9 +580,9 @@ void OptixScene::createWorld()
     unsigned int m_max_iterations;
 
     m_alpha = 0.003f;
-    m_delta = 0.00001f;
-    m_DEL = 0.0001f;
-    m_max_iterations = 32;
+    m_delta = 0.001f;
+    m_DEL = 0.001f;
+    m_max_iterations = 20;
 
     m_context[ "alpha" ]->setFloat( m_alpha );
     m_context[ "delta" ]->setFloat( m_delta );

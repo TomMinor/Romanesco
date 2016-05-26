@@ -341,6 +341,7 @@ void MainWindow::timerEvent(QTimerEvent *_event)
       if(m_glViewport)
       {
           m_glViewport->update();
+          qApp->processEvents();
       }
     }
 }
