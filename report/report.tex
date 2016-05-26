@@ -191,6 +191,19 @@ Houdini is still good for creature effects though, example noise shader goes her
 		\end{itemize}
 \end{itemize}
 
+\section{Rendering Strategy}
+\begin{itemize}
+	\item Render tiles
+	\begin{itemize}
+		\item For larger frame sizes this will give an opportunity for the calling program to return quickly and handle events
+		\item Will use less GPU RAM, which is vital for HD frames on GPUs without lots of memory
+		\item Has the potential to simplify implementation of other rendering algorithms in the future, for example Bidirectional Path Tracing stores light paths in an array that can become very large for huge images but is manageable for small tiles
+	\end{itemize}
+
+	\item Monitor the Optix rendering in a separate thread and copy over to host memory every half a second or so, this keeps the GUI responsive without over saturating the PCI-E bus (GPU -> CPU memory transfer) with constant memory copies.
+	
+\end{itemize}
+
 
 \noNumberChapter{4}{Conclusion}
 

@@ -37,7 +37,7 @@
 
 using namespace optix;
 
-#define USE_DEBUG_EXCEPTIONS 0
+#define USE_DEBUG_EXCEPTIONS 1
 
 // References:
 // [1] Hart, J. C., Sandin, D. J., and Kauffman, L. H. 1989. Ray tracing deterministic 3D fractals
@@ -94,6 +94,9 @@ rtDeclareVariable(unsigned int,  sqrt_num_samples, , );
 
 rtDeclareVariable(float,      t_hit,        rtIntersectionDistance, );
 
+rtDeclareVariable(float2,        TileSize, , );
+rtDeclareVariable(uint2,        NoOfTiles, , );
+
 
 struct PerRayData_pathtrace
 {
@@ -118,9 +121,8 @@ struct PerRayData_pathtrace
 struct PerRayData_pathtrace_shadow
 {
   bool inShadow;
-  unsigned int seed;
   unsigned int depth;
-  float3 attenuation;
+  float attenuation;
 };
 
 rtDeclareVariable(PerRayData_pathtrace, current_prd, rtPayload, );
@@ -145,13 +147,22 @@ RT_PROGRAM void exception()
 #endif
 }
 
+__device__ __inline__ uint2 mapBufferSizes(uint2 outputBufferSize , uint2 _tileSize, uint2 _tileIndex)
+{
+//    return make_uint2(outputBufferSize.x % tileSize.x,
+//                      outputBufferSize.y % tileSize.y);
+    return _tileIndex * _tileSize;
+}
 
 RT_PROGRAM void pathtrace_camera()
 {
     size_t2 screen = output_buffer.size();
 
+//    uint2 bufferLaunchIndex = launch_index;
+    uint2 bufferLaunchIndex = mapBufferSizes(make_uint2(screen.x, screen.y), make_uint2(TileSize), NoOfTiles) + launch_index;
+
     float2 inv_screen = 1.0f/make_float2(screen) * 2.f;
-    float2 pixel = (make_float2(launch_index)) * inv_screen - 1.f;
+    float2 pixel = (make_float2(bufferLaunchIndex)) * inv_screen - 1.f;
 
     float2 jitter_scale = inv_screen / sqrt_num_samples;
     unsigned int samples_per_pixel = sqrt_num_samples*sqrt_num_samples;
@@ -163,7 +174,7 @@ RT_PROGRAM void pathtrace_camera()
     float depth = 0.0f;
 
     // Bounce GI
-    unsigned int seed = tea<4>(screen.x * launch_index.y + launch_index.x, frame_number);
+    unsigned int seed = tea<4>(screen.x * bufferLaunchIndex.y + bufferLaunchIndex.x, frame_number);
     do
     {
         unsigned int x = samples_per_pixel % sqrt_num_samples;
@@ -214,24 +225,24 @@ RT_PROGRAM void pathtrace_camera()
         float a = 1.0f / (float)frame_number;
         float b = ((float)frame_number - 1.0f) * a;
 
-        float4 old_color = output_buffer[launch_index];
-        output_buffer[launch_index] = a * pixel_color + b * old_color;
+        float4 old_color = output_buffer[bufferLaunchIndex];
+        output_buffer[bufferLaunchIndex] = a * pixel_color + b * old_color;
 
-        float3 old_nrm = output_buffer_nrm[launch_index];
-        output_buffer_nrm[launch_index] = a * pixel_color_normal + b * old_nrm;
+        float3 old_nrm = output_buffer_nrm[bufferLaunchIndex];
+        output_buffer_nrm[bufferLaunchIndex] = a * pixel_color_normal + b * old_nrm;
 
-        float3 old_world = output_buffer_world[launch_index];
-        output_buffer_world[launch_index] = a * pixel_color_world + b * old_world;
+        float3 old_world = output_buffer_world[bufferLaunchIndex];
+        output_buffer_world[bufferLaunchIndex] = a * pixel_color_world + b * old_world;
 
-        float old_depth = output_buffer_depth[launch_index];
-        output_buffer_depth[launch_index] = a * pixel_color_depth + b * old_depth;
+        float old_depth = output_buffer_depth[bufferLaunchIndex];
+        output_buffer_depth[bufferLaunchIndex] = a * pixel_color_depth + b * old_depth;
     }
     else
     {
-        output_buffer[launch_index] = pixel_color;
-        output_buffer_nrm[launch_index] = pixel_color_normal;
-        output_buffer_world[launch_index] = pixel_color_world;
-        output_buffer_depth[launch_index] = pixel_color_depth;
+        output_buffer[bufferLaunchIndex] = pixel_color;
+        output_buffer_nrm[bufferLaunchIndex] = pixel_color_normal;
+        output_buffer_world[bufferLaunchIndex] = pixel_color_world;
+        output_buffer_depth[bufferLaunchIndex] = pixel_color_depth;
     }
 }
 
@@ -240,7 +251,13 @@ RT_PROGRAM void pathtrace_camera()
 
 
 
-
+//// Geometric orbit trap. Creates the 'cube' look.
+//float trap(vec3 p){
+//	return  length(p.x-0.5-0.5*sin(time/10.0)); // <- cube forms
+//	//return  length(p.x-1.0);
+//	//return length(p.xz-vec2(1.0,1.0))-0.05; // <- tube forms
+//	//return length(p); // <- no trap
+//}
 
 RT_PROGRAM void intersect(int primIdx)
 {
@@ -273,8 +290,8 @@ RT_PROGRAM void intersect(int primIdx)
   if(shouldSphereTrace)
   {
 //      Mandelbulb sdf(max_iterations);
-//      MengerSponge sdf(max_iterations);
-      IFSTest sdf(max_iterations);
+      MengerSponge sdf(max_iterations);
+//      IFSTest sdf(max_iterations);
       sdf.setTime(global_t);
       sdf.evalParameters();
 
@@ -367,16 +384,12 @@ RT_PROGRAM void diffuseEmitter(){
 
 rtDeclareVariable(PerRayData_pathtrace_shadow, current_prd_shadow, rtPayload, );
 
-
 RT_PROGRAM void shadow()
 {
-    ///@todo http://www.thepolygoners.com/tutorials/GIIntro/GIIntro.htm
   current_prd_shadow.inShadow = true;
-  current_prd_shadow.attenuation = ray.origin + (t_hit * ray.direction);
 
   rtTerminateRay();
 }
-
 
 
 __device__ float hash(float _seed)
@@ -429,8 +442,8 @@ RT_PROGRAM void diffuse()
   float3 v1, v2;
   createONB(ffnormal, v1, v2);
 
-  current_prd.direction = v1 * p.x + v2 * p.y + ffnormal * p.z;
-//  current_prd.direction = cosineDirection(current_prd.seed + frame_number, world_geometric_normal);
+//  current_prd.direction = v1 * p.x + v2 * p.y + ffnormal * p.z;
+  current_prd.direction = cosineDirection(current_prd.seed/* + frame_number*/, world_geometric_normal);
   current_prd.attenuation = /*current_prd.attenuation * */diffuse_color; // use the diffuse_color as the diffuse response
   current_prd.countEmitted = false;
 
@@ -469,9 +482,8 @@ RT_PROGRAM void diffuse()
     {
       PerRayData_pathtrace_shadow shadow_prd;
       shadow_prd.inShadow = false;
-      shadow_prd.depth = current_prd.depth;
-      shadow_prd.attenuation = make_float3(0.0f);
-      shadow_prd.seed = current_prd.seed + frame_number;
+      shadow_prd.depth = 0;
+      shadow_prd.attenuation = 1.0f;
 
       Ray shadow_ray = make_Ray(hitpoint + (shading_normal * 0.01), L, pathtrace_shadow_ray_type, scene_epsilon, Ldist );
       rtTrace(top_shadower, shadow_ray, shadow_prd);
@@ -481,29 +493,7 @@ RT_PROGRAM void diffuse()
         float weight= nDl * LnDl * A / (M_PIf*Ldist*Ldist);
         result += light.emission * weight;
       }
-      else if(current_prd.depth < 3)
-      {
-        float z1 = rnd(current_prd.seed);
-        float z2 = rnd(current_prd.seed);
-        float3 p;
 
-        cosine_sample_hemisphere(z1, z2, p);
-
-        float3 v1, v2;
-        createONB(ffnormal, v1, v2);
-
-        float3 ray_origin = shadow_prd.attenuation;
-        float3 ray_direction = v1 * p.x + v2 * p.y + ffnormal * p.z;
-
-        current_prd.result = make_float4(0.0f);
-        current_prd.seed = current_prd.seed + frame_number;
-        current_prd.depth++;
-
-        Ray ray = make_Ray(ray_origin, ray_direction, pathtrace_ray_type, scene_epsilon, RT_DEFAULT_MAX);
-        rtTrace(top_object, ray, current_prd);
-
-        result += make_float3( current_prd.result );
-      }
     }
   }
 
