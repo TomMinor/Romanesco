@@ -25,16 +25,17 @@
 #include <optixu/optixu_math_namespace.h>
 #include <optixu/optixu_matrix_namespace.h>
 #include <optixu/optixu_aabb_namespace.h>
-#include "distance_field.h"
+
 #include "path_tracer.h"
 #include "random.h"
 
 #include "GLSL_Functions.h"
+#include "DistanceFieldMaths.h"
+#include "DistanceFieldPrimitives.h"
+#include "DistanceFieldAdvancedPrimitives.h"
+#include "DistanceFieldTraps.h"
 
 using namespace optix;
-
-// Helper macro to convert to vec4 for the purpose of a rotation
-#define applyRotation(p,rot) make_float3(make_float4(p, 1.0f) * rot);
 
 #define USE_DEBUG_EXCEPTIONS 0
 
@@ -129,10 +130,6 @@ rtDeclareVariable(PerRayData_pathtrace, prd_radiance, rtPayload, );
 //  float3 attenuation;
 //  bool inShadow;
 //};
-
-//#define MANDELBULB
-//#define MENGERSPONGE
-#define SHADERTOYTEST
 
 RT_PROGRAM void exception()
 {
@@ -238,309 +235,9 @@ RT_PROGRAM void pathtrace_camera()
 }
 
 
-// Intersect the bounding sphere of the Julia set.
-static __host__ __device__ bool intersectBoundingSphere( float3 o, float3 d, float sqRadius, float& tmin, float &tmax )
-{
-  const float sq_radius = sqRadius;
-  const float b = dot( o, d );
-  const float c = dot( o, o ) - sq_radius;
-  const float disc = b*b - c;
 
-  if( disc > 0.0f )
-  {
-    const float sdisc = sqrtf( disc );
-    tmin = (-b - sdisc);
-    tmax = (-b + sdisc);
 
-    if(tmin > tmax)
-    {
-      const float temp = tmin;
-      tmax = tmin;
-      tmin = temp;
-    }
 
-    return true;
-  }
-  else
-  {
-    tmin = tmax = 0;
-  }
-  return false;
-}
-
-
-
-#define inf 10000.0
-
-__device__ float sdCross(float3 _p)
-{
-    float3 p1 = make_float3(_p.x, _p.y, _p.z);
-    float3 p2 = make_float3(_p.y, _p.z, _p.x);
-    float3 p3 = make_float3(_p.z, _p.x, _p.y);
-
-    float da = sdBox(p1, make_float3(inf, 1.0, 1.0));
-    float db = sdBox(p2, make_float3(1.0, inf, 1.0));
-    float dc = sdBox(p3, make_float3(1.0, 1.0, inf));
-
-//    float da = maxcomp(fabs(p1));
-//    float db = maxcomp(fabs(p2));
-//    float dc = maxcomp(fabs(p3));
-
-    return min(da, min(db, dc));
-}
-
-__device__ float2 rotate(float2 v, float a) {
-    return make_float2( cos(a)*v.x + sin(a)*v.y, -sin(a)*v.x + cos(a)*v.y );
-}
-
-
-#define Iterations 32
-#define Scale 2.0
-#define Offset make_float3(0.92858,0.92858,0.32858)
-#define FudgeFactor 0.8
-__device__ float DE(float3 _p)
-{
-    float3 offset = make_float3(1.0 + 0.2f * cos( 1.0f * (global_t / 5.7f)),
-                                1.0,
-                                0.3 + 0.1f * (cos( 1.0f * (global_t / 1.7f)))
-                                );
-
-    float3 z = _p;
-    z.x -= global_t * 0.01f;
-    z.x = fmod(z.x, 1.0f);
-
-    z = fabs( 1.0 - fmod(z, 2.0));
-    z.x = fabs(z.x + Offset.x) - Offset.x;
-
-
-    float d = 1000.0f;
-    for(int n = 0; n < max_iterations; ++n)
-    {
-        ///@todo rotate
-
-        // y
-        if(z.x + z.y < 0.0){ float3 tmp = z; z.x = -tmp.y; z.y = -tmp.x; }
-        z = fabs(z);
-
-        // z
-        if(z.x + z.z < 0.0){ float3 tmp = z; z.x = -tmp.z; z.z = -tmp.x; }
-        z = fabs(z);
-
-        // y
-        if(z.x - z.y < 0.0){ float3 tmp = z; z.x = tmp.y; z.y = tmp.x; }
-        z = fabs(z);
-
-        // z
-        if(z.x - z.z < 0.0){ float3 tmp = z; z.x = tmp.z; z.z = tmp.x; }
-        z = fabs(z);
-
-        z = z * Scale - offset * (Scale - 1.0);
-
-        float2 tmp = make_float2(z.y, z.z);
-//        Matrix4x4 rotation = Matrix4x4::rotate( radians(-global_t / 18.0f), make_float3(1, 0, 0) );
-//        float3 r = applyRotation( make_float3(z.y, z.z, 0.0f),  rotation);
-
-        float2 r = rotate(tmp, -global_t / 18.0f);
-        z.y = r.x;
-        z.z = r.y;
-
-        d = min(d, length(z) * powf(Scale, -float(n+1)));
-    }
-
-    return d;
-}
-
-
-__device__ float map(float3 _p)
-{
-#ifdef SHADERTOYTEST
-    float a = DE(_p) * FudgeFactor;
-    _p.y += 1;
-    float b = sdBox(_p, make_float3(2));
-    return max(a,b);
-#endif
-
-#ifdef MENGERSPONGE
-    float d = sdBox(_p, make_float3(1.0f));
-
-    float s = 1.0;
-    for(int m=0; m<5; m++)
-    {
-        Matrix4x4 rotX = Matrix4x4::rotate( radians( global_t ) , make_float3(1,0,0) );
-        Matrix4x4 rotY = Matrix4x4::rotate( radians( global_t ) , make_float3(0,1,0) );
-        Matrix4x4 rotZ = Matrix4x4::rotate( radians( global_t ) , make_float3(0,0,1) );
-
-        _p = applyRotation(_p, rotX);
-        _p = applyRotation(_p, rotY);
-        _p = applyRotation(_p, rotZ);
-
-        float3 a = fmod(_p * s, 2.0f) - make_float3(1.0f);
-        s *= 3.0;
-
-        float3 r = ( make_float3(1.0) - ( make_float3(3.0) * fabs(a)));
-
-        float c = (float)sdCross(r) / (float)s;
-
-        d = max(d, c);
-    }
-
-    return d;
-#endif
-}
-
-
-
-inline __host__ __device__ float lengthSqr(float3 _v)
-{
-    return dot(_v, _v);
-}
-
-
-
-struct JuliaSet
-{
-  __host__ __device__
-  JuliaSet(const unsigned int max_iterations) : m_max_iterations(max_iterations)
-  {}
-
-  // Return the approximate lower bound on the distance from x to the set.
-  __host__ __device__ __forceinline__
-  float operator()( float3 x ) const
-  {
-
-#ifdef MANDELBULB
-    // Iterated values.
-    float3 zn  = x;//make_float3( x, 0 );
-    float4 fp_n = make_float4( 1, 0, 0, 0 );  // start derivative at real 1 (see [2]).
-
-    const float sq_threshold = 2.0f;   // divergence threshold
-
-    float oscillatingTime = sin(global_t / 40.0f );
-    float p = (2.0f * oscillatingTime) + 6.0f; //7.5
-    float rad = 0.0f;
-    float dist = 0.0f;
-    float d = 1.0;
-
-    // Iterate to compute f_n and fp_n for the distance estimator.
-    int i = m_max_iterations;
-    while( i-- )
-    {
-//      fp_n = 2.0f * mul( make_float4(zn), fp_n );   // z prime in [2]
-//      zn = square( make_float4(zn) ) + c4;         // equation (1) in [1]
-
-      // Stop when we know the point diverges.
-      // TODO: removing this condition burns 2 less registers and results in
-      //       in a big perf improvement. Can we do something about it?
-
-      rad = length(zn);
-
-      if( rad > sq_threshold )
-      {
-        dist = 0.5f * rad * logf( rad ) / d;
-      }
-      else
-      {
-        float th = atan2( length( make_float3(zn.x, zn.y, 0.0f) ), zn.z );
-        float phi = atan2( zn.y, zn.x );
-        float rado = pow(rad, p);
-        d = pow(rad, p - 1) * (p-1) * d + 1.0;
-
-        float sint = sin(th * p);
-        zn.x = rado * sint * cos(phi * p);
-        zn.y = rado * sint * sin(phi * p);
-        zn.z = rado * cos(th * p);
-        zn += x;
-      }
-    }
-
-    return dist;
-#endif
-
-
-#ifdef MENGERSPONGE
-    float d = map(x);
-
-    return d;
-#endif
-
-#ifdef SHADERTOYTEST
-    float d = map(x);
-
-    return d;
-#endif
-  }
-
-  unsigned int m_max_iterations;
-};
-
-__device__ bool insideSphere(float3 _point, float3 _center, float _radiusSqr, float* _distance) {
-    float distance = length( _point - _center );
-    float radius = sqrt(_radiusSqr);
-    *_distance = distance;
-    if(distance <= radius)
-    {
-        return true;
-    }
-    return false;
-}
-
-class OrbitTrap
-{
-public:
-    __device__ OrbitTrap() {;}
-
-    __device__ virtual void trap( float3 _p ) = 0;
-
-    __device__ virtual float getTrapValue() = 0;
-
-private:
-
-};
-
-class CrossTrap
-{
-public:
-    __device__ CrossTrap(float _size = 0.05f)
-        : m_dist(_size)
-    {;}
-
-    __device__ void trap( float3 _p )
-    {
-            if( fabs( _p.x ) < m_dist) {  m_dist = fabs( _p.x ); }
-       else if( fabs( _p.y ) < m_dist) {  m_dist = fabs( _p.y ); }
-       else if( fabs( _p.z ) < m_dist) {  m_dist = fabs( _p.z ); }
-    }
-
-    __device__ float getTrapValue()
-    {
-        return sqrt(m_dist);
-    }
-
-private:
-    float m_dist;
-};
-
-class SphereTrap
-{
-public:
-    __device__ SphereTrap(float _size = 0.5f)
-        : m_dist(1e20), m_size(_size)
-    {;}
-
-    __device__ void trap( float3 _p )
-    {
-        float3 tmp = make_float3(_p.x - m_size, _p.y, _p.z);
-        m_dist = dot(tmp,tmp);
-    }
-
-    __device__ float getTrapValue()
-    {
-        return sqrt(m_dist);
-    }
-
-private:
-    float m_dist, m_size;
-};
 
 //// Geometric orbit trap. Creates the 'cube' look.
 //float trap(vec3 p){
@@ -564,14 +261,12 @@ RT_PROGRAM void intersect(int primIdx)
   float distance;
   if( insideSphere(ray.origin, make_float3(0,0,0), sqRadius, &distance) )
   {
-//      rtPrintf("Inside sphere : %f\n", distance);
       tmin = 0;
       tmax = RT_DEFAULT_MAX;
       shouldSphereTrace = true;
   }
   else
   {
-//      rtPrintf("Outside sphere : %f\n", distance);
       // Push hit to nearest point on sphere
       if( intersectBoundingSphere(ray.origin, ray.direction, sqRadius, tmin, tmax) )
       {
@@ -582,14 +277,16 @@ RT_PROGRAM void intersect(int primIdx)
 
   if(shouldSphereTrace)
   {
-    JuliaSet distance( max_iterations );
+//      Mandelbulb sdf(max_iterations);
+      MengerSponge sdf(max_iterations);
+//      IFSTest sdf(max_iterations);
+      sdf.setTime(global_t);
+      sdf.evalParameters();
+
+//    JuliaSet distance( max_iterations );
     //distance.m_max_iterations = 64;
 
     // === Raymarching (Sphere Tracing) Procedure ===
-
-    // XXX inline the sphere tracing procedure here because nvcc isn't
-    //     generating the right code i guess
-
     float3 ray_direction = ray.direction;
     float3 eye = ray.origin;
 //    eye.y -= global_t * 1.2f;
@@ -615,7 +312,7 @@ RT_PROGRAM void intersect(int primIdx)
 
     for( unsigned int i = 0; i < 800; ++i )
     {
-      dist = distance( x );
+      dist = sdf.evalDistance(x);
 
       // Step along the ray and accumulate the distance from the origin.
       x += dist * ray_direction;
@@ -639,11 +336,12 @@ RT_PROGRAM void intersect(int primIdx)
     {
       if( rtPotentialIntersection( dist_from_origin)  )
       {
-        // color HACK
-        distance.m_max_iterations = 14;  // more iterations for normal estimate, to fake some more detail
-        normal = estimate_normal(distance, x, DEL);
+        sdf.setMaxIterations(14); // more iterations for normal estimate, to fake some more detail
+        normal = calculateNormal(sdf, x, DEL);
+
         geometric_normal = normal;
         shading_normal = normal;
+
         smallestdistance = trap.getTrapValue();
         rtReportIntersection( 0 );
       }
@@ -660,19 +358,8 @@ RT_PROGRAM void bounds (int, float result[6])
 }
 
 
-//
-// Julia set shader.
-//
 
 rtBuffer<ParallelogramLight>     lights;
-
-RT_PROGRAM void julia_ah_shadow()
-{
-  // this material is opaque, so it fully attenuates all shadow rays
-//  prd_shadow.attenuation = make_float3(0);
-
-  rtTerminateRay();
-}
 
 rtDeclareVariable(float3, emission_color, , );
 RT_PROGRAM void diffuseEmitter(){
@@ -719,25 +406,6 @@ __device__ float3 cosineDirection(float _seed, float3 _n)
     return sqrt(u) * (cos(a) * uu + sin(a) * vv) + sqrt(1.0 - u) * _n;
 }
 
-
-//__device__ float myshadow( float3 _origin, float3 _dir )
-//{
-//    float res = 0.0;
-
-//    float tmax = 12.0;
-
-//    float t = 0.001;
-//    for(int i=0; i<80; i++ )
-//    {
-//        float h = map(ro+rd*t);
-//        if( h<0.0001 || t>tmax) break;
-//        t += h;
-//    }
-
-//    if( t>tmax ) res = 1.0;
-
-//    return res;
-//}
 
 rtDeclareVariable(float3,        diffuse_color, , );
 
@@ -826,7 +494,7 @@ RT_PROGRAM void diffuse()
 
   float3 ambient = make_float3(0.1f);
 
-  current_prd.result = make_float4(result/* * colourtrap*/ + ambient, 1.0);
+  current_prd.result = make_float4(result/* * colourtrap*//* + ambient*/, 1.0);
 //  current_prd.result = make_float4( do_work(), 1.0f );
   current_prd.result_nrm = shading_normal;
   current_prd.result_world = hitpoint;

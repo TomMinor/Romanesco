@@ -249,35 +249,7 @@ inline float3 fabs(float3 _p)
 #endif
 
 
-/* SDF Primitives */
-///
-/// \brief sdSphere
-/// \param p
-/// \param s
-/// \return
-///
-__host__ __device__
-inline float sdSphere( float3 p, float s )
-{
-  return length(p) - s;
-}
 
-///
-/// \brief sdBox
-/// \param p
-/// \param _b
-/// \return
-///
-__host__ __device__
-inline float sdBox( float3 p, float3 _b )
-{
-  float3 d = fabs(p) - _b;
-
-  float a = max(d.y, d.z);
-  float b = max(d.x, a);
-
-  return min(b, 0.0f) + length( max(d, 0.0f) );
-}
 
 
 

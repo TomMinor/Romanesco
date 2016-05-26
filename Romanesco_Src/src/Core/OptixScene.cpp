@@ -196,8 +196,8 @@ void OptixScene::setVar(const std::string& _name, optix::Matrix4x4 _v )
 
 void OptixScene::updateBufferSize(unsigned int _width, unsigned int _height)
 {
-    _width = 1920;
-    _height = 1080;
+//    _width = 1920;
+//    _height = 1080;
 
     m_width = _width;
     m_height = _height;
