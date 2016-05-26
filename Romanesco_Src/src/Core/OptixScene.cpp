@@ -12,6 +12,7 @@
 #include <QKeyEvent>
 #include <QtMath>
 #include <QDir>
+#include <QCoreApplication>
 
 #include <unistd.h>
 #include <math.h>
@@ -773,6 +774,7 @@ bool OptixScene::saveBuffersToDisk(std::string _filename)
     return image.write(pixels);
 }
 
+
 void OptixScene::drawToBuffer()
 {
     if( m_camera_changed ) {
@@ -784,16 +786,38 @@ void OptixScene::drawToBuffer()
     RTsize buffer_width, buffer_height;
     m_context["output_buffer"]->getBuffer()->getSize( buffer_width, buffer_height );
 
+    // http://heart-touching-graphics.blogspot.co.uk/2012/04/bidirectional-path-tracing-using-nvidia_27.html
+    // https://devtalk.nvidia.com/default/topic/806609/optix/splitting-work-on-multiple-launches/
+    // http://graphics.cs.aueb.gr/graphics/docs/Constantinos%20Kalampokis%20Thesis.pdf
+    int2 NoOfTiles = make_int2(12, 12);
+    float2 launch_index_tileSize = make_float2( float(buffer_width) / NoOfTiles.x,
+                                                float(buffer_height) / NoOfTiles.y );
+
     // Update Optix scene if necessary
     if(m_frame < m_progressiveTimeout)
     {
-        m_context["frame_number"]->setUint(m_frame);
-        m_frame++;
+        m_context["frame_number"]->setUint(m_frame++);
 
-        m_context->launch( 0,
-                           static_cast<unsigned int>(buffer_width),
-                           static_cast<unsigned int>(buffer_height)
-                           );
+        m_context["TileSize"]->setFloat( launch_index_tileSize );
+
+        for(int i=0; i<NoOfTiles.x; i++)
+        {
+            for(int j=0; j<NoOfTiles.y; j++)
+            {
+                m_context["NoOfTiles"]->setUint(i, j);
+
+                m_context->launch( 0,
+                                  static_cast<unsigned int>(launch_index_tileSize.x),
+                                  static_cast<unsigned int>(launch_index_tileSize.y)
+                                  );
+            }
+//            QCoreApplication::processEvents(QEventLoop::EventLoopExec);
+        }
+
+//        m_context->launch( 0,
+//                           static_cast<unsigned int>(buffer_width),
+//                           static_cast<unsigned int>(buffer_height)
+//                           );
     }
     else if(!m_frameDone) // We've hit the 'max' timeout
     {
@@ -841,7 +865,6 @@ void OptixScene::drawToBuffer()
     {
         assert(0 && "Couldn't bind GL Buffer Object");
     }
-
 
     /// ===========================================================
 
