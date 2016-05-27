@@ -185,6 +185,24 @@ void MainWindow::initializeGL()
 {
     OptixScene* optixscene = m_glViewport->m_optixScene;
     connect(optixscene, SIGNAL(frameReady()), this, SLOT(dumpFrame()));
+
+//    connect(optixscene, SIGNAL(bucketReady(uint,uint)), this, SLOT(bucketRendered(uint,uint)));
+//    connect(optixscene, SIGNAL(bucketRowReady(uint)), this, SLOT(rowRendered(uint)));
+}
+
+void MainWindow::bucketRendered(uint i, uint j)
+{
+//    qDebug("Bucket (%d, %d) completed", i, j);
+
+//    qApp->processEvents();
+}
+
+void MainWindow::rowRendered(uint _row)
+{
+//    qDebug("Row %d completed", _row);
+
+    m_glViewport->repaint();
+//    qApp->processEvents();
 }
 
 void MainWindow::setGlobalStyleSheet(const QString& _styleSheet)
