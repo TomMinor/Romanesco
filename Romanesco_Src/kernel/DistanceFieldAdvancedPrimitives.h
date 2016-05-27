@@ -72,11 +72,10 @@ public:
         //            z = z * m_scale - offset * (m_scale - 1.0);
 
         //            float2 tmp = make_float2(z.y, z.z);
-        //    //        Matrix4x4 rotation = Matrix4x4::rotate( radians(-global_t / 18.0f), make_float3(1, 0, 0) );
-        //    //        float3 r = applyRotation( make_float3(z.y, z.z, 0.0f),  rotation);
 
 
-        float m_scale = 2.0f;
+
+        float m_scale = 1.0f;
         float3 offset = make_float3(0.92858,0.92858,0.32858);
 
         // Iterate to compute f_n and fp_n for the distance estimator.
@@ -85,7 +84,7 @@ public:
         {
           rad = length(zn);
 
-          zn = zn * m_scale - offset * (m_scale - 1.0);
+//          zn = zn * m_scale - offset * (m_scale - 1.0);
 
           if( rad > sq_threshold )
           {
@@ -104,6 +103,12 @@ public:
             zn.z = rado * cos(th * p);
             zn += _p;
           }
+
+//          float2 r = rotate(tmp, -global_t / 18.0f);
+          Matrix4x4 rotation = Matrix4x4::rotate( radians(-m_time / 18.0f), make_float3(1, 0, 0) );
+          float3 r = applyTransform( make_float3(zn.y, zn.z, 0.0f),  rotation);
+//          zn.y = r.x;
+//          zn.z = r.y;
         }
 
         return dist;
@@ -142,9 +147,9 @@ public:
             Matrix4x4 rotY = Matrix4x4::rotate( radians( m_rotate.y ) , make_float3(0,1,0) );
             Matrix4x4 rotZ = Matrix4x4::rotate( radians( m_rotate.z ) , make_float3(0,0,1) );
 
-            _p = applyRotation(_p, rotX);
-            _p = applyRotation(_p, rotY);
-            _p = applyRotation(_p, rotZ);
+            _p = applyTransform(_p, rotX);
+            _p = applyTransform(_p, rotY);
+            _p = applyTransform(_p, rotZ);
 
             float3 a = fmod(_p * s, 2.0f) - make_float3(1.0f);
             s *= 3.0;
@@ -210,14 +215,15 @@ private:
 
         float3 z = _p;
         z.x -= global_t * 0.01f;
-        z.x = fmod(z.x, 1.0f);
+//        z.x = fmod(z.x, 3.5f);
 
         z = fabs( 1.0 - fmod(z, 2.0));
-        z.x = fabs(z.x + m_offset.x) - m_offset.x;
+//        z.x = fabs(z.x + m_offset.x) - m_offset.x;
+//        z.x = fabs(z.x + offset.x) - offset.x;
 
 
 //        float d = 1000.0f;
-//        for(int n = 0; n < m_maxIterations / 2; ++n)
+//        for(int n = 0; n < m_maxIterations; ++n)
 //        {
 //            ///@todo rotate
 //            ///
@@ -250,9 +256,9 @@ private:
 //            d = min(d, length(z) * powf(m_scale, -float(n+1)));
 //        }
 
-        float d2 = sdf.evalDistance(z);
+        float d = sdf.evalDistance(z);
 
-        return d2;
+        return d;
     }
 
 protected:

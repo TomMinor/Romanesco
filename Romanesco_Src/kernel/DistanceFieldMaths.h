@@ -7,7 +7,7 @@
 using namespace optix;
 
 // Helper macro to convert to vec4 for the purpose of a rotation
-#define applyRotation(p,rot) make_float3(make_float4(p, 1.0f) * rot);
+#define applyTransform(p,rot) make_float3(make_float4(p, 1.0f) * rot);
 
 inline __device__ float lengthSqr(float3 _v)
 {
