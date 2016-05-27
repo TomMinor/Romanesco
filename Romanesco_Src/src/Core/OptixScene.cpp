@@ -46,7 +46,7 @@
 
 
 OptixScene::OptixScene(unsigned int _width, unsigned int _height, QObject *_parent)
-    : QObject(_parent), m_time(0.0f)
+    : QObject(_parent), m_time(0.0f), m_renderThread(this)
 {
     /// ================ Initialise Output Texture Buffer ======================
     glGenTextures( 1, &m_texId );
@@ -99,6 +99,8 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height, QObject *_pare
     m_progressiveTimeout = 40;
 
     m_future = std::async( std::launch::async, &OptixScene::asyncDraw, this );
+
+    m_renderThread.start(QThread::LowPriority);
 }
 
 void OptixScene::createBuffers()
@@ -782,62 +784,15 @@ bool OptixScene::saveBuffersToDisk(std::string _filename)
     return image.write(pixels);
 }
 
-
-void OptixScene::drawToBuffer()
+void OptixScene::updateGLBuffer()
 {
-    if( m_camera_changed ) {
-        m_camera_changed = false;
-        m_frame = 1;
-        m_frameDone = false;
-    }
-
-    RTsize buffer_width, buffer_height;
-    m_context["output_buffer"]->getBuffer()->getSize( buffer_width, buffer_height );
-
-    // http://heart-touching-graphics.blogspot.co.uk/2012/04/bidirectional-path-tracing-using-nvidia_27.html
-    // https://devtalk.nvidia.com/default/topic/806609/optix/splitting-work-on-multiple-launches/
-    // http://graphics.cs.aueb.gr/graphics/docs/Constantinos%20Kalampokis%20Thesis.pdf
-    int2 NoOfTiles = make_int2(12, 12);
-    float2 launch_index_tileSize = make_float2( float(buffer_width) / NoOfTiles.x,
-                                                float(buffer_height) / NoOfTiles.y );
-
-    // Update Optix scene if necessary
-    if(m_frame < m_progressiveTimeout)
-    {
-        m_context["frame_number"]->setUint(m_frame++);
-
-        m_context["TileSize"]->setFloat( launch_index_tileSize );
-
-        for(int i=0; i<NoOfTiles.x; i++)
-        {
-            for(int j=0; j<NoOfTiles.y; j++)
-            {
-                m_context["NoOfTiles"]->setUint(i, j);
-
-                m_context->launch( 0,
-                                  static_cast<unsigned int>(launch_index_tileSize.x),
-                                  static_cast<unsigned int>(launch_index_tileSize.y)
-                                  );
-            }
-//            QCoreApplication::processEvents(QEventLoop::EventLoopExec);
-        }
-
-//        m_context->launch( 0,
-//                           static_cast<unsigned int>(buffer_width),
-//                           static_cast<unsigned int>(buffer_height)
-//                           );
-    }
-    else if(!m_frameDone) // We've hit the 'max' timeout
-    {
-        m_frameDone = true;
-        emit frameReady();
-    }
-
     // Copy optix buffer to gl texture directly on the GPU
     // (current visible buffer could potentially be changed even when optix scene is finished rendering, so copy over this every frame regardless)
     /// ==================  Copy to texture =======================
     optix::Buffer buffer = m_context[m_outputBuffer]->getBuffer();
     RTformat buffer_format = buffer->getFormat();
+    RTsize buffer_width, buffer_height;
+    buffer->getSize( buffer_width, buffer_height );
 
     vboId = buffer->getGLBOId();
 
@@ -872,6 +827,63 @@ void OptixScene::drawToBuffer()
     else
     {
         assert(0 && "Couldn't bind GL Buffer Object");
+    }
+}
+
+void OptixScene::drawToBuffer()
+{
+    if( m_camera_changed ) {
+        m_camera_changed = false;
+        m_frame = 1;
+        m_frameDone = false;
+    }
+
+    RTsize buffer_width, buffer_height;
+    m_context["output_buffer"]->getBuffer()->getSize( buffer_width, buffer_height );
+
+    // http://heart-touching-graphics.blogspot.co.uk/2012/04/bidirectional-path-tracing-using-nvidia_27.html
+    // https://devtalk.nvidia.com/default/topic/806609/optix/splitting-work-on-multiple-launches/
+    // http://graphics.cs.aueb.gr/graphics/docs/Constantinos%20Kalampokis%20Thesis.pdf
+    int2 NoOfTiles = make_int2(12, 12);
+    float2 launch_index_tileSize = make_float2( float(buffer_width) / NoOfTiles.x,
+                                                float(buffer_height) / NoOfTiles.y );
+
+    // Update Optix scene if necessary
+    if(m_frame < m_progressiveTimeout)
+    {
+        m_context["frame_number"]->setUint(m_frame++);
+
+        m_context["TileSize"]->setFloat( launch_index_tileSize );
+
+        for(int i=0; i<NoOfTiles.x; i++)
+        {
+            for(int j=0; j<NoOfTiles.y; j++)
+            {
+//                if(!m_camera_changed)
+                {
+                    m_context["NoOfTiles"]->setUint(i, j);
+
+                    m_context->launch( 0,
+                                      static_cast<unsigned int>(launch_index_tileSize.x),
+                                      static_cast<unsigned int>(launch_index_tileSize.y)
+                                      );
+
+//                    updateGLBuffer();
+//                    emit bucketReady(i, j);
+                }
+            }
+
+            //updateGLBuffer();
+//            emit bucketRowReady(i);
+        }
+    }
+
+    updateGLBuffer();
+
+    if(m_frame < m_progressiveTimeout && !m_frameDone) // We've hit the 'max' timeout
+    {
+        m_frameDone = true;
+        emit frameReady(); ///@todo This causes input issues, forces a draw before the scene has been copied over
     }
 
     /// ===========================================================

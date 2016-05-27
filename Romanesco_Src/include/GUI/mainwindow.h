@@ -66,9 +66,10 @@ private slots:
     void dumpRenderedFrame();
     void dumpFlipbookFrame();
 
+    void bucketRendered(uint i, uint j);
+    void rowRendered(uint _row);
+
     void initializeGL();
-
-
 
 private:
     QFramebuffer *m_framebuffer;

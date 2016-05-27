@@ -24,6 +24,69 @@ using namespace optix;
 
 #include <future>
 #include <iostream>
+#include <QThread>
+#include <QMutex>
+#include <QMutexLocker>
+#include <QWaitCondition>
+#include <QDebug>
+
+
+class RenderThread : public QThread
+{
+    Q_OBJECT
+
+public:
+    RenderThread(QObject *parent = 0)
+        : QThread(parent)
+    {
+        restart = false;
+        abort = false;
+    }
+
+    ~RenderThread()
+    {
+        mutex.lock();
+        abort = true;
+        condition.wakeOne();
+        mutex.unlock();
+
+        wait();
+    }
+
+signals:
+    void renderedImage();
+
+protected:
+    void run() override
+    {
+        forever {
+            mutex.lock();
+            // Reinit
+            mutex.unlock();
+
+            emit renderedImage();
+
+            mutex.lock();
+
+            qDebug() << "Render Thread";
+            if (!restart)
+            {
+                condition.wait(&mutex);
+            }
+
+            restart = false;
+            mutex.unlock();
+        }
+    }
+
+private:
+    QMutex mutex;
+    QWaitCondition condition;
+
+//    QSize resultSize;
+    bool restart;
+    bool abort;
+};
 
 class OptixScene : public QObject
 {
@@ -129,8 +192,15 @@ private:
         std::cout << "Drawing" << std::endl;
     }
 
+    void updateGLBuffer();
+
+    RenderThread m_renderThread;
+
 signals:
     void frameReady();
+
+    void bucketRowReady(uint _row);
+    void bucketReady(uint _i, uint _j);
 
 };
 
