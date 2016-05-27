@@ -121,8 +121,9 @@ struct PerRayData_pathtrace
 struct PerRayData_pathtrace_shadow
 {
   bool inShadow;
+  float3 attenuation;
   unsigned int depth;
-  float attenuation;
+  unsigned int seed;
 };
 
 rtDeclareVariable(PerRayData_pathtrace, current_prd, rtPayload, );
@@ -183,9 +184,7 @@ RT_PROGRAM void pathtrace_camera()
         float2 d = pixel + jitter*jitter_scale;
         float3 ray_origin = eye;
         float3 ray_direction = normalize(d.x*U + d.y*V + W);
-
-        ray_direction = make_float3((make_float4(ray_direction, 1.0) * normalmatrix));
-//        ray_direction = normalize(ray_direction);
+        ray_direction = applyTransform(ray_direction, normalmatrix);
 
         PerRayData_pathtrace prd;
         prd.result = make_float4(0.f);
@@ -290,8 +289,8 @@ RT_PROGRAM void intersect(int primIdx)
   if(shouldSphereTrace)
   {
 //      Mandelbulb sdf(max_iterations);
-      MengerSponge sdf(max_iterations);
-//      IFSTest sdf(max_iterations);
+//      MengerSponge sdf(max_iterations);
+      IFSTest sdf(max_iterations);
       sdf.setTime(global_t);
       sdf.evalParameters();
 
@@ -483,9 +482,10 @@ RT_PROGRAM void diffuse()
       PerRayData_pathtrace_shadow shadow_prd;
       shadow_prd.inShadow = false;
       shadow_prd.depth = 0;
-      shadow_prd.attenuation = 1.0f;
+      shadow_prd.attenuation = make_float3(0.0f);
+      shadow_prd.seed = current_prd.seed + frame_number;
 
-      Ray shadow_ray = make_Ray(hitpoint + (shading_normal * 0.01), L, pathtrace_shadow_ray_type, scene_epsilon, Ldist );
+      Ray shadow_ray = make_Ray(hitpoint + (shading_normal * 0.0001), L, pathtrace_shadow_ray_type, scene_epsilon, Ldist );
       rtTrace(top_shadower, shadow_ray, shadow_prd);
 
       if(!shadow_prd.inShadow)
@@ -493,7 +493,29 @@ RT_PROGRAM void diffuse()
         float weight= nDl * LnDl * A / (M_PIf*Ldist*Ldist);
         result += light.emission * weight;
       }
+      else if(current_prd.depth < 3)
+      {
+        float z1 = rnd(current_prd.seed);
+        float z2 = rnd(current_prd.seed);
+        float3 p;
 
+        cosine_sample_hemisphere(z1, z2, p);
+
+        float3 v1, v2;
+        createONB(ffnormal, v1, v2);
+
+        float3 ray_origin = shadow_prd.attenuation;
+        float3 ray_direction = v1 * p.x + v2 * p.y + ffnormal * p.z;
+
+        current_prd.result = make_float4(0.0f);
+        current_prd.seed = current_prd.seed + frame_number;
+        current_prd.depth++;
+
+        Ray ray = make_Ray(ray_origin, ray_direction, pathtrace_ray_type, scene_epsilon, RT_DEFAULT_MAX);
+        rtTrace(top_object, ray, current_prd);
+
+        result += make_float3( current_prd.result );
+      }
     }
   }
 
@@ -502,11 +524,11 @@ RT_PROGRAM void diffuse()
 
   float3 a = make_float3(0.4f, 0.2f, 0.2f);
   float3 b = make_float3(0.5f, 0.5f, 0.55f);
-//  colourtrap = lerp(a, b, powf(smallestdistance, 1.0f) );
+  colourtrap = lerp(a, b, powf(smallestdistance, 1.0f) );
 
   float3 ambient = make_float3(0.1f);
 
-  current_prd.result = make_float4(result/* * colourtrap*//* + ambient*/, 1.0);
+  current_prd.result = make_float4(result/* * colourtrap*/, 1.0);
 //  current_prd.result = make_float4( do_work(), 1.0f );
   current_prd.result_nrm = shading_normal;
   current_prd.result_world = hitpoint;
@@ -542,6 +564,8 @@ RT_PROGRAM void chrome_ah_shadow()
 rtTextureSampler<float4, 2> envmap;
 RT_PROGRAM void envmap_miss()
 {
+    float strength =1.0f;
+
   float theta = atan2f( ray.direction.x, ray.direction.z );
   float phi   = M_PIf * 0.5f -  acosf( ray.direction.y );
   float u     = (theta + M_PIf) * (0.5f * M_1_PIf);
@@ -549,10 +573,16 @@ RT_PROGRAM void envmap_miss()
 //  prd_radiance.result = make_float3( tex2D(envmap, u, v) );
 
   current_prd.done = true;
-  current_prd.result = tex2D(envmap, u, v);
+  if(current_prd.depth > 0)
+  {
+      current_prd.result += strength * tex2D(envmap, u, v);
+  } else {
+      current_prd.result = tex2D(envmap, u, v);
+  }
+
   current_prd.result.w = 0.0; // Alpha should be 0 if we missed
   current_prd.result_nrm = make_float3(0.0, 0.0, 0.0);
   current_prd.result_world = make_float3(0.0, 0.0, 0.0);
   current_prd.result_depth = RT_DEFAULT_MAX;
-  rtTerminateRay();
+//  rtTerminateRay();
 }

@@ -22,6 +22,9 @@ using namespace optix;
 
 #include <QObject>
 
+#include <future>
+#include <iostream>
+
 class OptixScene : public QObject
 {
     Q_OBJECT
@@ -117,6 +120,14 @@ protected:
     bool m_frameDone;
 
     std::vector<ParallelogramLight> m_lights;
+
+    std::future<void> m_future;
+
+private:
+    void asyncDraw()
+    {
+        std::cout << "Drawing" << std::endl;
+    }
 
 signals:
     void frameReady();

@@ -96,7 +96,9 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height, QObject *_pare
     m_context->validate();
     m_context->compile();
 
-    m_progressiveTimeout = 20;
+    m_progressiveTimeout = 40;
+
+    m_future = std::async( std::launch::async, &OptixScene::asyncDraw, this );
 }
 
 void OptixScene::createBuffers()
@@ -453,12 +455,13 @@ void OptixScene::createCameras()
 
 
     // Miss programs
-    m_context->setMissProgram( 0, m_context->createProgramFromPTXFile( "ptx/raymarch.cu.ptx", "envmap_miss" ) );
+    m_context->setMissProgram( static_cast<unsigned int>(PathTraceRay::CAMERA), m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "envmap_miss" ) );
 
     const optix::float3 default_color = m_context["bg_color"]->getFloat3();
-//    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/i7245143/src/optix/SDK/tutorial/data/CedarCity.hdr", default_color) );
+    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/i7245143/src/optix/SDK/tutorial/data/CedarCity.hdr", default_color) );
 //    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/tom/src/Fragmentarium/Fragmentarium-Source/Examples/Include/Ditch-River_2k.hdr", default_color) );
-    m_context["envmap"]->setTextureSampler( loadTexture( m_context,  qgetenv("HOME").toStdString() + "/Downloads/Milkyway/Milkyway_small.hdr", default_color) );
+//    m_context["envmap"]->setTextureSampler( loadTexture( m_context,  qgetenv("HOME").toStdString() + "/Downloads/Milkyway/Milkyway_small.hdr", default_color) );
+//    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/i7245143/Pictures/hdri/hdrmaps_com_free_050_half.hdr", default_color) );
 }
 
 void OptixScene::createLightGeo()
@@ -580,9 +583,14 @@ void OptixScene::createWorld()
     float m_DEL;
     unsigned int m_max_iterations;
 
-    m_alpha = 0.003f;
-    m_delta = 0.001f;
-    m_DEL = 0.001f;
+//    m_alpha = 0.003f;
+//    m_delta = 0.001f;
+//    m_DEL = 0.001f;
+//    m_max_iterations = 20;
+
+    m_alpha = 0.03f;
+    m_delta = 0.01f;
+    m_DEL = 0.0001f;
     m_max_iterations = 20;
 
     m_context[ "alpha" ]->setFloat( m_alpha );
