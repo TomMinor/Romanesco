@@ -127,6 +127,9 @@ void TestGLWidget::paintGL()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    m_camRot = m_desiredCamRot;
+    m_camPos = m_desiredCamPos;
+
     optix::Matrix4x4 rotX = rotX.rotate( m_camRot.x(), make_float3(1,0,0));
     optix::Matrix4x4 rotY = rotY.rotate( m_camRot.y(), make_float3(0,1,0));
     optix::Matrix4x4 rotZ = rotZ.rotate( m_camRot.z(), make_float3(0,0,1));
@@ -140,8 +143,6 @@ void TestGLWidget::paintGL()
 //    m_camRot.setY( FInterpTo( m_camRot.y(), m_desiredCamRot.y(), m_frame, 0.00025) );
 //    m_camRot.setZ( FInterpTo( m_camRot.z(), m_desiredCamRot.z(), m_frame, 0.00025) );
 
-    m_camRot = m_desiredCamRot;
-    m_camPos = m_desiredCamPos;
 
     if(m_optixScene)
     {

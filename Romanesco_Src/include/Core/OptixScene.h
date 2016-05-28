@@ -30,58 +30,27 @@ using namespace optix;
 #include <QWaitCondition>
 #include <QDebug>
 
+class OptixScene;
 
 class RenderThread : public QThread
 {
     Q_OBJECT
 
 public:
-    RenderThread(QObject *parent = 0)
-        : QThread(parent)
-    {
-        restart = false;
-        abort = false;
-    }
+    RenderThread(OptixScene* parent);
 
-    ~RenderThread()
-    {
-        mutex.lock();
-        abort = true;
-        condition.wakeOne();
-        mutex.unlock();
-
-        wait();
-    }
+    ~RenderThread();
 
 signals:
     void renderedImage();
 
 protected:
-    void run() override
-    {
-        forever {
-            mutex.lock();
-            // Reinit
-            mutex.unlock();
-
-            emit renderedImage();
-
-            mutex.lock();
-
-            qDebug() << "Render Thread";
-            if (!restart)
-            {
-                condition.wait(&mutex);
-            }
-
-            restart = false;
-            mutex.unlock();
-        }
-    }
+    void run() override;
 
 private:
     QMutex mutex;
     QWaitCondition condition;
+    OptixScene* m_scene;
 
 //    QSize resultSize;
     bool restart;
