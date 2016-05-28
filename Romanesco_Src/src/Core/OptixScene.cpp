@@ -45,6 +45,55 @@
 /// * All camera stuff should be moved into it's own, simpler class
 
 
+RenderThread::RenderThread(OptixScene* parent)
+    : QThread( static_cast<QObject*>(parent) ), m_scene(parent)
+{
+    restart = false;
+    abort = false;
+}
+
+RenderThread::~RenderThread()
+{
+    mutex.lock();
+    abort = true;
+    condition.wakeOne();
+    mutex.unlock();
+
+    wait();
+}
+
+void RenderThread::run()
+{
+    forever
+    {
+        mutex.lock();
+        // Reinit
+        if(abort)
+        {
+            break;
+        }
+
+//        m_scene->drawToBuffer();
+
+        mutex.unlock();
+
+        emit renderedImage();
+
+        mutex.lock();
+
+        qDebug() << "Render Thread";
+
+//        if (!restart)
+//        {
+//            condition.wait(&mutex);
+//        }
+
+        restart = false;
+        mutex.unlock();
+    }
+}
+
+
 OptixScene::OptixScene(unsigned int _width, unsigned int _height, QObject *_parent)
     : QObject(_parent), m_time(0.0f), m_renderThread(this)
 {
@@ -592,7 +641,7 @@ void OptixScene::createWorld()
 
     m_alpha = 0.03f;
     m_delta = 0.01f;
-    m_DEL = 0.0001f;
+    m_DEL = 0.001f;
     m_max_iterations = 20;
 
     m_context[ "alpha" ]->setFloat( m_alpha );
@@ -844,10 +893,11 @@ void OptixScene::drawToBuffer()
     // http://heart-touching-graphics.blogspot.co.uk/2012/04/bidirectional-path-tracing-using-nvidia_27.html
     // https://devtalk.nvidia.com/default/topic/806609/optix/splitting-work-on-multiple-launches/
     // http://graphics.cs.aueb.gr/graphics/docs/Constantinos%20Kalampokis%20Thesis.pdf
-    int2 NoOfTiles = make_int2(12, 12);
+    int2 NoOfTiles = make_int2(1,1);
     float2 launch_index_tileSize = make_float2( float(buffer_width) / NoOfTiles.x,
-                                                float(buffer_height) / NoOfTiles.y );
+                                                                           float(buffer_height) / NoOfTiles.y );
 
+    bool isFrameReady = false;
     // Update Optix scene if necessary
     if(m_frame < m_progressiveTimeout)
     {
@@ -868,22 +918,26 @@ void OptixScene::drawToBuffer()
                                       static_cast<unsigned int>(launch_index_tileSize.y)
                                       );
 
-//                    updateGLBuffer();
+                    updateGLBuffer();
 //                    emit bucketReady(i, j);
                 }
             }
 
-            //updateGLBuffer();
+            updateGLBuffer();
 //            emit bucketRowReady(i);
         }
+    }
+    else if(!m_frameDone) // We've hit the 'max' timeout
+    {
+        m_frameDone = true;
+        isFrameReady = true;
     }
 
     updateGLBuffer();
 
-    if(m_frame < m_progressiveTimeout && !m_frameDone) // We've hit the 'max' timeout
+    if(isFrameReady)
     {
-        m_frameDone = true;
-        emit frameReady(); ///@todo This causes input issues, forces a draw before the scene has been copied over
+        emit frameReady();
     }
 
     /// ===========================================================

@@ -289,8 +289,8 @@ RT_PROGRAM void intersect(int primIdx)
   if(shouldSphereTrace)
   {
 //      Mandelbulb sdf(max_iterations);
-//      MengerSponge sdf(max_iterations);
-      IFSTest sdf(max_iterations);
+      MengerSponge sdf(max_iterations);
+//      IFSTest sdf(max_iterations);
       sdf.setTime(global_t);
       sdf.evalParameters();
 
@@ -493,7 +493,7 @@ RT_PROGRAM void diffuse()
         float weight= nDl * LnDl * A / (M_PIf*Ldist*Ldist);
         result += light.emission * weight;
       }
-      else if(current_prd.depth < 3)
+      else if(current_prd.depth < 1)
       {
         float z1 = rnd(current_prd.seed);
         float z2 = rnd(current_prd.seed);
