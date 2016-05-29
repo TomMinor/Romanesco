@@ -159,7 +159,9 @@ void ShaderWindow::update()
     m_optixScene->setVar("global_t", m_frame);
 
     m_optixScene->setVar("normalmatrix", normalmatrix);
+
     m_optixScene->setCamera(  optix::make_float3( m_camPos.x(), m_camPos.y(), m_camPos.z() ),
+                              make_float3(0.0f, 0.3f, 0.0f),
                               90.0f,
                               width(), height()
                               );

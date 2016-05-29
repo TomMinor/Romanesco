@@ -127,9 +127,8 @@ bool AreSame(QVector3D a, QVector3D b)
 
 void TestGLWidget::updateCamera()
 {
-
-
     m_optixScene->setCamera(  optix::make_float3( m_camPos.x(), m_camPos.y(), m_camPos.z() ),
+                              make_float3(0.0f, 0.3f, 0.0f),
                               90.0f,
                               m_overrideRes ? m_overrideWidth : width(),
                               m_overrideRes ? m_overrideHeight : height()
@@ -291,9 +290,9 @@ void TestGLWidget::keyPressEvent(QKeyEvent *_event)
                 float yMove = radius * sinf( pitchRad );
                 float zMove = radius * cosf( yawRad ) * cosf( pitchRad );
 
-                m_desiredCamPos.setX( m_desiredCamPos.x() + xMove );
-                m_desiredCamPos.setY( m_desiredCamPos.y() + yMove );
-                m_desiredCamPos.setZ( m_desiredCamPos.z() + zMove );
+                m_desiredCamPos.setX( m_desiredCamPos.x() - xMove );
+                m_desiredCamPos.setY( m_desiredCamPos.y() - yMove );
+                m_desiredCamPos.setZ( m_desiredCamPos.z() - zMove );
                 m_updateCamera = true;
             }
 
@@ -313,9 +312,9 @@ void TestGLWidget::keyPressEvent(QKeyEvent *_event)
                 float yMove = radius * sinf( pitchRad );
                 float zMove = radius * cosf( yawRad ) * cosf( pitchRad );
 
-                m_desiredCamPos.setX( m_desiredCamPos.x() - xMove );
-                m_desiredCamPos.setY( m_desiredCamPos.y() - yMove );
-                m_desiredCamPos.setZ( m_desiredCamPos.z() - zMove );
+                m_desiredCamPos.setX( m_desiredCamPos.x() + xMove );
+                m_desiredCamPos.setY( m_desiredCamPos.y() + yMove );
+                m_desiredCamPos.setZ( m_desiredCamPos.z() + zMove );
                 m_updateCamera = true;
             }
 
@@ -381,14 +380,14 @@ void TestGLWidget::keyPressEvent(QKeyEvent *_event)
 
         case Qt::Key_Left:
             {
-                m_desiredCamRot.setY( m_desiredCamRot.y() + rotateOffset );
+                m_desiredCamRot.setY( m_desiredCamRot.y() - rotateOffset );
                 m_updateCamera = true;
             }
             break;
 
         case Qt::Key_Right:
             {
-                 m_desiredCamRot.setY( m_desiredCamRot.y() - rotateOffset );
+                 m_desiredCamRot.setY( m_desiredCamRot.y() + rotateOffset );
                  m_updateCamera = true;
             }
             break;
