@@ -123,6 +123,14 @@ bool AreSame(QVector3D a, QVector3D b)
                 fabs(a.z() - b.z()) < EPSILON );
 }
 
+void TestGLWidget::overrideCameraRes(int _width, int _height)
+{
+    m_optixScene->setCamera(  optix::make_float3( m_camPos.x(), m_camPos.y(), m_camPos.z() ),
+                              90.0f,
+                             _width, _height
+                              );
+}
+
 void TestGLWidget::paintGL()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

@@ -222,9 +222,42 @@ void MainWindow::initializeGL()
         timeScale->setValue( m_timeline->getTimeScale() );
         timeLayout->addWidget(timeScale);
 
-        layout->addWidget(timeGrpBox);
+        QGroupBox* viewportGrpBox = new QGroupBox("Viewport Settings");
+        QGridLayout* viewportLayout = new QGridLayout;
+        viewportGrpBox->setLayout(viewportLayout);
 
-        connect( timeScale, SIGNAL(valueChanged(double)), this, SLOT(setTimeScale(double)));
+        QLabel* toggleResOverrideLbl = new QLabel;
+        toggleResOverrideLbl->setText("Override viewport resolution");
+        viewportLayout->addWidget( toggleResOverrideLbl, 0, 0 );
+
+        QCheckBox* toggleResOverride = new QCheckBox;
+        toggleResOverride->setChecked( optixscene->getResolutionOverride() );
+        viewportLayout->addWidget( toggleResOverride, 0, 1 );
+
+        m_resX = new QSpinBox;
+        m_resX->setMinimum(1);
+        m_resX->setMaximum(9000);
+        m_resX->setValue( optixscene->getResolution().x );
+        m_resX->setEnabled( toggleResOverride->isChecked() );
+        viewportLayout->addWidget(m_resX, 1, 0);
+
+        m_resY = new QSpinBox;
+        m_resY->setMinimum(1);
+        m_resY->setMaximum(9000);
+        m_resY->setValue( optixscene->getResolution().y );
+        m_resY->setEnabled( toggleResOverride->isChecked() );
+        viewportLayout->addWidget(m_resY, 1, 1);
+
+        layout->addWidget(timeGrpBox);
+        layout->addWidget(viewportGrpBox);
+
+        connect( timeScale, SIGNAL(valueChanged(double)), this, SLOT(setTimeScale(double)) );
+        connect( m_resX, SIGNAL(editingFinished()), this, SLOT(forceViewportResolution()) );
+        connect( m_resY, SIGNAL(editingFinished()), this, SLOT(forceViewportResolution()) );
+
+        connect( toggleResOverride, SIGNAL(clicked(bool)), optixscene, SLOT(setShouldOverrideResolution(bool)));
+        connect( toggleResOverride, SIGNAL(clicked(bool)), m_resX, SLOT(setEnabled(bool)) );
+        connect( toggleResOverride, SIGNAL(clicked(bool)), m_resY, SLOT(setEnabled(bool)) );
 
         renderSettingsWidget->setLayout( layout );
     }

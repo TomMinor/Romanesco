@@ -30,6 +30,8 @@ public:
     void enterEvent(QEvent* _event) override;
     void leaveEvent(QEvent* _event) override;
 
+    void overrideCameraRes(int _width, int _height);
+
     OptixScene* m_optixScene;
     unsigned int m_previousWidth, m_previousHeight;
 

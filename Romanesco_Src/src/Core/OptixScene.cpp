@@ -150,6 +150,8 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height, QObject *_pare
 //    m_future = std::async( std::launch::async, &OptixScene::asyncDraw, this );
 
 //    m_renderThread.start(QThread::LowPriority);
+
+    m_overrideRes = false;
 }
 
 void OptixScene::createBuffers()
@@ -192,6 +194,14 @@ optix::Buffer OptixScene::createOutputBuffer(RTformat _format, unsigned int _wid
     buffer->setSize( _width, _height );
 
     return buffer;
+}
+
+int2 OptixScene::getResolution()
+{
+    optix::Buffer buffer = m_context[m_outputBuffer]->getBuffer();
+    RTsize width, height;
+    buffer->getSize(width, height);
+    return make_int2(width, height);
 }
 
 void OptixScene::setTime(float _t)
@@ -250,11 +260,8 @@ void OptixScene::setVar(const std::string& _name, optix::Matrix4x4 _v )
 
 void OptixScene::updateBufferSize(unsigned int _width, unsigned int _height)
 {
-//    _width = 1920;
-//    _height = 1080;
-
-    m_width = _width;
-    m_height = _height;
+    m_width = m_overrideRes ? m_overrideWidth : _width;
+    m_height = m_overrideRes ? m_overrideHeight : _height;
 
     // Update any GL bound Optix buffers
     for( auto& buffer : m_glOutputBuffers )
@@ -894,7 +901,7 @@ void OptixScene::drawToBuffer()
     // http://graphics.cs.aueb.gr/graphics/docs/Constantinos%20Kalampokis%20Thesis.pdf
     int2 NoOfTiles = make_int2(1,1);
     float2 launch_index_tileSize = make_float2( float(buffer_width) / NoOfTiles.x,
-                                                                           float(buffer_height) / NoOfTiles.y );
+                                                float(buffer_height) / NoOfTiles.y );
 
     bool isFrameReady = false;
     // Update Optix scene if necessary

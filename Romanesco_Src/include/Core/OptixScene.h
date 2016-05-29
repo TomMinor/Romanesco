@@ -106,6 +106,21 @@ public:
 
     float* getBufferContents(std::string _name);
 
+    int2 getResolution();
+
+    void setResolutionOverride(int2 _res)
+    {
+        m_overrideWidth = _res.x;
+        m_overrideHeight = _res.y;
+
+        updateBufferSize( m_overrideWidth, m_overrideHeight );
+    }
+
+    bool getResolutionOverride()
+    {
+        return m_overrideRes;
+    }
+
     bool saveBuffersToDisk(std::string _filename);
 
     std::string outputBuffer();
@@ -167,6 +182,10 @@ public:
     unsigned int m_width;
     unsigned int m_height;
 
+    bool m_overrideRes;
+    unsigned int m_overrideWidth;
+    unsigned int m_overrideHeight;
+
 protected:
     std::string m_outputBuffer;
 
@@ -223,6 +242,12 @@ public slots:
     {
         m_sqrt_num_samples = _samples;
         m_context["sqrt_num_samples"]->setUint( m_sqrt_num_samples );
+        m_camera_changed = true;
+    }
+
+    void setShouldOverrideResolution(bool _v)
+    {
+        m_overrideRes = _v;
         m_camera_changed = true;
     }
 
