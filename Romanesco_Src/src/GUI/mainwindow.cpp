@@ -231,7 +231,7 @@ void MainWindow::initializeGL()
         viewportLayout->addWidget( toggleResOverrideLbl, 0, 0 );
 
         QCheckBox* toggleResOverride = new QCheckBox;
-        toggleResOverride->setChecked( optixscene->getResolutionOverride() );
+        toggleResOverride->setChecked( m_glViewport->getResolutionOverride() );
         viewportLayout->addWidget( toggleResOverride, 0, 1 );
 
         m_resX = new QSpinBox;
@@ -255,7 +255,7 @@ void MainWindow::initializeGL()
         connect( m_resX, SIGNAL(editingFinished()), this, SLOT(forceViewportResolution()) );
         connect( m_resY, SIGNAL(editingFinished()), this, SLOT(forceViewportResolution()) );
 
-        connect( toggleResOverride, SIGNAL(clicked(bool)), optixscene, SLOT(setShouldOverrideResolution(bool)));
+        connect( toggleResOverride, SIGNAL(clicked(bool)), m_glViewport, SLOT(setShouldOverrideResolution(bool)));
         connect( toggleResOverride, SIGNAL(clicked(bool)), m_resX, SLOT(setEnabled(bool)) );
         connect( toggleResOverride, SIGNAL(clicked(bool)), m_resY, SLOT(setEnabled(bool)) );
 

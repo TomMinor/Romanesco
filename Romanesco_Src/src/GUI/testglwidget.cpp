@@ -15,6 +15,8 @@ TestGLWidget::TestGLWidget(QWidget *parent)
     m_desiredCamRot = m_camRot = QVector3D(0,(0.5f * M_PI),0);
 
     m_updateCamera = true;
+
+    m_overrideRes = false;
 }
 
 TestGLWidget::~TestGLWidget()
@@ -123,11 +125,14 @@ bool AreSame(QVector3D a, QVector3D b)
                 fabs(a.z() - b.z()) < EPSILON );
 }
 
-void TestGLWidget::overrideCameraRes(int _width, int _height)
+void TestGLWidget::updateCamera()
 {
+
+
     m_optixScene->setCamera(  optix::make_float3( m_camPos.x(), m_camPos.y(), m_camPos.z() ),
                               90.0f,
-                             _width, _height
+                              m_overrideRes ? m_overrideWidth : width(),
+                              m_overrideRes ? m_overrideHeight : height()
                               );
 }
 
@@ -158,10 +163,7 @@ void TestGLWidget::paintGL()
         if(m_updateCamera)
         {
             m_optixScene->setVar("normalmatrix", normalmatrix);
-            m_optixScene->setCamera(  optix::make_float3( m_camPos.x(), m_camPos.y(), m_camPos.z() ),
-                                      90.0f,
-                                      width(), height()
-                                      );
+            updateCamera();
             m_updateCamera = false;
         }
     }

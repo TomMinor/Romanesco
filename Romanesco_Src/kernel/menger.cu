@@ -175,14 +175,14 @@ RT_PROGRAM void pathtrace_camera()
     float3 world = make_float3(0.0f);
     float depth = 0.0f;
 
-    // Bounce GI
     unsigned int seed = tea<4>(screen.x * bufferLaunchIndex.y + bufferLaunchIndex.x, frame_number);
     do
     {
         unsigned int x = samples_per_pixel % sqrt_num_samples;
         unsigned int y = samples_per_pixel / sqrt_num_samples;
         float2 jitter = make_float2(x-rnd(seed), y-rnd(seed));
-        float2 d = pixel + jitter*jitter_scale;
+        float2 d = pixel + jitter * jitter_scale;
+
         float3 ray_origin = eye;
         float3 ray_direction = normalize(d.x*U + d.y*V + W);
         ray_direction = applyTransform(ray_direction, normalmatrix);
@@ -295,13 +295,10 @@ RT_PROGRAM void intersect(int primIdx)
       sdf.setTime(global_t);
       sdf.evalParameters();
 
-//    JuliaSet distance( max_iterations );
-    //distance.m_max_iterations = 64;
-
     // === Raymarching (Sphere Tracing) Procedure ===
     float3 ray_direction = ray.direction;
     float3 eye = ray.origin;
-//    eye.y -= global_t * 1.2f;
+//    eye.x -= global_t * 1.2f;
     float3 x = eye + tmin * ray_direction;
 
     float dist_from_origin = tmin;
@@ -333,13 +330,13 @@ RT_PROGRAM void intersect(int primIdx)
     {
       //dir.zy = rotate(dir2.zy,totalDistance * tan( atan( cos(iGlobalTime * 0.8) )) * NonLinearPerspective);
 
-      float2 rot = rotate( make_float2(originalDir.z, originalDir.y), totalDistance * cos( global_t * 0.8f )) * NonLinearPerspective;
+     float delta = sin( global_t * 0.1f ) * 30 + tan(global_t  * 0.001f) * 10;
+      float2 rot = rotate( make_float2(originalDir.z, originalDir.y),
+                           radians(totalDistance * delta) ) * NonLinearPerspective;
       ray_direction.z = rot.x;
       ray_direction.y = rot.y;
 
-
-
-      sdf.setTranslateHook(0, make_float3( -global_t * 0.01f, 0.0f, 0.0f ) );
+      sdf.setTranslateHook(0, make_float3( -global_t * 1.0f, 0.0f, 0.0f ) );
       sdf.setRotateHook( 0, make_float3( radians(-global_t / 18.0f), 0.0f, 0.0f) );
 
       float scale = 1.0f;
@@ -514,9 +511,9 @@ RT_PROGRAM void diffuse()
       if(!shadow_prd.inShadow)
       {
         float weight= nDl * LnDl * A / (M_PIf*Ldist*Ldist);
-        result += light.emission * weight * 0.5f;
+        result += light.emission * weight;
       }
-      else if(current_prd.depth < 1)
+      else if(current_prd.depth < 7)
       {
         float z1 = rnd(current_prd.seed);
         float z2 = rnd(current_prd.seed);

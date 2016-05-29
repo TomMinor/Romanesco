@@ -155,7 +155,7 @@ public:
         const float sq_threshold = 2.0f;   // divergence threshold
 
         float oscillatingTime = sin(m_time / 40.0f );
-        float p = (2.0f * oscillatingTime) + 6.0f; //7.5
+        float p = 2.0f;//(2.0f * oscillatingTime) + 6.0f; //7.5
         float rad = 0.0f;
         float dist = 0.0f;
         float d = 1.0;
@@ -308,6 +308,7 @@ private:
                                     );
 
         float3 z = _p;
+//        float d2 = sdf.evalDistance(z);
 //        z.x -= global_t * 0.01f;
         translateHook(0, z);
 
@@ -352,8 +353,7 @@ private:
             d = min(d, length(z) * powf(m_scale, -float(n+1)));
         }
 
-//        float d = sdf.evalDistance(z);
-
+//        d = max(d, d2);
         return d;
     }
 
