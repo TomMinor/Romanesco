@@ -90,7 +90,7 @@ public:
     optix::Buffer createGLOutputBuffer(RTformat _format, unsigned int _width, unsigned int _height);
     optix::Buffer createOutputBuffer(RTformat _format, unsigned int _width, unsigned int _height);
 
-    void setCamera(optix::float3 _eye, float _fov, int _width, int _height);
+    void setCamera(optix::float3 _eye, optix::float3 _lookat, float _fov, int _width, int _height);
     void setVar(const std::string& _name, float _v);
     void setVar(const std::string& _name, optix::float3 _v);
     void setVar(const std::string& _name, optix::Matrix4x4 _v);
@@ -152,7 +152,7 @@ public:
     RTbuffer  m_buffer;
 
     optix::Context m_context;
-    PinholeCamera* m_camera;
+//    PinholeCamera* m_camera;
 
     /* Parameters */
     RTvariable result_buffer;
@@ -196,6 +196,8 @@ private:
     void updateGLBuffer();
 
     RenderThread m_renderThread;
+
+    PinholeCamera* m_camera;
 
 public slots:
     void setProgressiveTimeout(int _timeout)

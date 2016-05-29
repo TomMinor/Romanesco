@@ -95,7 +95,7 @@ void RenderThread::run()
 
 
 OptixScene::OptixScene(unsigned int _width, unsigned int _height, QObject *_parent)
-    : QObject(_parent), m_time(0.0f), m_renderThread(this)
+    : QObject(_parent), m_time(0.0f), m_renderThread(this), m_camera(nullptr)
 {
     /// ================ Initialise Output Texture Buffer ======================
     glGenTextures( 1, &m_texId );
@@ -126,6 +126,12 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height, QObject *_pare
 #endif
     /// --------------------------------------------------------------
 
+    /// ================ Initialise Output Buffers ======================
+    createBuffers();
+    updateBufferSize(_width, _height);
+    setOutputBuffer("output_buffer");
+    /// --------------------------------------------------------------
+
     /// ===================== Initialise World ======================
     initialiseScene();
     createCameras();
@@ -135,11 +141,6 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height, QObject *_pare
 //    createLightGeo();
     /// --------------------------------------------------------------
 
-    /// ================ Initialise Output Buffers ======================
-    createBuffers();
-    updateBufferSize(_width, _height);
-    setOutputBuffer("output_buffer");
-    /// --------------------------------------------------------------
 
 
     m_context->validate();
@@ -150,8 +151,6 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height, QObject *_pare
 //    m_future = std::async( std::launch::async, &OptixScene::asyncDraw, this );
 
 //    m_renderThread.start(QThread::LowPriority);
-
-
 }
 
 void OptixScene::createBuffers()
@@ -210,29 +209,36 @@ void OptixScene::setTime(float _t)
     m_context[ "global_t" ]->setFloat( m_time );
 }
 
-void OptixScene::setCamera(optix::float3 _eye, /*optix::float3 _lookat, */float _fov, int _width, int _height)
+void OptixScene::setCamera(optix::float3 _eye, optix::float3 _lookat, float _fov, int _width, int _height)
 {
-//    m_camera->setParameters( _eye,
-//                             optix::make_float3(0,0,0),
-//                             camera_data.up,
-//                             _fov, // hfov is ignored when using keep vertical
-//                             _fov,
-//                             MyPinholeCamera::KeepHorizontal );
+    m_camera->setParameters( _eye,
+                             _eye + optix::make_float3(0,0,1),
+                             make_float3(0.0f, 1.0f, 0.0f),
+                             _fov, // hfov is ignored when using keep vertical
+                             _fov,
+                             PinholeCamera::KeepVertical );
+    m_camera->setAspectRatio( static_cast<float>(_width)/static_cast<float>(_height) );
 
-//    optix::float3 eye, U, V, W;
-//    m_camera->setAspectRatio( static_cast<float>(_width)/static_cast<float>(_height) );
-    float aspectRatio = static_cast<float>(m_width)/static_cast<float>(m_height);
+    optix::float3 eye, U, V, W;
+//    float aspectRatio = static_cast<float>(m_width)/static_cast<float>(m_height);
 //    float inputAngle = atan( radians(_fov * 0.5) );
 //    float outputAngle = degrees(2.0f * atanf(aspectRatio * tanf(radians(0.5f * (inputAngle)))) );
 
     ///@todo Make this more physically accurate
     /// http://www.scratchapixel.com/lessons/3d-basic-rendering/3d-viewing-pinhole-camera/how-pinhole-camera-works-part-2
-    float focalLength = aspectRatio;
+//    float focalLength = aspectRatio;
 
-    m_context["eye"]->setFloat( _eye );
-    m_context["U"]->setFloat( optix::make_float3(1, 0, 0) );
-    m_context["V"]->setFloat( optix::make_float3(0, 1, 0) );
-    m_context["W"]->setFloat( optix::make_float3(0, 0, 1) * focalLength );
+    m_camera->getEyeUVW(eye, U, V, W);
+
+    m_context["eye"]->setFloat( eye );
+//    m_context["U"]->setFloat( optix::make_float3(1, 0, 0) );
+//    m_context["V"]->setFloat( optix::make_float3(0, 1, 0) );
+//    m_context["W"]->setFloat( optix::make_float3(0, 0, 1) * focalLength );
+
+
+    m_context["U"]->setFloat( U );
+    m_context["V"]->setFloat( V );
+    m_context["W"]->setFloat( W );
 
     m_camera_changed = true;
 }
@@ -480,18 +486,18 @@ void OptixScene::createCameras()
 //                                 optix::make_float3( 0.0f, 1.0f,  0.0f ), // up
 //                                 60.0f );                          // vfov
 
-//    m_camera = new PinholeCamera( camera_data.eye,
-//                              camera_data.lookat,
-//                              camera_data.up,
-//                              -1.0f, // hfov is ignored when using keep vertical
-//                              camera_data.vfov,
-//                              MyPinholeCamera::KeepVertical );
+    m_camera = new PinholeCamera(
+                   make_float3(0.0f, 0.0f, 0.0f),
+                   make_float3(0.0f, 0.0f, 1.0f),
+                   make_float3(0.0f, 1.0f, 0.0f),
+                   -1.0f, // hfov is ignored when using keep vertical
+                   60.0f,
+                   PinholeCamera::KeepVertical );
 
-    //
-    //    setCamera( camera_data.eye,
-    //               camera_data.lookat,
-    //               60.0f,
-    //               _width, _height);
+    optix::Buffer buffer = m_context[m_outputBuffer]->getBuffer();
+    RTsize width, height;
+    buffer->getSize(width, height);
+    setCamera( make_float3(0.0f), make_float3(0.0f, 0.3f, 0.0f), 60.0f, width, height);
 
     // Declare camera variables.  The values do not matter, they will be overwritten in trace.
     m_context["eye"]->setFloat( optix::make_float3( 0.0f, 0.0f, 0.0f ) );
