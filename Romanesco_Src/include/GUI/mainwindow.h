@@ -91,6 +91,7 @@ private:
 
     TestGLWidget* m_glViewport;
     QAnimatedTimeline* m_timeline;
+    QTabWidget* m_mainTabWidget;
 
 
     bool m_flipbooking;
@@ -99,6 +100,8 @@ private:
     bool m_update_pending;
     bool m_animating;
     int m_updateTimer, m_drawTimer;
+
+    float m_timeScale;
 };
 
 #endif // QNEMAINWINDOW_H

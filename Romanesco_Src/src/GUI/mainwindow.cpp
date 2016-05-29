@@ -141,11 +141,20 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect(m_glViewport, SIGNAL(initializedGL()), this, SLOT(initializeGL()));
 
+
+    QVBoxLayout* rightLayout = new QVBoxLayout;
+    QWidget* rightLayoutWidget = new QWidget;
+    rightLayoutWidget->setLayout(rightLayout);
+
+    m_mainTabWidget = new QTabWidget;
+
+    rightLayout->addWidget(m_mainTabWidget);
+    rightLayout->addWidget(view);
+
     // Add Viewport
     splitter->addWidget(m_glViewport);
-
     // Add right hand side
-    splitter->addWidget(view);
+    splitter->addWidget(rightLayoutWidget);
 
     m_timeline = new QAnimatedTimeline;
     m_timeline->setStartFrame(0);
@@ -188,6 +197,90 @@ void MainWindow::initializeGL()
 
 //    connect(optixscene, SIGNAL(bucketReady(uint,uint)), this, SLOT(bucketRendered(uint,uint)));
 //    connect(optixscene, SIGNAL(bucketRowReady(uint)), this, SLOT(rowRendered(uint)));
+
+
+    QWidget* materialSettingsWidget = new QWidget;
+    {
+        QFormLayout* layout = new QFormLayout;
+
+        materialSettingsWidget->setLayout( layout );
+    }
+
+    QWidget* renderSettingsWidget = new QWidget;
+    {
+        QFormLayout* layout = new QFormLayout;
+
+        renderSettingsWidget->setLayout( layout );
+    }
+
+    QWidget* sceneSettingsWidget = new QWidget;
+    {
+        QVBoxLayout* layout = new QVBoxLayout;
+
+        QGroupBox* samplingGrpBox = new QGroupBox("Sampling Settings");
+        QGroupBox* cameraGrpBox = new QGroupBox("Camera Settings");
+        QGroupBox* viewportGrpBox = new QGroupBox("Viewport Settings");
+
+
+        QSpinBox* progressiveSpinbox = new QSpinBox;
+        progressiveSpinbox->setMinimum(1);
+        progressiveSpinbox->setMaximum(1000);
+        progressiveSpinbox->setValue( optixscene->getProgressiveTimeout() );
+
+        QSpinBox* maxIterations = new QSpinBox;
+        maxIterations->setMinimum(1);
+        maxIterations->setMaximum(1000);
+        maxIterations->setValue( optixscene->getMaximumIterations() );
+
+        QSpinBox* sqrtNumSamples = new QSpinBox;
+        sqrtNumSamples->setMinimum(1);
+        sqrtNumSamples->setMaximum(64);
+        sqrtNumSamples->singleStep(1);
+        sqrtNumSamples->setValue( optixscene->getNumPixelSamplesSqrt() );
+
+        QDoubleSpinBox* normalDelta = new QDoubleSpinBox;
+        normalDelta->setMinimum(0.000001f);
+        normalDelta->setSingleStep( 0.001f );
+        normalDelta->setDecimals(5);
+        normalDelta->setValue( optixscene->getNormalDelta() );
+
+        QDoubleSpinBox* surfaceDelta = new QDoubleSpinBox;
+        surfaceDelta->setMinimum(0.000001f);
+        surfaceDelta->setSingleStep( 0.001f );
+        surfaceDelta->setDecimals(5);
+        surfaceDelta->setValue( optixscene->getSurfaceEpsilon() );
+
+        connect( progressiveSpinbox, SIGNAL(valueChanged(int)), optixscene, SLOT(setProgressiveTimeout(int)) );
+        connect( maxIterations , SIGNAL(valueChanged(int)), optixscene, SLOT(setMaximumIterations(int)) );
+        connect( sqrtNumSamples , SIGNAL(valueChanged(int)), optixscene, SLOT(setSamplesPerPixelSquared(int)) );
+        connect( normalDelta, SIGNAL(valueChanged(double)), optixscene, SLOT(setNormalDelta(double)) );
+        connect( surfaceDelta, SIGNAL(valueChanged(double)), optixscene, SLOT(setSurfaceEpsilon(double)) );
+
+        QFormLayout* samplingLayout = new QFormLayout;
+        QFormLayout* cameraLayout = new QFormLayout;
+        QFormLayout* viewportLayout = new QFormLayout;
+
+        samplingLayout->addRow( tr("&Pixel &Samples (&Square Root):"), sqrtNumSamples  );
+
+        viewportLayout->addRow( tr("&Progressive &Timeout:"), progressiveSpinbox  );
+        viewportLayout->addRow( tr("&Maximum &Iterations:"), maxIterations  );
+        viewportLayout->addRow( tr("&Normal &Delta:"), normalDelta );
+        viewportLayout->addRow( tr("&Surface &Delta:"), surfaceDelta );
+
+        samplingGrpBox->setLayout(samplingLayout);
+        viewportGrpBox->setLayout(viewportLayout);
+        cameraGrpBox->setLayout(cameraLayout);
+
+        layout->addWidget( viewportGrpBox );
+        layout->addWidget( samplingGrpBox );
+        layout->addWidget( cameraGrpBox );
+
+        sceneSettingsWidget->setLayout( layout );
+    }
+
+    m_mainTabWidget->addTab( sceneSettingsWidget,     "Scene Settings" );
+    m_mainTabWidget->addTab( materialSettingsWidget,  "Material Settings" );
+    m_mainTabWidget->addTab( renderSettingsWidget,    "Render Settings" );
 }
 
 void MainWindow::bucketRendered(uint i, uint j)

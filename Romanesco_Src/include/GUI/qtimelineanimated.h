@@ -41,6 +41,11 @@ public slots:
     void setRangeMax(int x);
     void setRange(int a, int b);
 
+    ///
+    /// \brief setTimeScale allows the user to scale the emitted time, if the 'real' value is too slow/fast
+    /// \param _scale
+    ///
+    void setTimeScale(float _scale);
 
     void play();
     void stop();
@@ -72,6 +77,7 @@ private:
 
     int m_currentFrame;
     unsigned int m_fps;
+    float m_timeScale;
 };
 
 #endif // QTIMELINE_H

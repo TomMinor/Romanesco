@@ -145,11 +145,11 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height, QObject *_pare
     m_context->validate();
     m_context->compile();
 
-    m_progressiveTimeout = 40;
+    m_progressiveTimeout = 10;
 
-    m_future = std::async( std::launch::async, &OptixScene::asyncDraw, this );
+//    m_future = std::async( std::launch::async, &OptixScene::asyncDraw, this );
 
-    m_renderThread.start(QThread::LowPriority);
+//    m_renderThread.start(QThread::LowPriority);
 }
 
 void OptixScene::createBuffers()
@@ -358,7 +358,8 @@ void OptixScene::initialiseScene()
     m_context["bad_color"]->setFloat( 1.0f, 1.0f, 0.0f );
     // Miss program
     //m_context->setMissProgram( 0, m_context->createProgramFromPTXFile( "ptx/constantbg.cu.ptx", "miss" ) );
-    m_context["bg_color"]->setFloat( optix::make_float3(108.0f/255.0f, 166.0f/255.0f, 205.0f/255.0f) * 0.5f );
+//    m_context["bg_color"]->setFloat( optix::make_float3(108.0f/255.0f, 166.0f/255.0f, 205.0f/255.0f) * 0.5f );
+    m_context["bg_color"]->setFloat( optix::make_float3(0.1f) );
 
     setTime(0.0f);
 }
@@ -639,12 +640,10 @@ void OptixScene::createWorld()
 //    m_DEL = 0.001f;
 //    m_max_iterations = 20;
 
-    m_alpha = 0.03f;
     m_delta = 0.01f;
     m_DEL = 0.001f;
     m_max_iterations = 20;
 
-    m_context[ "alpha" ]->setFloat( m_alpha );
     m_context[ "delta" ]->setFloat( m_delta );
     m_context[ "max_iterations" ]->setUint( m_max_iterations );
     m_context[ "DEL" ]->setFloat( m_DEL );

@@ -112,6 +112,31 @@ public:
 
     void setTime(float _t);
 
+    int getProgressiveTimeout()
+    {
+        return m_progressiveTimeout;
+    }
+
+    int getNumPixelSamplesSqrt()
+    {
+        return m_sqrt_num_samples;
+    }
+
+    float getNormalDelta()
+    {
+        return m_context["DEL"]->getFloat();
+    }
+
+    float getSurfaceEpsilon()
+    {
+        return m_context["delta"]->getFloat();
+    }
+
+    float getMaximumIterations()
+    {
+        return m_context["max_iterations"]->getInt();
+    }
+
 //    InitialCameraData camera_data;
     optix::GeometryGroup m_geometrygroup;
 
@@ -164,6 +189,42 @@ private:
     void updateGLBuffer();
 
     RenderThread m_renderThread;
+
+public slots:
+    void setProgressiveTimeout(int _timeout)
+    {
+        m_progressiveTimeout = _timeout + 1;
+        if(m_progressiveTimeout < m_frame)
+        {
+            m_frame = m_progressiveTimeout;
+            m_camera_changed = true;
+        }
+    }
+
+    void setNormalDelta(double _delta)
+    {
+        m_context[ "DEL" ]->setFloat( _delta );
+        m_camera_changed = true;
+    }
+
+    void setSurfaceEpsilon(double _epsilon)
+    {
+        m_context[ "delta" ]->setFloat( _epsilon );
+        m_camera_changed = true;
+    }
+
+    void setMaximumIterations(int _iterations)
+    {
+        m_context[ "max_iterations" ]->setUint( _iterations );
+        m_camera_changed = true;
+    }
+
+    void setSamplesPerPixelSquared(int _samples)
+    {
+        m_sqrt_num_samples = _samples;
+        m_context["sqrt_num_samples"]->setUint( m_sqrt_num_samples );
+        m_camera_changed = true;
+    }
 
 signals:
     void frameReady();
