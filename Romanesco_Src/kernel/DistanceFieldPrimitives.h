@@ -57,7 +57,8 @@ __device__ float sdfCross(float3 _p)
 }
 
 __device__ float2 rotate(float2 v, float a) {
-    return make_float2( cos(a)*v.x + sin(a)*v.y, -sin(a)*v.x + cos(a)*v.y );
+    return make_float2( cos(a)*v.x + sin(a)*v.y,
+                       -sin(a)*v.x + cos(a)*v.y );
 }
 
 #endif

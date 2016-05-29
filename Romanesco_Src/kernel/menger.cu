@@ -49,7 +49,6 @@ rtBuffer<float3, 2>              output_buffer_world;
 rtBuffer<float, 2>              output_buffer_depth;
 
 rtDeclareVariable( float3, eye, , );
-rtDeclareVariable( float,  alpha , , );
 rtDeclareVariable( float,  delta , , );
 rtDeclareVariable( float,  DEL , , );
 rtDeclareVariable( uint,   max_iterations , , );    // max iterations for divergence determination
@@ -96,6 +95,8 @@ rtDeclareVariable(float,      t_hit,        rtIntersectionDistance, );
 
 rtDeclareVariable(float2,        TileSize, , );
 rtDeclareVariable(uint2,        NoOfTiles, , );
+
+rtDeclareVariable(float3, bg_color, , );
 
 
 struct PerRayData_pathtrace
@@ -289,8 +290,8 @@ RT_PROGRAM void intersect(int primIdx)
   if(shouldSphereTrace)
   {
 //      Mandelbulb sdf(max_iterations);
-      MengerSponge sdf(max_iterations);
-//      IFSTest sdf(max_iterations);
+//      MengerSponge sdf(max_iterations);
+      IFSTest sdf(max_iterations);
       sdf.setTime(global_t);
       sdf.evalParameters();
 
@@ -312,7 +313,7 @@ RT_PROGRAM void intersect(int primIdx)
     // Compute epsilon using equation (16) of [1].
     //float epsilon = max(0.000001f, alpha * powf(dist_from_origin, delta));
     //const float epsilon = 1e-3f;
-    const float epsilon = 0.001;
+    const float epsilon = delta;
 
     //http://blog.hvidtfeldts.net/index.php/2011/09/distance-estimated-3d-fractals-v-the-mandelbulb-different-de-approximations/
     float fudgeFactor = 0.99;
@@ -321,13 +322,35 @@ RT_PROGRAM void intersect(int primIdx)
     // const int maxSteps = 128;
     float dist = 0;
 
+    float3 originalDir = ray_direction;
+
+    const float NonLinearPerspective = 1.3;
+
+    const float Jitter = 0.05f;
+    float totalDistance = 0.0;//Jitter * tea<4>(current_prd.seed, frame_number);
+
     for( unsigned int i = 0; i < 800; ++i )
     {
-      dist = sdf.evalDistance(x);
+      //dir.zy = rotate(dir2.zy,totalDistance * tan( atan( cos(iGlobalTime * 0.8) )) * NonLinearPerspective);
+
+      float2 rot = rotate( make_float2(originalDir.z, originalDir.y), totalDistance * cos( global_t * 0.8f )) * NonLinearPerspective;
+      ray_direction.z = rot.x;
+      ray_direction.y = rot.y;
+
+
+
+      sdf.setTranslateHook(0, make_float3( -global_t * 0.01f, 0.0f, 0.0f ) );
+      sdf.setRotateHook( 0, make_float3( radians(-global_t / 18.0f), 0.0f, 0.0f) );
+
+      float scale = 1.0f;
+      float3 offset = make_float3(0.92858,0.92858,0.32858);
+      sdf.setScaleHook( 0, x * scale - offset * (scale - 1.0f));
 
       // Step along the ray and accumulate the distance from the origin.
       x += dist * ray_direction;
+      dist = sdf.evalDistance(x);
       dist_from_origin += dist * fudgeFactor;
+      totalDistance += dist;
 
       // Check if we're close enough or too far.
       if( dist < epsilon || dist_from_origin > tmax  )
@@ -491,7 +514,7 @@ RT_PROGRAM void diffuse()
       if(!shadow_prd.inShadow)
       {
         float weight= nDl * LnDl * A / (M_PIf*Ldist*Ldist);
-        result += light.emission * weight;
+        result += light.emission * weight * 0.5f;
       }
       else if(current_prd.depth < 1)
       {
@@ -577,7 +600,8 @@ RT_PROGRAM void envmap_miss()
   {
       current_prd.result += strength * tex2D(envmap, u, v);
   } else {
-      current_prd.result = tex2D(envmap, u, v);
+      current_prd.result = make_float4(bg_color, 0.0f);
+//      current_prd.result = tex2D(envmap, u, v);
   }
 
   current_prd.result.w = 0.0; // Alpha should be 0 if we missed

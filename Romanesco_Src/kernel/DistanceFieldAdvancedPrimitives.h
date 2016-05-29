@@ -7,6 +7,8 @@
 
 using namespace optix;
 
+#define TOTALXFORMHOOKS 3
+
 ///
 /// \brief The DistanceEstimator class is an interface for the more complex fractal surfaces that require state and many parameters
 ///
@@ -17,6 +19,14 @@ public:
     {
         m_maxIterations = _maxIterations;
         m_time = 0.0f;
+
+        // Initialise default hook values
+        for(uint i = 0; i < TOTALXFORMHOOKS; ++i)
+        {
+            setScaleHook(i, make_float3(1.0f));
+            setRotateHook(i, make_float3(0.0f));
+            setTranslateHook(i, make_float3(0.0f));
+        }
     }
 
     __device__ inline virtual void evalParameters()  = 0;
@@ -38,9 +48,90 @@ public:
         m_time = _t;
     }
 
+    __device__ inline float3 scaleHook(uint _idx, float3 _v)
+    {
+        if(_idx > (TOTALXFORMHOOKS - 1)) {
+            return _v;
+        }
+
+        float3 amount = m_scale[_idx];
+
+        // Special case for uniform scale
+        if( amount == make_float3(1.0f) )
+        {
+            return _v;
+        }
+
+        Matrix4x4 transform = Matrix4x4::scale(amount);
+        _v = applyTransform(_v, transform);
+
+        return _v;
+    }
+
+    __device__ inline float3 rotateHook(uint _idx, float3 _v)
+    {
+        if(_idx > (TOTALXFORMHOOKS - 1)) {
+            return _v;
+        }
+
+        float3 amount = m_rotate[_idx];
+
+        // Special case for no rotation
+        if( amount == make_float3(0.0f) )
+        {
+            return _v;
+        }
+
+        Matrix4x4 transformX = Matrix4x4::rotate(amount.x, make_float3(1,0,0));
+        Matrix4x4 transformY = Matrix4x4::rotate(amount.y, make_float3(0,1,0));
+        Matrix4x4 transformZ = Matrix4x4::rotate(amount.z, make_float3(0,0,1));
+        _v = applyTransform(_v, transformX * transformY * transformZ);
+
+        return _v;
+    }
+
+    __device__ inline float3 translateHook(uint _idx, float3 _v)
+    {
+        if(_idx > (TOTALXFORMHOOKS - 1)) {
+            return _v;
+        }
+
+        float3 amount = m_translate[_idx];
+
+        // Special case for no translation
+        if( amount == make_float3(0.0f) )
+        {
+            return _v;
+        }
+
+        Matrix4x4 transform = Matrix4x4::translate(amount);
+        _v = applyTransform(_v, transform);
+
+        return _v;
+    }
+
+    __device__ inline float3 setScaleHook(uint _idx, float3 _v)
+    {
+        m_scale[_idx] = _v;
+    }
+
+    __device__ inline float3 setRotateHook(uint _idx, float3 _v)
+    {
+        m_rotate[_idx] = _v;
+    }
+
+    __device__ inline float3 setTranslateHook(uint _idx, float3 _v)
+    {
+        m_translate[_idx] = _v;
+    }
+
 protected:
     unsigned int m_maxIterations;
     float m_time;
+
+    float3 m_scale[TOTALXFORMHOOKS];
+    float3 m_rotate[TOTALXFORMHOOKS];
+    float3 m_translate[TOTALXFORMHOOKS];
 };
 
 
@@ -70,10 +161,10 @@ public:
         float d = 1.0;
 
         //            z = z * m_scale - offset * (m_scale - 1.0);
-
         //            float2 tmp = make_float2(z.y, z.z);
 
-
+        zn = scaleHook(0, zn);
+        zn = rotateHook(0, zn);
 
         float m_scale = 1.0f;
         float3 offset = make_float3(0.92858,0.92858,0.32858);
@@ -85,6 +176,8 @@ public:
           rad = length(zn);
 
 //          zn = zn * m_scale - offset * (m_scale - 1.0);
+          zn = scaleHook(1, zn);
+          zn = rotateHook(1, zn);
 
           if( rad > sq_threshold )
           {
@@ -104,9 +197,10 @@ public:
             zn += _p;
           }
 
+
 //          float2 r = rotate(tmp, -global_t / 18.0f);
-          Matrix4x4 rotation = Matrix4x4::rotate( radians(-m_time / 18.0f), make_float3(1, 0, 0) );
-          float3 r = applyTransform( make_float3(zn.y, zn.z, 0.0f),  rotation);
+//          Matrix4x4 rotation = Matrix4x4::rotate( radians(-m_time / 18.0f), make_float3(1, 0, 0) );
+//          float3 r = applyTransform( make_float3(zn.y, zn.z, 0.0f),  rotation);
 //          zn.y = r.x;
 //          zn.z = r.y;
         }
@@ -214,7 +308,9 @@ private:
                                     );
 
         float3 z = _p;
-        z.x -= global_t * 0.01f;
+//        z.x -= global_t * 0.01f;
+        translateHook(0, z);
+
 //        z.x = fmod(z.x, 3.5f);
 
         z = fabs( 1.0 - fmod(z, 2.0));
@@ -222,41 +318,41 @@ private:
 //        z.x = fabs(z.x + offset.x) - offset.x;
 
 
-//        float d = 1000.0f;
-//        for(int n = 0; n < m_maxIterations; ++n)
-//        {
-//            ///@todo rotate
-//            ///
-//            // y
-//            if(z.x + z.y < 0.0){ float3 tmp = z; z.x = -tmp.y; z.y = -tmp.x; }
-//            z = fabs(z);
+        float d = 1000.0f;
+        for(int n = 0; n < m_maxIterations; ++n)
+        {
+            ///@todo rotate
+            ///
+            // y
+            if(z.x + z.y < 0.0){ float3 tmp = z; z.x = -tmp.y; z.y = -tmp.x; }
+            z = fabs(z);
 
-//            // z
-//            if(z.x + z.z < 0.0){ float3 tmp = z; z.x = -tmp.z; z.z = -tmp.x; }
-//            z = fabs(z);
+            // z
+            if(z.x + z.z < 0.0){ float3 tmp = z; z.x = -tmp.z; z.z = -tmp.x; }
+            z = fabs(z);
 
-//            // y
-//            if(z.x - z.y < 0.0){ float3 tmp = z; z.x = tmp.y; z.y = tmp.x; }
-//            z = fabs(z);
+            // y
+            if(z.x - z.y < 0.0){ float3 tmp = z; z.x = tmp.y; z.y = tmp.x; }
+            z = fabs(z);
 
-//            // z
-//            if(z.x - z.z < 0.0){ float3 tmp = z; z.x = tmp.z; z.z = tmp.x; }
-//            z = fabs(z);
+            // z
+            if(z.x - z.z < 0.0){ float3 tmp = z; z.x = tmp.z; z.z = tmp.x; }
+            z = fabs(z);
 
-//            z = z * m_scale - offset * (m_scale - 1.0);
+            z = z * m_scale - offset * (m_scale - 1.0);
 
-//            float2 tmp = make_float2(z.y, z.z);
-//    //        Matrix4x4 rotation = Matrix4x4::rotate( radians(-global_t / 18.0f), make_float3(1, 0, 0) );
-//    //        float3 r = applyRotation( make_float3(z.y, z.z, 0.0f),  rotation);
+            float2 tmp = make_float2(z.y, z.z);
+    //        Matrix4x4 rotation = Matrix4x4::rotate( radians(-global_t / 18.0f), make_float3(1, 0, 0) );
+    //        float3 r = applyRotation( make_float3(z.y, z.z, 0.0f),  rotation);
 
-//            float2 r = rotate(tmp, -global_t / 18.0f);
-//            z.y = r.x;
-//            z.z = r.y;
+            float2 r = rotate(tmp, -global_t / 18.0f);
+            z.y = r.x;
+            z.z = r.y;
 
-//            d = min(d, length(z) * powf(m_scale, -float(n+1)));
-//        }
+            d = min(d, length(z) * powf(m_scale, -float(n+1)));
+        }
 
-        float d = sdf.evalDistance(z);
+//        float d = sdf.evalDistance(z);
 
         return d;
     }

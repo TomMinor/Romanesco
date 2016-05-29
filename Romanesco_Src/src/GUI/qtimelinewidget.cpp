@@ -129,6 +129,13 @@ QAnimatedTimeline::QAnimatedTimeline(QWidget *parent) : QWidget(parent)
     layout->addLayout(spinnerLayout);
 
     setFPS(30);
+
+    m_timeScale = 1.0f;
+}
+
+void QAnimatedTimeline::setTimeScale(float _scale)
+{
+    m_timeScale = _scale;
 }
 
 void QAnimatedTimeline::timerUpdate()
@@ -197,7 +204,7 @@ void QAnimatedTimeline::updateSlider(int _x)
 
 void QAnimatedTimeline::updateTime(int _x)
 {
-    emit timeUpdated(_x);
+    emit timeUpdated(_x * m_timeScale);
 }
 
 void QAnimatedTimeline::emitTime(int _x)

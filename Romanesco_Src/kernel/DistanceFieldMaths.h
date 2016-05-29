@@ -9,6 +9,18 @@ using namespace optix;
 // Helper macro to convert to vec4 for the purpose of a rotation
 #define applyTransform(p,rot) make_float3(make_float4(p, 1.0f) * rot);
 
+// http://stackoverflow.com/questions/17333/most-effective-way-for-float-and-double-comparison
+static inline __device__ bool AreSame(float a, float b)
+{
+    #define EPSILON 0.0001f
+    return fabs(a - b) < EPSILON;
+}
+
+__forceinline__ RT_HOSTDEVICE bool operator==(const float3& a, const float3& b)
+{
+  return AreSame(a.x, b.x) && AreSame(a.y, b.y) && AreSame(a.z, b.z);
+}
+
 inline __device__ float lengthSqr(float3 _v)
 {
     return dot(_v, _v);
