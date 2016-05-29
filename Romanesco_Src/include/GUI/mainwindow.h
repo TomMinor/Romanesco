@@ -71,6 +71,11 @@ private slots:
 
     void initializeGL();
 
+    void setTimeScale(double _f)
+    {
+        m_timeline->setTimeScale(_f);
+    }
+
 private:
     QFramebuffer *m_framebuffer;
     QNodeGraph *nodeEditor;

@@ -208,7 +208,23 @@ void MainWindow::initializeGL()
 
     QWidget* renderSettingsWidget = new QWidget;
     {
-        QFormLayout* layout = new QFormLayout;
+        QVBoxLayout* layout = new QVBoxLayout;
+
+        QGroupBox* timeGrpBox = new QGroupBox("Time Settings");
+        QFormLayout* timeLayout = new QFormLayout;
+        timeGrpBox->setLayout(timeLayout);
+
+        QDoubleSpinBox* timeScale = new QDoubleSpinBox;
+        timeScale->setMinimum(0.01f);
+        timeScale->setMaximum(100.0f);
+        timeScale->setSingleStep( 0.1f );
+        timeScale->setDecimals(3);
+        timeScale->setValue( m_timeline->getTimeScale() );
+        timeLayout->addWidget(timeScale);
+
+        layout->addWidget(timeGrpBox);
+
+        connect( timeScale, SIGNAL(valueChanged(double)), this, SLOT(setTimeScale(double)));
 
         renderSettingsWidget->setLayout( layout );
     }
@@ -235,7 +251,6 @@ void MainWindow::initializeGL()
         QSpinBox* sqrtNumSamples = new QSpinBox;
         sqrtNumSamples->setMinimum(1);
         sqrtNumSamples->setMaximum(64);
-        sqrtNumSamples->singleStep(1);
         sqrtNumSamples->setValue( optixscene->getNumPixelSamplesSqrt() );
 
         QDoubleSpinBox* normalDelta = new QDoubleSpinBox;

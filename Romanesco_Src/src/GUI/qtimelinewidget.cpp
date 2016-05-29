@@ -138,6 +138,11 @@ void QAnimatedTimeline::setTimeScale(float _scale)
     m_timeScale = _scale;
 }
 
+float QAnimatedTimeline::getTimeScale()
+{
+    return m_timeScale;
+}
+
 void QAnimatedTimeline::timerUpdate()
 {
     // We will be getting about 1 call per milli-second,
