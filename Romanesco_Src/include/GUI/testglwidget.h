@@ -30,10 +30,16 @@ public:
     void enterEvent(QEvent* _event) override;
     void leaveEvent(QEvent* _event) override;
 
-    void overrideCameraRes(int _width, int _height);
+//    void overrideCameraRes(int _width, int _height);
 
     OptixScene* m_optixScene;
     unsigned int m_previousWidth, m_previousHeight;
+
+
+    bool getResolutionOverride()
+    {
+        return m_overrideRes;
+    }
 
 public slots:
     void updateTime(float _t)
@@ -44,11 +50,29 @@ public slots:
         m_optixScene->setTime(_t);
     }
 
+    void setShouldOverrideResolution(bool _v)
+    {
+        m_overrideRes = _v;
+        m_updateCamera = true;
+    }
+
+    void setResolutionOverride(int2 _res)
+    {
+        m_overrideWidth = _res.x;
+        m_overrideHeight = _res.y;
+
+        m_optixScene->updateBufferSize( m_overrideWidth, m_overrideHeight );
+        updateCamera();
+    }
+
+
 signals:
     void initializedGL();
 
 private:
     //QMatrix4x4 m_projection;
+
+    void updateCamera();
 
     bool m_updateCamera;
 
@@ -62,6 +86,11 @@ private:
 
     float m_time;
     long m_frame;
+
+    bool m_overrideRes;
+    unsigned int m_overrideWidth;
+    unsigned int m_overrideHeight;
+
 };
 
 #endif // TESTGLWIDGET_H

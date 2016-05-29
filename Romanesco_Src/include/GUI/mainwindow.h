@@ -81,10 +81,8 @@ private slots:
         int x = m_resX->value();
         int y = m_resY->value();
 
-        m_glViewport->overrideCameraRes(x,y);
-
-        OptixScene* optixScene = m_glViewport->m_optixScene;
-        optixScene->setResolutionOverride( make_int2(x, y) );
+//        m_glViewport->overrideCameraRes(x,y);
+        m_glViewport->setResolutionOverride( make_int2(x, y) );
     }
 
 private:

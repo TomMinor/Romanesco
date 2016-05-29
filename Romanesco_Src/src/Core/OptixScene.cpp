@@ -151,7 +151,7 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height, QObject *_pare
 
 //    m_renderThread.start(QThread::LowPriority);
 
-    m_overrideRes = false;
+
 }
 
 void OptixScene::createBuffers()
@@ -227,7 +227,7 @@ void OptixScene::setCamera(optix::float3 _eye, /*optix::float3 _lookat, */float 
 
     ///@todo Make this more physically accurate
     /// http://www.scratchapixel.com/lessons/3d-basic-rendering/3d-viewing-pinhole-camera/how-pinhole-camera-works-part-2
-    float focalLength = 1.0f / aspectRatio;
+    float focalLength = aspectRatio;
 
     m_context["eye"]->setFloat( _eye );
     m_context["U"]->setFloat( optix::make_float3(1, 0, 0) );
@@ -260,8 +260,8 @@ void OptixScene::setVar(const std::string& _name, optix::Matrix4x4 _v )
 
 void OptixScene::updateBufferSize(unsigned int _width, unsigned int _height)
 {
-    m_width = m_overrideRes ? m_overrideWidth : _width;
-    m_height = m_overrideRes ? m_overrideHeight : _height;
+    m_width =_width;
+    m_height = _height;
 
     // Update any GL bound Optix buffers
     for( auto& buffer : m_glOutputBuffers )
@@ -389,27 +389,27 @@ void OptixScene::createLights()
     m_context["test"]->set(test_buffer);
 
 
-    {
-        glm::mat4 rot = glm::mat4(1.0f);
-        glm::rotate(rot, 30.0f, glm::vec3(1,0,0));
+//    {
+//        glm::mat4 rot = glm::mat4(1.0f);
+//        glm::rotate(rot, 30.0f, glm::vec3(1,0,0));
 
-        glm::vec3 v1(-130.0f, 0.0f, 0.0f);
-//        v1 = glm::vec3(glm::vec4(v1, 1.0) * rot);
-        glm::vec3 v2( 0.0f, 0.0f, 105.0f);
-//        v2 = glm::vec3(glm::vec4(v2, 1.0) * rot);
+//        glm::vec3 v1(-130.0f, 0.0f, 0.0f);
+////        v1 = glm::vec3(glm::vec4(v1, 1.0) * rot);
+//        glm::vec3 v2( 0.0f, 0.0f, 105.0f);
+////        v2 = glm::vec3(glm::vec4(v2, 1.0) * rot);
 
-        ParallelogramLight light;
-//        light.corner   = make_float3( 343.0f, 548.6f, 227.0f);
-            light.corner   = make_float3( 0.0f, 300.0f, 0.0f);
-        //    light.v1       = make_float3( -130.0f, 0.0f, 0.0f);
-        //    light.v2       = make_float3( 0.0f, 0.0f, 105.0f);
-        light.v1       = make_float3( v1.x, v1.y, v1.z );
-        light.v2       = make_float3( v2.x, v2.y, v2.z );
-        light.normal   = normalize( cross(light.v1, light.v2) );
-        light.emission = make_float3( 10.0f );
+//        ParallelogramLight light;
+////        light.corner   = make_float3( 343.0f, 548.6f, 227.0f);
+//            light.corner   = make_float3( 0.0f, 300.0f, 0.0f);
+//        //    light.v1       = make_float3( -130.0f, 0.0f, 0.0f);
+//        //    light.v2       = make_float3( 0.0f, 0.0f, 105.0f);
+//        light.v1       = make_float3( v1.x, v1.y, v1.z );
+//        light.v2       = make_float3( v2.x, v2.y, v2.z );
+//        light.normal   = normalize( cross(light.v1, light.v2) );
+//        light.emission = make_float3( 3.0f );
 
-        m_lights.push_back(light);
-    }
+//        m_lights.push_back(light);
+//    }
 
 //    {
 //        glm::mat4 rot = glm::mat4(1.0f);
@@ -450,7 +450,7 @@ void OptixScene::createLights()
         light.v1       = make_float3( v1.x, v1.y, v1.z );
         light.v2       = make_float3( v2.x, v2.y, v2.z );
         light.normal   = normalize( cross(light.v1, light.v2) );
-        light.emission = make_float3( 5.5f );
+        light.emission = make_float3( 0.4f, 0.2f, 0.05f ) * 15.0f;
 
         m_lights.push_back(light);
     }
@@ -517,7 +517,7 @@ void OptixScene::createCameras()
     m_context->setMissProgram( static_cast<unsigned int>(PathTraceRay::CAMERA), m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "envmap_miss" ) );
 
     const optix::float3 default_color = m_context["bg_color"]->getFloat3();
-    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/i7245143/src/optix/SDK/tutorial/data/CedarCity.hdr", default_color) );
+    m_context["envmap"]->setTextureSampler( loadTexture( m_context, qgetenv("HOME").toStdString() +  + "/src/optix/SDK/tutorial/data/CedarCity.hdr", default_color) );
 //    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/tom/src/Fragmentarium/Fragmentarium-Source/Examples/Include/Ditch-River_2k.hdr", default_color) );
 //    m_context["envmap"]->setTextureSampler( loadTexture( m_context,  qgetenv("HOME").toStdString() + "/Downloads/Milkyway/Milkyway_small.hdr", default_color) );
 //    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/i7245143/Pictures/hdri/hdrmaps_com_free_050_half.hdr", default_color) );
