@@ -76,6 +76,17 @@ private slots:
         m_timeline->setTimeScale(_f);
     }
 
+    void forceViewportResolution()
+    {
+        int x = m_resX->value();
+        int y = m_resY->value();
+
+        m_glViewport->overrideCameraRes(x,y);
+
+        OptixScene* optixScene = m_glViewport->m_optixScene;
+        optixScene->setResolutionOverride( make_int2(x, y) );
+    }
+
 private:
     QFramebuffer *m_framebuffer;
     QNodeGraph *nodeEditor;
@@ -87,6 +98,8 @@ private:
     QAction *m_flipbookAct;
     QAction *m_renderAct;
 
+    QSpinBox* m_resX;
+    QSpinBox* m_resY;
 
     QStatusBar *m_statusBar;
     QProgressBar *m_renderProgress;
