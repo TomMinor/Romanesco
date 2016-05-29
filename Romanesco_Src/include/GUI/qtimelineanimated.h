@@ -31,6 +31,8 @@ public:
     int getTime();
     void setFPS(int _f);
 
+    float getTimeScale();
+
 signals:
     void timeUpdated(float);
 
