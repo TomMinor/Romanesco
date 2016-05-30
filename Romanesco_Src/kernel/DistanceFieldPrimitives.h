@@ -1,6 +1,7 @@
 #ifndef __DISTANCEFIELDPRIMITIVES_H__
 #define __DISTANCEFIELDPRIMITIVES_H__
 
+#include "romanescomath.h"
 #include "GLSL_Functions.h"
 
 /* SDF Primitives */

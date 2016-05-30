@@ -1,32 +1,28 @@
 ToDO
 
 Critical
-	+ Save frames to EXR
-	+ Of any size
-	+ Fix aspect ratio
 	+ Port shadertoy fully
-	+ Fix lighting to use bounces
+	+ Split diffuse and lighting into separate EXR channels
 
 * Mplay
 	- Export to mp4 using ffmpeg?
-* Render
-	+ Settings popup for timeout etc
-	+ Save frames to disk ( out_%04d.png )
-		- Any size
-* Global Settings
-	+ Timeout
-	+ Epsilon
-	+ DEL
-	+ Max steps
+
 * Camera
-	- Fix aspect ratio
 	- Basic keyframing, list of keyframes at certain frames? Store xform
+
 * Lights
 	+ Add lights to list
 	+ Control colour and intensity
 	+ Visibility?
+	+ Look through light to position it
 * Port over shadertoy test
 	+ Distance Field Header
 
 * Toggle between basic phong shading model and path tracing
-* 
+* Render
+	+ Shots are saved in separate callable cuda files
+	+ Command line options for batch rendering
+		- Which scene to render
+		- Start/End Frame
+		- Option to auto-quit when complete (render sequence of shots)
+	+ Add option to change render path in gui or via command line

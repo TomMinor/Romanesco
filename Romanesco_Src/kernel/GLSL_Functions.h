@@ -6,14 +6,7 @@
 /// \author Tom Minor
 ///
 
-#ifdef ROMANESCO_RUNTIME_COMPILE
-#include <cuda.h>
-#include <cuda_runtime.h>
-#include <cutil_math.h>
-#else
-#include <optix_math.h>
-#endif
-
+#include "romanescomath.h"
 
 __host__ __device__ float degrees(float _radians)
 {

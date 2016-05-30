@@ -144,7 +144,9 @@ HEADERS += include/Core/*.h \
                        include/SDFOps/DomainOp/*.h \
                        include/SDFOps/DomainDeformer/*.h \
                        include/SDFOps/Primitive/*.h \
-                      kernel/*.h
+                      kernel/*.h \
+    kernel/cutil_matrix.h \
+    kernel/romanescomath.h
 OTHER_FILES += shaders/*
 
 RESOURCES += \
