@@ -370,14 +370,14 @@ void MainWindow::initializeGL()
 
     if(m_batchMode)
     {
-        startRender();
-
         if(m_renderX > -1 && m_renderY > -1)
         {
             qDebug("Rendering at %dx%d", m_renderX, m_renderY );
             m_glViewport->setShouldOverrideResolution(true);
             m_glViewport->setResolutionOverride( make_int2(m_renderX, m_renderY) );
         }
+
+        startRender();
     }
 }
 

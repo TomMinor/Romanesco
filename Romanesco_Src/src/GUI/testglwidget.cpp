@@ -89,22 +89,30 @@ void TestGLWidget::initializeGL()
     emit initializedGL();
 }
 
-void TestGLWidget::resizeGL(int w, int h)
+void TestGLWidget::resizeGL(int _w, int _h)
 {
 //        m_projection.setToIdentity();
 //        m_projection.perspective(60.0f, w / float(h), 0.01f, 1000.0f);
 
 //    qDebug() << m_previousHeight << height() << ", " << m_previousWidth << width() << ", " << m_updateCamera;
+    int w = width();
+    int h = height();
 
-    if( m_previousHeight != height() || m_previousWidth != width() )
+    if( m_previousHeight != h || m_previousWidth != w )
     {
-        m_previousHeight = height();
-        m_previousWidth = width();
+        if(m_overrideRes)
+        {
+            w = m_overrideWidth;
+            h = m_overrideHeight;
+        }
+
+        m_previousHeight = h;
+        m_previousWidth = w;
 
         if(m_optixScene)
         {
             m_updateCamera = true;
-            m_optixScene->updateBufferSize( width(), height() );
+            m_optixScene->updateBufferSize( w, h );
         }
     } else {
         m_updateCamera = false;
