@@ -31,7 +31,6 @@
 #define CUTIL_MATRIX_H
 
 #include "cutil_math.h"
-#include <assert.h>
 
 // __forceinline__ works in CUDA, VS, and with gcc.  Leave it as a macro in case
 // we need to make this per-platform or we want to switch off inlining globally.

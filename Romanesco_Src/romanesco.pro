@@ -146,7 +146,8 @@ HEADERS += include/Core/*.h \
                        include/SDFOps/Primitive/*.h \
                       kernel/*.h \
     kernel/cutil_matrix.h \
-    kernel/romanescomath.h
+    kernel/romanescomath.h \
+    kernel/romanescocore.h
 OTHER_FILES += shaders/*
 
 RESOURCES += \
@@ -162,6 +163,7 @@ INCLUDEPATH += ./include/SDFOps/DomainOp
 INCLUDEPATH += ./include/SDFOps/Primitive
 INCLUDEPATH += ./include
 INCLUDEPATH += /opt/local/include
+INCLUDEPATH += ./kernel
 
 DESTDIR=./
 

@@ -1,6 +1,7 @@
 #ifndef DISTANCEFIELDADVANCEDPRIMITIVES_H__
 #define DISTANCEFIELDADVANCEDPRIMITIVES_H__
 
+#include "romanescomath.h"
 #include "DistanceFieldMaths.h"
 #include "DistanceFieldPrimitives.h"
 
