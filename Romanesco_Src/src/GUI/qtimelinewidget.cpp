@@ -11,7 +11,7 @@
 
 #include "qtimelineanimated.h"
 
-QAnimatedTimeline::QAnimatedTimeline(QWidget *parent) : QWidget(parent)
+QAnimatedTimeline::QAnimatedTimeline(QWidget *parent) : QWidget(parent), m_slider(nullptr)
 {
     m_direction = Direction::Forward;
 
@@ -277,6 +277,7 @@ void QAnimatedTimeline::setRangeMin(int x)
 
     if(m_slider)
     {
+        m_slider->setValue(x);
         m_slider->setMinimum(x);
     }
 
