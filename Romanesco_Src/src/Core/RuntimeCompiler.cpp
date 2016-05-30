@@ -37,6 +37,7 @@ RuntimeCompiler::RuntimeCompiler(const std::string &_name, const std::string _so
     m_opts.push_back("--gpu-architecture=compute_20");
     m_opts.push_back("-rdc=true");
     m_opts.push_back("-I./kernel");
+    m_opts.push_back("-I./scenes");
     // CUDA_INCLUDE_PATH include folder is set in the .pro file at compile time for now
     m_opts.push_back("-I" MACROTOSTRING(CUDA_INCLUDE_PATH)); // compiler automatically concatenates the string and macro
 

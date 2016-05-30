@@ -197,7 +197,7 @@ MainWindow::MainWindow(QWidget *parent) :
     m_renderX = -1;
     m_renderY = -1;
 
-    m_renderPath = "./out_%04d.exr";
+    m_renderPath = "/tmp/out_%04d.exr";
 
     m_timeline->setTimeScale(0.2f);
 
