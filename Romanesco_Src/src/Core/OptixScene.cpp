@@ -921,7 +921,7 @@ void OptixScene::drawToBuffer()
     // http://heart-touching-graphics.blogspot.co.uk/2012/04/bidirectional-path-tracing-using-nvidia_27.html
     // https://devtalk.nvidia.com/default/topic/806609/optix/splitting-work-on-multiple-launches/
     // http://graphics.cs.aueb.gr/graphics/docs/Constantinos%20Kalampokis%20Thesis.pdf
-    int2 NoOfTiles = make_int2(1,1);
+    int2 NoOfTiles = make_int2(3,3);
     float2 launch_index_tileSize = make_float2( float(buffer_width) / NoOfTiles.x,
                                                 float(buffer_height) / NoOfTiles.y );
 

@@ -83,6 +83,11 @@ public slots:
         m_timeline->setEndFrame(_x);
     }
 
+    void setProgressiveTimeout(int _t)
+    {
+        m_progressiveTimeout = _t;
+    }
+
     void setFOV(float _fov)
     {
         if(!m_fovSpinbox)
@@ -229,6 +234,9 @@ private:
     std::string m_renderPath;
 
     QString m_deferredScenePath;
+
+    int m_progressiveTimeout;
+    QSpinBox* m_progressiveSpinbox;
 };
 
 #endif // QNEMAINWINDOW_H
