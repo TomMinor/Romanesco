@@ -86,6 +86,7 @@ public slots:
     void setProgressiveTimeout(int _t)
     {
         m_progressiveTimeout = _t;
+        m_progressiveSpinbox->setValue(m_progressiveTimeout);
     }
 
     void setFOV(float _fov)

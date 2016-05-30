@@ -207,6 +207,128 @@ MainWindow::MainWindow(QWidget *parent) :
     m_progressiveTimeout = 1;
 }
 
+//http://doc.qt.io/qt-5/qcommandlineparser.html
+enum CommandLineParseResult
+{
+    CommandLineOk,
+    CommandLineError,
+    CommandLineVersionRequested,
+    CommandLineHelpRequested
+};
+
+CommandLineParseResult parseCommandLine(QCommandLineParser &parser, MainWindow *window, QString *errorMessage)
+{
+//    parser.setSingleDashWordOptionMode(QCommandLineParser::ParseAsLongOptions);
+
+    parser.addHelpOption();
+    parser.addVersionOption();
+//    parser.addPositionalArgument("source",      QCoreApplication::translate("main", "Source file to copy."));
+//    parser.addPositionalArgument("destination", QCoreApplication::translate("main", "Destination directory."));
+
+    const QCommandLineOption startFrameOption("s", "Start frame", "start");
+    parser.addOption(startFrameOption);
+    const QCommandLineOption endFrameOption("e", "End frame", "end");
+    parser.addOption(endFrameOption);
+
+    const QCommandLineOption widthOption("width", "Render width", "width");
+    parser.addOption(widthOption);
+    const QCommandLineOption heightOption("height", "Render height", "height");
+    parser.addOption(heightOption);
+
+    const QCommandLineOption timeoutOption("timeout", "Progressive Timeout", "timeout");
+    parser.addOption(timeoutOption);
+
+//    const QCommandLineOption fovOption("fov", "Field of View", "FOV");
+//    parser.addOption(fovOption);
+
+    const QCommandLineOption sceneOption("i", "Scene hit source file to load", "scene");
+    parser.addOption(sceneOption);
+
+    const QCommandLineOption outPathOption("f", "Output file path e.g. ./frames/out_%04d.exr", "file");
+    parser.addOption(outPathOption);
+
+
+    parser.addOptions({
+                          {{"b", "batch"},
+                           QCoreApplication::translate("main", "Quit when the render is complete")},
+                      });
+
+
+//    const QCommandLineOption nameServerOption("n", "The name server to use.", "nameserver");
+//    parser.addOption(nameServerOption);
+//    const QCommandLineOption typeOption("t", "The lookup type.", "type");
+//    parser.addOption(typeOption);
+//    parser.addPositionalArgument("name", "The name to look up.");
+//    const QCommandLineOption helpOption = parser.addHelpOption();
+//    const QCommandLineOption versionOption = parser.addVersionOption();
+
+    if (!parser.parse(QCoreApplication::arguments())) {
+        *errorMessage = parser.errorText();
+        return CommandLineError;
+    }
+
+    if (parser.isSet("v"))
+        return CommandLineVersionRequested;
+
+    if (parser.isSet("h"))
+        return CommandLineHelpRequested;
+
+    if (parser.isSet("b"))
+    {
+        window->setBatchMode(true);
+    }
+
+    // Frame range
+    if (parser.isSet(endFrameOption))
+    {
+        const int endFrame = parser.value(endFrameOption).toInt();
+        qDebug() << endFrame;
+        window->setEndFrame( endFrame );
+    }
+    if (parser.isSet(startFrameOption))
+    {
+        const int startFrame = parser.value(startFrameOption).toInt();
+        qDebug() << startFrame;
+        window->setStartFrame( startFrame );
+    }
+
+    if(parser.isSet(timeoutOption))
+    {
+        int timeout = parser.value(timeoutOption).toInt();
+        window->setProgressiveTimeout(timeout);
+    }
+
+    // Render Size
+    if (parser.isSet(widthOption) && parser.isSet(heightOption))
+    {
+        const QString width = parser.value(widthOption);
+        const QString height = parser.value(heightOption);
+        window->setRender( width.toInt(), height.toInt() );
+    }
+
+    if (parser.isSet(sceneOption))
+    {
+        const QString scenePath = parser.value(sceneOption);
+        window->loadHitFileDeferred(scenePath);
+    }
+
+    if (parser.isSet(outPathOption))
+    {
+        const QString outpath = parser.value(outPathOption);
+        window->setRenderPath(outpath.toStdString());
+    }
+
+
+//    if (parser.isSet(fovOption))
+//    {
+//        const QString fov = parser.value(fovOption);
+//        window->setFOV(fov.toFloat());
+//    }
+
+
+    return CommandLineOk;
+}
+
 void MainWindow::initializeGL()
 {
     OptixScene* optixscene = m_glViewport->m_optixScene;
@@ -361,6 +483,30 @@ void MainWindow::initializeGL()
     m_mainTabWidget->addTab( m_sceneSettingsWidget,     "Scene Settings" );
     m_mainTabWidget->addTab( m_materialSettingsWidget,  "Material Settings" );
     m_mainTabWidget->addTab( m_renderSettingsWidget,    "Render Settings" );
+
+    {
+        QCommandLineParser parser;
+        parser.setApplicationDescription("Fractal Interactive Preview Tool");
+
+        QString errorMessage;
+        switch (parseCommandLine(parser, this, &errorMessage)) {
+            case CommandLineOk:
+                break;
+            case CommandLineError:
+                fputs(qPrintable(errorMessage), stderr);
+                fputs("\n\n", stderr);
+                fputs(qPrintable(parser.helpText()), stderr);
+                exit(1);
+            case CommandLineVersionRequested:
+                printf("%s %s\n", qPrintable(QCoreApplication::applicationName()),
+                       qPrintable(QCoreApplication::applicationVersion()));
+                exit(0);
+            case CommandLineHelpRequested:
+                parser.showHelp();
+                Q_UNREACHABLE();
+        }
+
+    }
 
     if(m_deferredScenePath != "")
     {

@@ -637,11 +637,11 @@ void OptixScene::createWorld()
     }
 
 //    lights->setChildCount( areaLights.size() );
-    for(unsigned int i = 0; i < areaLights.size(); i++)
-    {
-//        lights->setChild(i, areaLights[i]);
-        m_geometrygroup->addChild( areaLights[i] );
-    }
+//    for(unsigned int i = 0; i < areaLights.size(); i++)
+//    {
+////        lights->setChild(i, areaLights[i]);
+//        m_geometrygroup->addChild( areaLights[i] );
+//    }
 
 
 
