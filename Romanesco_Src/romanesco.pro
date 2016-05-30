@@ -183,6 +183,7 @@ LIBS += -lboost_system
 
 CUDA_SOURCES += kernel/*.cu
 OTHER_FILES += kernel/*.h
+OTHER_FILES += scenes/*.cu
 
 # Setup CUDA paths
 linux:CUDA_DIR = $$system( dirname $(dirname $(which nvcc)) )
