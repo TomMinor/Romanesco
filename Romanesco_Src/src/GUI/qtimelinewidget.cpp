@@ -39,7 +39,7 @@ QAnimatedTimeline::QAnimatedTimeline(QWidget *parent) : QWidget(parent)
     m_slider->setOrientation(Qt::Horizontal);
     m_slider->setTickPosition(QSlider::TicksBelow);
 
-    QHBoxLayout* buttonLayout = new QHBoxLayout(this);
+    QHBoxLayout* buttonLayout = new QHBoxLayout();
     buttonLayout->setMargin(0);
 
     QPushButton* playBtn = new QPushButton(QIcon(":/images/play.png"), "", 0);
@@ -60,7 +60,7 @@ QAnimatedTimeline::QAnimatedTimeline(QWidget *parent) : QWidget(parent)
     buttonLayout->addWidget(playBtn);
     buttonLayout->addWidget(nextBtn);
 
-    QHBoxLayout* spinnerLayout = new QHBoxLayout(this);
+    QHBoxLayout* spinnerLayout = new QHBoxLayout();
     spinnerLayout->setMargin(0);
 
     m_spinbox_timeStart = new QSpinBox;

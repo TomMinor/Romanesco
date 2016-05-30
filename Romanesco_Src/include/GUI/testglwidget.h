@@ -63,8 +63,32 @@ public slots:
 
         m_optixScene->updateBufferSize( m_overrideWidth, m_overrideHeight );
         updateCamera();
+        m_updateCamera = true;
     }
 
+    void setFOV(double _fov)
+    {
+        m_fov = _fov;
+        updateCamera();
+        m_updateCamera = true;
+    }
+
+    float getFOV()
+    {
+        return m_fov;
+    }
+
+    void setCameraPos(float _x, float _y, float _z)
+    {
+        m_camPos = m_desiredCamPos = QVector3D(_x, _y, _z);
+        updateCamera();
+    }
+
+    void setCameraRot(float _x, float _y, float _z)
+    {
+        m_camRot = m_desiredCamRot = QVector3D(_x, _y, _z);
+        updateCamera();
+    }
 
 signals:
     void initializedGL();
@@ -86,6 +110,7 @@ private:
 
     float m_time;
     long m_frame;
+    float m_fov;
 
     bool m_overrideRes;
     unsigned int m_overrideWidth;

@@ -1,8 +1,8 @@
-#define ROMANESCO_RUNTIME_COMPILE
-#include "DistanceFieldAdvancedPrimitives.h"
+// pos 1.5 0 0
+// rot 0 1.5708 0
+// fov 75
 
-#define RT_CALLABLE_PROGRAM __device__ __noinline__
-
+#include "romanescocore.h"
 
 class TunnelTest : public DistanceEstimator
 {
@@ -105,7 +105,7 @@ protected:
     float3 m_limits;
 };
 
-RT_CALLABLE_PROGRAM float hit(float3 x, uint maxIterations, float global_t)
+HIT_PROGRAM float hit(float3 x, uint maxIterations, float global_t)
 {
 	TunnelTest sdf(maxIterations);
 	sdf.evalParameters();
@@ -113,5 +113,3 @@ RT_CALLABLE_PROGRAM float hit(float3 x, uint maxIterations, float global_t)
 
 	return sdf.evalDistance(x);
 }
-
-#undef ROMANESCO_RUNTIME_COMPILE
