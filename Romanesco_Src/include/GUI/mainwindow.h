@@ -48,6 +48,11 @@ public:
 
     void setGlobalStyleSheet(const QString& _styleSheet);
 
+public slots:
+    void setRenderPath(std::string _path)
+    {
+        m_renderPath = _path;
+    }
 
 private slots:
 	void saveFile();
@@ -109,7 +114,6 @@ private:
     QAnimatedTimeline* m_timeline;
     QTabWidget* m_mainTabWidget;
 
-
     bool m_flipbooking;
     bool m_rendering;
 
@@ -118,6 +122,8 @@ private:
     int m_updateTimer, m_drawTimer;
 
     float m_timeScale;
+
+    std::string m_renderPath;
 };
 
 #endif // QNEMAINWINDOW_H

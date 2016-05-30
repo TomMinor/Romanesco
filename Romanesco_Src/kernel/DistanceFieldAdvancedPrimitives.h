@@ -1,11 +1,8 @@
 #ifndef DISTANCEFIELDADVANCEDPRIMITIVES_H__
 #define DISTANCEFIELDADVANCEDPRIMITIVES_H__
 
-
 #include "DistanceFieldMaths.h"
 #include "DistanceFieldPrimitives.h"
-
-using namespace optix;
 
 #define TOTALXFORMHOOKS 3
 
@@ -110,17 +107,17 @@ public:
         return _v;
     }
 
-    __device__ inline float3 setScaleHook(uint _idx, float3 _v)
+    __device__ inline void setScaleHook(uint _idx, float3 _v)
     {
         m_scale[_idx] = _v;
     }
 
-    __device__ inline float3 setRotateHook(uint _idx, float3 _v)
+    __device__ inline void setRotateHook(uint _idx, float3 _v)
     {
         m_rotate[_idx] = _v;
     }
 
-    __device__ inline float3 setTranslateHook(uint _idx, float3 _v)
+    __device__ inline void setTranslateHook(uint _idx, float3 _v)
     {
         m_translate[_idx] = _v;
     }
@@ -314,7 +311,7 @@ private:
 
 //        z.x = fmod(z.x, 3.5f);
 
-        z = fabs( 1.0 - fmod(z, 2.0));
+        z = fabs( make_float3(1.0f) - fmod(z, 2.0f));
 //        z.x = fabs(z.x + m_offset.x) - m_offset.x;
 //        z.x = fabs(z.x + offset.x) - offset.x;
 
