@@ -456,7 +456,7 @@ void OptixScene::createLights()
         light.v1       = make_float3( v1.x, v1.y, v1.z );
         light.v2       = make_float3( v2.x, v2.y, v2.z );
         light.normal   = normalize( cross(light.v1, light.v2) );
-        light.emission = make_float3( 0.4f, 0.2f, 0.05f ) * 15.0f;
+        light.emission = make_float3( .5f ) * 15.0f;
 
         m_lights.push_back(light);
     }
