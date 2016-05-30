@@ -161,6 +161,9 @@ void TestGLWidget::paintGL()
 
         if(m_updateCamera)
         {
+            qDebug() << m_camPos;
+            qDebug() << m_camRot;
+
             m_optixScene->setVar("normalmatrix", normalmatrix);
             updateCamera();
             m_updateCamera = false;

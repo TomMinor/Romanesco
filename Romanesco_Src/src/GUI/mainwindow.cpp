@@ -147,9 +147,12 @@ MainWindow::MainWindow(QWidget *parent) :
     rightLayoutWidget->setLayout(rightLayout);
 
     m_mainTabWidget = new QTabWidget;
-
     rightLayout->addWidget(m_mainTabWidget);
-    rightLayout->addWidget(view);
+
+    m_editorTabWidget = new QTabWidget;
+    m_editorTabWidget->addTab(view, "Node Editor");
+    rightLayout->addWidget(m_editorTabWidget);
+    setupEditor();
 
     // Add Viewport
     splitter->addWidget(m_glViewport);
@@ -199,14 +202,14 @@ void MainWindow::initializeGL()
 //    connect(optixscene, SIGNAL(bucketRowReady(uint)), this, SLOT(rowRendered(uint)));
 
 
-    QWidget* materialSettingsWidget = new QWidget;
+    m_materialSettingsWidget = new QWidget;
     {
         QFormLayout* layout = new QFormLayout;
 
-        materialSettingsWidget->setLayout( layout );
+        m_materialSettingsWidget->setLayout( layout );
     }
 
-    QWidget* renderSettingsWidget = new QWidget;
+    m_renderSettingsWidget = new QWidget;
     {
         QVBoxLayout* layout = new QVBoxLayout;
 
@@ -259,10 +262,10 @@ void MainWindow::initializeGL()
         connect( toggleResOverride, SIGNAL(clicked(bool)), m_resX, SLOT(setEnabled(bool)) );
         connect( toggleResOverride, SIGNAL(clicked(bool)), m_resY, SLOT(setEnabled(bool)) );
 
-        renderSettingsWidget->setLayout( layout );
+        m_renderSettingsWidget->setLayout( layout );
     }
 
-    QWidget* sceneSettingsWidget = new QWidget;
+    m_sceneSettingsWidget = new QWidget;
     {
         QVBoxLayout* layout = new QVBoxLayout;
 
@@ -323,12 +326,14 @@ void MainWindow::initializeGL()
         layout->addWidget( samplingGrpBox );
         layout->addWidget( cameraGrpBox );
 
-        sceneSettingsWidget->setLayout( layout );
+        m_sceneSettingsWidget->setLayout( layout );
     }
 
-    m_mainTabWidget->addTab( sceneSettingsWidget,     "Scene Settings" );
-    m_mainTabWidget->addTab( materialSettingsWidget,  "Material Settings" );
-    m_mainTabWidget->addTab( renderSettingsWidget,    "Render Settings" );
+    m_mainTabWidget->addTab( m_sceneSettingsWidget,     "Scene Settings" );
+    m_mainTabWidget->addTab( m_materialSettingsWidget,  "Material Settings" );
+    m_mainTabWidget->addTab( m_renderSettingsWidget,    "Render Settings" );
+
+
 }
 
 void MainWindow::bucketRendered(uint i, uint j)
@@ -545,6 +550,25 @@ void MainWindow::loadFile()
 	f.open(QFile::ReadOnly);
 	QDataStream ds(&f);
     nodeEditor->load(ds);
+}
+
+void MainWindow::loadHitFile()
+{
+    QString fname = QFileDialog::getOpenFileName();
+    if (fname.isEmpty())
+        return;
+
+    QFile f(fname);
+    f.open(QFile::ReadOnly);
+    QString cuSrc = f.readAll();
+
+    m_editor->setText(cuSrc);
+}
+
+void MainWindow::builtHitFunction()
+{
+    std::string src = m_editor->toPlainText().toStdString();
+    m_glViewport->m_optixScene->setGeometryHitProgram(src);
 }
 
 void MainWindow::addBlock()

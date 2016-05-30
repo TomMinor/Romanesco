@@ -31,6 +31,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
 #include "qframebuffer.h"
 #include "testglwidget.h"
+#include "highlighter.h"
 
 class QNodeGraph;
 
@@ -90,6 +91,52 @@ private slots:
         m_glViewport->setResolutionOverride( make_int2(x, y) );
     }
 
+    void loadHitFile();
+
+    void builtHitFunction();
+
+private:
+    void setupEditor()
+    {
+        QFont font;
+        font.setFamily("dejavu-sans-mono");
+        font.setFixedPitch(true);
+    //    font.setPointSize(10);
+
+        m_editor = new QTextEdit;
+        m_editor->setFont(font);
+        m_editor->setWordWrapMode( QTextOption::NoWrap );
+
+        m_highlighter = new Highlighter(m_editor->document());
+
+        QWidget* editorWidget = new QWidget;
+        QVBoxLayout* layout = new QVBoxLayout;
+
+        QPushButton* loadBtn = new QPushButton;
+        loadBtn->setText("Load");
+        QPushButton* buildBtn = new QPushButton;
+        buildBtn->setText("Build");
+
+        connect(loadBtn, SIGNAL(pressed()), this, SLOT(loadHitFile()));
+        connect(buildBtn, SIGNAL(pressed()), this, SLOT(builtHitFunction()));
+
+        QHBoxLayout* buttonLayout = new QHBoxLayout;
+        buttonLayout->addWidget(loadBtn);
+        buttonLayout->addWidget(buildBtn);
+
+        layout->addLayout(buttonLayout);
+        layout->addWidget( m_editor );
+
+        editorWidget->setLayout(layout);
+
+        m_editorTabWidget->insertTab(0, editorWidget, "Scene Hit" );
+        m_editorTabWidget->setCurrentIndex(0);
+
+        QFile file("kernel/tmp.cu");
+        if (file.open(QFile::ReadOnly | QFile::Text))
+            m_editor->setPlainText(file.readAll());
+    }
+
 private:
     QFramebuffer *m_framebuffer;
     QNodeGraph *nodeEditor;
@@ -113,6 +160,11 @@ private:
     TestGLWidget* m_glViewport;
     QAnimatedTimeline* m_timeline;
     QTabWidget* m_mainTabWidget;
+    QTabWidget* m_editorTabWidget;
+
+    QWidget* m_sceneSettingsWidget;
+    QWidget* m_renderSettingsWidget;
+    QWidget* m_materialSettingsWidget;
 
     bool m_flipbooking;
     bool m_rendering;
@@ -122,6 +174,9 @@ private:
     int m_updateTimer, m_drawTimer;
 
     float m_timeScale;
+
+    Highlighter* m_highlighter;
+    QTextEdit* m_editor;
 
     std::string m_renderPath;
 };

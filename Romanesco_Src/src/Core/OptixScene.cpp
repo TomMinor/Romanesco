@@ -228,17 +228,30 @@ void OptixScene::setCamera(optix::float3 _eye, optix::float3 _lookat, float _fov
     /// http://www.scratchapixel.com/lessons/3d-basic-rendering/3d-viewing-pinhole-camera/how-pinhole-camera-works-part-2
 //    float focalLength = aspectRatio;
 
+    eye = _eye;
     m_camera->getEyeUVW(eye, U, V, W);
 
     m_context["eye"]->setFloat( eye );
-//    m_context["U"]->setFloat( optix::make_float3(1, 0, 0) );
-//    m_context["V"]->setFloat( optix::make_float3(0, 1, 0) );
-//    m_context["W"]->setFloat( optix::make_float3(0, 0, 1) * focalLength );
-
+    m_context["U"]->setFloat( optix::make_float3(1, 0, 0) );
+    m_context["V"]->setFloat( optix::make_float3(0, 1, 0) );
+    m_context["W"]->setFloat( optix::make_float3(0, 0, 1) );
 
     m_context["U"]->setFloat( U );
     m_context["V"]->setFloat( V );
     m_context["W"]->setFloat( W );
+
+    float3 ulen = optix::make_float3(0, 0, 1) * tanf(radians(_fov*0.5f));
+    float3 camera_u = optix::make_float3(1, 0, 0) * ulen;
+    float3 vlen = optix::make_float3(0, 0, 1) * tanf(radians(_fov*0.5f));
+    float3 camera_v = optix::make_float3(0, 1, 0) * vlen;
+
+//    m_context["U"]->setFloat( camera_u );
+//    m_context["V"]->setFloat( camera_v );
+//    m_context["W"]->setFloat( W );
+
+//    float focalLength = _width / (2.0f * tan(_fov / 2.0f));
+//    focalLength = degrees(2.0f * atanf(static_cast<float>(_width)/static_cast<float>(_height) * tanf(radians(0.5f * _fov))));
+//    m_context["W"]->setFloat( optix::make_float3(0, 0, 1) * focalLength );
 
     m_camera_changed = true;
 }
@@ -660,6 +673,9 @@ void OptixScene::createWorld()
     m_context[ "delta" ]->setFloat( m_delta );
     m_context[ "max_iterations" ]->setUint( m_max_iterations );
     m_context[ "DEL" ]->setFloat( m_DEL );
+
+    optix::Program testcallable = m_context->createProgramFromPTXFile("/home/tom/src/Romanesco/Romanesco_Src/ptx/tmp.cu.ptx", "hit");
+    m_context["do_work"]->set(testcallable);
 }
 
 
@@ -677,7 +693,7 @@ __device__ __noinline__ float3 distancehit_hook()
 
 )";
 
-    std::string hit_src = (_hit_src == "") ? geometryhook_src : _hit_src;
+    std::string hit_src = _hit_src;//(_hit_src == "") ? geometryhook_src : _hit_src;
 
     // Compile function source to ptx
     RuntimeCompiler program("distancehit_hook", _hit_src);
@@ -700,7 +716,7 @@ __device__ __noinline__ float3 distancehit_hook()
 
     try
     {
-        optix::Program testcallable = m_context->createProgramFromPTXString(ptx, "distancehit_hook");
+        optix::Program testcallable = m_context->createProgramFromPTXString(ptx, "hit");
         m_context["do_work"]->set(testcallable);
     } catch(Exception &e)
     {

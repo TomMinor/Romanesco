@@ -99,6 +99,9 @@ rtDeclareVariable(uint2,        NoOfTiles, , );
 rtDeclareVariable(float3, bg_color, , );
 
 
+typedef rtCallableProgramX<float(float3, int, float)> callT;
+rtDeclareVariable(callT, do_work,,);
+
 struct PerRayData_pathtrace
 {
   float4 result;
@@ -291,9 +294,9 @@ RT_PROGRAM void intersect(int primIdx)
   {
 //      Mandelbulb sdf(max_iterations);
 //      MengerSponge sdf(max_iterations);
-      IFSTest sdf(max_iterations);
-      sdf.setTime(global_t);
-      sdf.evalParameters();
+//      IFSTest sdf(max_iterations);
+//      sdf.setTime(global_t);
+//      sdf.evalParameters();
 
     // === Raymarching (Sphere Tracing) Procedure ===
     float3 ray_direction = ray.direction;
@@ -328,7 +331,7 @@ RT_PROGRAM void intersect(int primIdx)
 
     for( unsigned int i = 0; i < 800; ++i )
     {
-      //dir.zy = rotate(dir2.zy,totalDistance * tan( atan( cos(iGlobalTime * 0.8) )) * NonLinearPerspective);
+//      dir.zy = rotate(dir2.zy,totalDistance * tan( atan( cos(iGlobalTime * 0.8) )) * NonLinearPerspective);
 
      float delta = sin( global_t * 0.1f ) * 30 + tan(global_t  * 0.001f) * 10;
       float2 rot = rotate( make_float2(originalDir.z, originalDir.y),
@@ -336,16 +339,17 @@ RT_PROGRAM void intersect(int primIdx)
       ray_direction.z = rot.x;
       ray_direction.y = rot.y;
 
-      sdf.setTranslateHook(0, make_float3( -global_t * 1.0f, 0.0f, 0.0f ) );
-      sdf.setRotateHook( 0, make_float3( radians(-global_t / 18.0f), 0.0f, 0.0f) );
+//      sdf.setTranslateHook(0, make_float3( -global_t * 1.0f, 0.0f, 0.0f ) );
+//      sdf.setRotateHook( 0, make_float3( radians(-global_t / 18.0f), 0.0f, 0.0f) );
 
-      float scale = 1.0f;
-      float3 offset = make_float3(0.92858,0.92858,0.32858);
-      sdf.setScaleHook( 0, x * scale - offset * (scale - 1.0f));
+//      float scale = 1.0f;
+//      float3 offset = make_float3(0.92858,0.92858,0.32858);
+//      sdf.setScaleHook( 0, x * scale - offset * (scale - 1.0f));
 
       // Step along the ray and accumulate the distance from the origin.
       x += dist * ray_direction;
-      dist = sdf.evalDistance(x);
+//      dist = sdf.evalDistance(x);
+      dist = do_work(x, max_iterations, global_t);
       dist_from_origin += dist * fudgeFactor;
       totalDistance += dist;
 
@@ -367,8 +371,19 @@ RT_PROGRAM void intersect(int primIdx)
     {
       if( rtPotentialIntersection( dist_from_origin)  )
       {
-        sdf.setMaxIterations(14); // more iterations for normal estimate, to fake some more detail
-        normal = calculateNormal(sdf, x, DEL);
+//        sdf.setMaxIterations(14); // more iterations for normal estimate, to fake some more detail
+//        normal = calculateNormal(sdf, x, DEL);
+
+        // Calculate normal with finite difference
+        {
+            uint iters = 14;
+            const float eps = DEL;
+            float dx = do_work(x + make_float3(eps,    0,   0), iters, global_t) - do_work(x - make_float3(eps,   0,   0), iters, global_t);
+            float dy = do_work(x + make_float3(  0,  eps,   0), iters, global_t) - do_work(x - make_float3(  0, eps,   0), iters, global_t);
+            float dz = do_work(x + make_float3(  0,    0, eps), iters, global_t) - do_work(x - make_float3(  0,   0, eps), iters, global_t);
+
+            normal = normalize( make_float3(dx, dy, dz) );
+        }
 
         geometric_normal = normal;
         shading_normal = normal;
@@ -440,8 +455,6 @@ __device__ float3 cosineDirection(float _seed, float3 _n)
 
 rtDeclareVariable(float3,        diffuse_color, , );
 
-typedef rtCallableProgramX<float3()> callT;
-rtDeclareVariable(callT, do_work,,);
 
 RT_PROGRAM void diffuse()
 {
