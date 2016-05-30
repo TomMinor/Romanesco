@@ -41,10 +41,13 @@ CommandLineParseResult parseCommandLine(QCommandLineParser &parser, MainWindow *
     const QCommandLineOption endFrameOption("e", "End frame", "end");
     parser.addOption(endFrameOption);
 
-    const QCommandLineOption widthOption("a", "Render width", "width");
+    const QCommandLineOption widthOption("width", "Render width", "width");
     parser.addOption(widthOption);
-    const QCommandLineOption heightOption("b", "Render height", "height");
+    const QCommandLineOption heightOption("height", "Render height", "height");
     parser.addOption(heightOption);
+
+    const QCommandLineOption timeoutOption("timeout", "Progressive Timeout", "timeout");
+    parser.addOption(timeoutOption);
 
 //    const QCommandLineOption fovOption("fov", "Field of View", "FOV");
 //    parser.addOption(fovOption);
@@ -96,6 +99,12 @@ CommandLineParseResult parseCommandLine(QCommandLineParser &parser, MainWindow *
     {
         const QString endFrame = parser.value(endFrameOption);
         window->setEndFrame( endFrame.toInt() );
+    }
+
+    if(parser.isSet(timeoutOption))
+    {
+        int timeout = parser.value(timeoutOption).toInt();
+        window->setProgressiveTimeout(timeout);
     }
 
     // Render Size

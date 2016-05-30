@@ -1,6 +1,6 @@
-// pos 1.5 0 0
+// pos 3.075 0 5.70148e-06
 // rot 0 1.5708 0
-// fov 75
+// fov 60
 
 #include "romanescocore.h"
 
@@ -11,7 +11,7 @@ public:
                        float _scale = 2.0f,
                        float3 _offset = make_float3(0.92858,0.92858,0.32858),
                        float _fudgeFactor = 0.8f,
-                       float3 _limits = make_float3(2.0f)
+                       float3 _limits = make_float3(7.0f, 2.0f, 1.0f)
                        )
         : DistanceEstimator(_maxIterations)
     {
@@ -30,7 +30,7 @@ public:
     {
         float a = map(_p) * m_fudgeFactor;
         _p.y += 1;
-        float b = sdBox(_p, m_limits);
+        float b = sdBox(_p  - make_float3(-4.0f, 0.0f, 0.0f), m_limits);
         return max(a,b);
     }
 

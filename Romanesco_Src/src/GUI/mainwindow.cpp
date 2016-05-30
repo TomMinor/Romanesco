@@ -203,6 +203,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     m_overrideFOV = 90.0f;
     m_deferredScenePath = "";
+
+    m_progressiveTimeout = 1;
 }
 
 void MainWindow::initializeGL()
@@ -276,11 +278,7 @@ void MainWindow::initializeGL()
 
         m_renderSettingsWidget->setLayout( layout );
 
-        if(m_renderX > -1 && m_renderY > -1)
-        {
-            m_glViewport->setResolutionOverride( make_int2(m_renderX, m_renderY) );
-            m_glViewport->setShouldOverrideResolution(true);
-        }
+
     }
 
     m_sceneSettingsWidget = new QWidget;
@@ -292,10 +290,11 @@ void MainWindow::initializeGL()
         QGroupBox* viewportGrpBox = new QGroupBox("Viewport Settings");
 
 
-        QSpinBox* progressiveSpinbox = new QSpinBox;
-        progressiveSpinbox->setMinimum(1);
-        progressiveSpinbox->setMaximum(1000);
-        progressiveSpinbox->setValue( optixscene->getProgressiveTimeout() );
+        m_progressiveSpinbox = new QSpinBox;
+        m_progressiveSpinbox->setMinimum(1);
+        m_progressiveSpinbox->setMaximum(1000);
+        m_progressiveSpinbox->setValue( m_progressiveTimeout );
+        optixscene->setProgressiveTimeout(m_progressiveTimeout);
 
         QSpinBox* maxIterations = new QSpinBox;
         maxIterations->setMinimum(1);
@@ -319,7 +318,7 @@ void MainWindow::initializeGL()
         surfaceDelta->setDecimals(5);
         surfaceDelta->setValue( optixscene->getSurfaceEpsilon() );
 
-        connect( progressiveSpinbox, SIGNAL(valueChanged(int)), optixscene, SLOT(setProgressiveTimeout(int)) );
+        connect( m_progressiveSpinbox, SIGNAL(valueChanged(int)), optixscene, SLOT(setProgressiveTimeout(int)) );
         connect( maxIterations , SIGNAL(valueChanged(int)), optixscene, SLOT(setMaximumIterations(int)) );
         connect( sqrtNumSamples , SIGNAL(valueChanged(int)), optixscene, SLOT(setSamplesPerPixelSquared(int)) );
         connect( normalDelta, SIGNAL(valueChanged(double)), optixscene, SLOT(setNormalDelta(double)) );
@@ -343,7 +342,7 @@ void MainWindow::initializeGL()
 
         cameraLayout->addRow( "Field Of View: ", m_fovSpinbox);
 
-        viewportLayout->addRow( tr("&Progressive &Timeout:"), progressiveSpinbox  );
+        viewportLayout->addRow( tr("&Progressive &Timeout:"), m_progressiveSpinbox  );
         viewportLayout->addRow( tr("&Maximum &Iterations:"), maxIterations  );
         viewportLayout->addRow( tr("&Normal &Delta:"), normalDelta );
         viewportLayout->addRow( tr("&Surface &Delta:"), surfaceDelta );
@@ -372,6 +371,13 @@ void MainWindow::initializeGL()
     if(m_batchMode)
     {
         startRender();
+
+        if(m_renderX > -1 && m_renderY > -1)
+        {
+            qDebug("Rendering at %dx%d", m_renderX, m_renderY );
+            m_glViewport->setShouldOverrideResolution(true);
+            m_glViewport->setResolutionOverride( make_int2(m_renderX, m_renderY) );
+        }
     }
 }
 
@@ -433,6 +439,15 @@ void MainWindow::dumpRenderedFrame()
 
     OptixScene* optixscene = m_glViewport->m_optixScene;
     optixscene->saveBuffersToDisk(imagePath);
+
+    if(m_batchMode)
+    {
+        if(currentFrame == m_timeline->getEndFrame() )
+        {
+            qDebug() << "Batch render complete";
+            exit(0);
+        }
+    }
 }
 
 void MainWindow::dumpFlipbookFrame()
@@ -648,6 +663,8 @@ void MainWindow::buildHitFunction()
 {
     std::string src = m_editor->toPlainText().toStdString();
     m_glViewport->m_optixScene->setGeometryHitProgram(src);
+    m_glViewport->refreshScene();
+
 }
 
 void MainWindow::addBlock()

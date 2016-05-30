@@ -90,6 +90,11 @@ public slots:
         updateCamera();
     }
 
+    void refreshScene()
+    {
+        m_updateCamera = true;
+    }
+
 signals:
     void initializedGL();
 
