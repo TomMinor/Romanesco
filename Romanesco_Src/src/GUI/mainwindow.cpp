@@ -44,6 +44,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent)
 {
+    m_fovSpinbox = nullptr;
+
     m_framebuffer = new QFramebuffer;
     m_framebuffer->resize(800, 600);
 
@@ -191,6 +193,16 @@ MainWindow::MainWindow(QWidget *parent) :
 
     m_flipbooking = false;
     m_rendering = false;
+    m_batchMode = false;
+    m_renderX = -1;
+    m_renderY = -1;
+
+    m_renderPath = "./out_%04d.exr";
+
+    m_timeline->setTimeScale(0.2f);
+
+    m_overrideFOV = 90.0f;
+    m_deferredScenePath = "";
 }
 
 void MainWindow::initializeGL()
@@ -263,6 +275,12 @@ void MainWindow::initializeGL()
         connect( toggleResOverride, SIGNAL(clicked(bool)), m_resY, SLOT(setEnabled(bool)) );
 
         m_renderSettingsWidget->setLayout( layout );
+
+        if(m_renderX > -1 && m_renderY > -1)
+        {
+            m_glViewport->setResolutionOverride( make_int2(m_renderX, m_renderY) );
+            m_glViewport->setShouldOverrideResolution(true);
+        }
     }
 
     m_sceneSettingsWidget = new QWidget;
@@ -313,6 +331,18 @@ void MainWindow::initializeGL()
 
         samplingLayout->addRow( tr("&Pixel &Samples (&Square Root):"), sqrtNumSamples  );
 
+        m_fovSpinbox = new QDoubleSpinBox;
+        m_fovSpinbox->setMinimum(0.1f);
+        m_fovSpinbox->setMaximum(360.0f);
+        m_fovSpinbox->setSingleStep( 1.0f );
+        m_fovSpinbox->setDecimals(1);
+        m_fovSpinbox->setValue( m_overrideFOV );
+        m_glViewport->setFOV( m_overrideFOV );
+
+        connect(m_fovSpinbox, SIGNAL(valueChanged(double)), m_glViewport, SLOT(setFOV(double)));
+
+        cameraLayout->addRow( "Field Of View: ", m_fovSpinbox);
+
         viewportLayout->addRow( tr("&Progressive &Timeout:"), progressiveSpinbox  );
         viewportLayout->addRow( tr("&Maximum &Iterations:"), maxIterations  );
         viewportLayout->addRow( tr("&Normal &Delta:"), normalDelta );
@@ -333,7 +363,16 @@ void MainWindow::initializeGL()
     m_mainTabWidget->addTab( m_materialSettingsWidget,  "Material Settings" );
     m_mainTabWidget->addTab( m_renderSettingsWidget,    "Render Settings" );
 
+    if(m_deferredScenePath != "")
+    {
+        loadHitFile(m_deferredScenePath);
+        m_deferredScenePath = "";
+    }
 
+    if(m_batchMode)
+    {
+        startRender();
+    }
 }
 
 void MainWindow::bucketRendered(uint i, uint j)
@@ -389,7 +428,7 @@ void MainWindow::dumpRenderedFrame()
     std::string statusMessage = boost::str( boost::format("Rendering frame %d of %d") % currentRelativeFrame % frameRange );
     m_statusBar->showMessage( statusMessage.c_str() );
 
-    std::string filepath = "./test_%04d.exr";
+    std::string filepath = m_renderPath;
     std::string imagePath = boost::str(boost::format(filepath) % currentFrame);
 
     OptixScene* optixscene = m_glViewport->m_optixScene;
@@ -556,16 +595,56 @@ void MainWindow::loadHitFile()
 {
     QString fname = QFileDialog::getOpenFileName();
     if (fname.isEmpty())
+    {
+        qDebug() << "Error opening " << fname;
         return;
+    }
 
-    QFile f(fname);
+    loadHitFile(fname);
+}
+
+void MainWindow::loadHitFile(QString _path)
+{
+    QFile f(_path);
     f.open(QFile::ReadOnly);
     QString cuSrc = f.readAll();
+
+    QStringList lines = cuSrc.split(QRegExp("[\r\n]"),QString::SkipEmptyParts);
+    if(lines.size() > 3)
+    {
+        for(int i = 0; i < 3; i++)
+        {
+            QString tmp = lines[i];
+            QStringList tokens = tmp.split(' ');
+            if( tokens.contains( "pos" ) )
+            {
+                QString a = tokens[2];
+                QString b = tokens[3];
+                QString c = tokens[4];
+                qDebug() << "pos " << a << ", " << b << ", " << c;
+                m_glViewport->setCameraPos( a.toFloat(), b.toFloat(), c.toFloat() );
+            }
+            else if (tokens.contains( "rot" ))
+            {
+                QString a = tokens[2];
+                QString b = tokens[3];
+                QString c = tokens[4];
+                qDebug() << "rot " << a << ", " << b << ", " << c;
+                m_glViewport->setCameraRot( a.toFloat(), b.toFloat(), c.toFloat() );
+            }
+            else if (tokens.contains( "fov" ))
+            {
+                QString a = tokens[2];
+                qDebug() << "FOV " << a;
+                setFOV( a.toFloat() );
+            }
+        }
+    }
 
     m_editor->setText(cuSrc);
 }
 
-void MainWindow::builtHitFunction()
+void MainWindow::buildHitFunction()
 {
     std::string src = m_editor->toPlainText().toStdString();
     m_glViewport->m_optixScene->setGeometryHitProgram(src);

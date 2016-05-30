@@ -55,6 +55,46 @@ public slots:
         m_renderPath = _path;
     }
 
+    void setBatchMode(bool _v)
+    {
+        m_batchMode = _v;
+    }
+
+    void loadHitFile(QString _path);
+
+    void loadHitFileDeferred(QString _path)
+    {
+        m_deferredScenePath = _path;
+    }
+
+    void setRender(int _x, int _y)
+    {
+        m_renderX = _x;
+        m_renderY = _y;
+    }
+
+    void setStartFrame(int _x)
+    {
+        m_timeline->setStartFrame(_x);
+    }
+
+    void setEndFrame(int _x)
+    {
+        m_timeline->setEndFrame(_x);
+    }
+
+    void setFOV(float _fov)
+    {
+        if(!m_fovSpinbox)
+        {
+            qDebug() << "FOV Spinbox null";
+        }
+
+        m_fovSpinbox->setValue( _fov );
+
+//        m_glViewport->setFOV(_fov);
+    }
+
 private slots:
 	void saveFile();
 	void loadFile();
@@ -92,8 +132,8 @@ private slots:
     }
 
     void loadHitFile();
+    void buildHitFunction();
 
-    void builtHitFunction();
 
 private:
     void setupEditor()
@@ -118,7 +158,7 @@ private:
         buildBtn->setText("Build");
 
         connect(loadBtn, SIGNAL(pressed()), this, SLOT(loadHitFile()));
-        connect(buildBtn, SIGNAL(pressed()), this, SLOT(builtHitFunction()));
+        connect(buildBtn, SIGNAL(pressed()), this, SLOT(buildHitFunction()));
 
         QHBoxLayout* buttonLayout = new QHBoxLayout;
         buttonLayout->addWidget(loadBtn);
@@ -175,10 +215,20 @@ private:
 
     float m_timeScale;
 
+    bool m_batchMode;
+    int m_renderX;
+    int m_renderY;
+
+    float m_overrideFOV;
+
     Highlighter* m_highlighter;
     QTextEdit* m_editor;
 
+    QDoubleSpinBox* m_fovSpinbox;
+
     std::string m_renderPath;
+
+    QString m_deferredScenePath;
 };
 
 #endif // QNEMAINWINDOW_H
