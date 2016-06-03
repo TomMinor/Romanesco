@@ -17,6 +17,7 @@ public:
     {
         m_maxIterations = _maxIterations;
         m_time = 0.0f;
+        m_trap = 0.0f;
 
         // Initialise default hook values
         for(uint i = 0; i < TOTALXFORMHOOKS; ++i)
@@ -30,6 +31,16 @@ public:
     __device__ inline virtual void evalParameters()  = 0;
 
     __device__ inline virtual float evalDistance(float3 _p) = 0;
+
+    __device__ inline void setTrap(float _t)
+    {
+        m_trap = _t;
+    }
+
+    __device__ inline float getTrap()
+    {
+        return m_trap;
+    }
 
     __device__ inline unsigned int getMaxIterations()
     {
@@ -126,6 +137,7 @@ public:
 protected:
     unsigned int m_maxIterations;
     float m_time;
+    float m_trap;
 
     float3 m_scale[TOTALXFORMHOOKS];
     float3 m_rotate[TOTALXFORMHOOKS];
@@ -167,38 +179,47 @@ public:
         float m_scale = 1.0f;
         float3 offset = make_float3(0.92858,0.92858,0.32858);
 
+        const float s = 0.9f;
+        float k = 1.0f;
+        float m = 1e10;
+
         // Iterate to compute f_n and fp_n for the distance estimator.
         int i = m_maxIterations;
         while( i-- )
         {
-          rad = length(zn);
+            m = min(m, dot(zn, zn) / (k*k) );
+            rad = length(zn);
 
 //          zn = zn * m_scale - offset * (m_scale - 1.0);
 
-          if( rad > sq_threshold )
-          {
-            dist = 0.5f * rad * logf( rad ) / d;
-          }
-          else
-          {
-            float th = atan2( length( make_float3(zn.x, zn.y, 0.0f) ), zn.z );
-            float phi = atan2( zn.y, zn.x );
-            float rado = pow(rad, p);
-            d = pow(rad, p - 1) * (p-1) * d + 1.0;
+            if( rad > sq_threshold )
+            {
+                dist = 0.5f * rad * logf( rad ) / d;
+            }
+            else
+            {
+                float th = atan2( length( make_float3(zn.x, zn.y, 0.0f) ), zn.z );
+                float phi = atan2( zn.y, zn.x );
+                float rado = pow(rad, p);
+                d = pow(rad, p - 1) * (p-1) * d + 1.0;
 
-            float sint = sin(th * p);
-            zn.x = rado * sint * cos(phi * p);
-            zn.y = rado * sint * sin(phi * p);
-            zn.z = rado * cos(th * p);
-            zn += _p;
-          }
+                float sint = sin(th * p);
+                zn.x = rado * sint * cos(phi * p);
+                zn.y = rado * sint * sin(phi * p);
+                zn.z = rado * cos(th * p);
+                zn += _p;
+            }
+
+            k *= s;
 
 //          float2 r = rotate(tmp, -global_t / 18.0f);
-          Matrix4x4 rotation = Matrix4x4::rotate( radians(-m_time / 18.0f), make_float3(1, 0, 0) );
-          float3 r = applyTransform( make_float3(zn.y, zn.z, 0.0f),  rotation);
+//          Matrix4x4 rotation = Matrix4x4::rotate( radians(-m_time / 18.0f), make_float3(1, 0, 0) );
+//          float3 r = applyTransform( make_float3(zn.y, zn.z, 0.0f),  rotation);
 //          zn.y = r.x;
 //          zn.z = r.y;
         }
+
+        setTrap(m);
 
         return dist;
     }
