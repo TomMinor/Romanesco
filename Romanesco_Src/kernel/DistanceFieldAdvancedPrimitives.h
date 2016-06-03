@@ -153,16 +153,16 @@ public:
         const float sq_threshold = 2.0f;   // divergence threshold
 
         float oscillatingTime = sin(m_time / 40.0f );
-        float p = 2.0f;//(2.0f * oscillatingTime) + 6.0f; //7.5
+        float p = (2.0f * oscillatingTime) + 6.0f; //7.5
         float rad = 0.0f;
         float dist = 0.0f;
         float d = 1.0;
 
         //            z = z * m_scale - offset * (m_scale - 1.0);
+
         //            float2 tmp = make_float2(z.y, z.z);
 
-        zn = scaleHook(0, zn);
-        zn = rotateHook(0, zn);
+
 
         float m_scale = 1.0f;
         float3 offset = make_float3(0.92858,0.92858,0.32858);
@@ -174,8 +174,6 @@ public:
           rad = length(zn);
 
 //          zn = zn * m_scale - offset * (m_scale - 1.0);
-          zn = scaleHook(1, zn);
-          zn = rotateHook(1, zn);
 
           if( rad > sq_threshold )
           {
@@ -195,10 +193,9 @@ public:
             zn += _p;
           }
 
-
 //          float2 r = rotate(tmp, -global_t / 18.0f);
-//          Matrix4x4 rotation = Matrix4x4::rotate( radians(-m_time / 18.0f), make_float3(1, 0, 0) );
-//          float3 r = applyTransform( make_float3(zn.y, zn.z, 0.0f),  rotation);
+          Matrix4x4 rotation = Matrix4x4::rotate( radians(-m_time / 18.0f), make_float3(1, 0, 0) );
+          float3 r = applyTransform( make_float3(zn.y, zn.z, 0.0f),  rotation);
 //          zn.y = r.x;
 //          zn.z = r.y;
         }
@@ -210,6 +207,7 @@ private:
     float m_power;
 
 };
+
 
 
 

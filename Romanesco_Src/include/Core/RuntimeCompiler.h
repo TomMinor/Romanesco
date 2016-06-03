@@ -49,6 +49,8 @@ public:
 private:
 #ifdef NVRTC_AVAILABLE
     nvrtcProgram m_prog;
+#else
+    std::string m_source;
 #endif
 
     char* m_result;

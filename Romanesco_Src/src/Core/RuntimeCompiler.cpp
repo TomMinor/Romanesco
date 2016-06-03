@@ -44,6 +44,8 @@ RuntimeCompiler::RuntimeCompiler(const std::string &_name, const std::string _so
 
 #ifdef NVRTC_AVAILABLE
     NVRTC_SAFE_CALL( nvrtcCreateProgram(&m_prog, _source.c_str(), _name.c_str(), 0, NULL, NULL) );
+#else
+    m_source = _source;
 #endif
 }
 
@@ -84,7 +86,7 @@ void RuntimeCompiler::compile()
 
     static const std::string tmpFile = "/tmp/out.cu";
     std::ofstream cudaFile(tmpFile, std::ofstream::out );
-//    cudaFile << _source;
+    cudaFile << m_source;
     cudaFile.close();
 
     const std::string nvcccall = nvccbin + " -m64 " + nvcc_opts + nvccflags + " " + " -o /dev/stdout " + tmpFile;
