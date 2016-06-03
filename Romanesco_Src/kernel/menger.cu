@@ -99,7 +99,7 @@ rtDeclareVariable(uint2,        NoOfTiles, , );
 rtDeclareVariable(float3, bg_color, , );
 
 
-typedef rtCallableProgramX<float(float3, int, float)> callT;
+typedef rtCallableProgramX<float2(float3, int, float)> callT;
 rtDeclareVariable(callT, do_work,,);
 
 struct PerRayData_pathtrace
@@ -322,6 +322,7 @@ RT_PROGRAM void intersect(int primIdx)
     // const int maxSteps = 128;
     float dist = 0;
 
+    float orbitdist = 1e10;
     float3 originalDir = ray_direction;
 
 //    const float NonLinearPerspective = 1.3;
@@ -346,7 +347,10 @@ RT_PROGRAM void intersect(int primIdx)
 //      float3 offset = make_float3(0.92858,0.92858,0.32858);
 //      sdf.setScaleHook( 0, x * scale - offset * (scale - 1.0f));
 
-      dist = do_work(x, max_iterations, global_t);
+      float2 result = do_work(x, max_iterations, global_t);
+      dist = result.x;
+      float trapValue = result.y;
+
 
       // Step along the ray and accumulate the distance from the origin.
       x += dist * ray_direction;
@@ -361,8 +365,8 @@ RT_PROGRAM void intersect(int primIdx)
           break;
       }
 
-//      orbitdist = min( orbitdist, lengthSqr(x - point) );
-      trap.trap(x);
+      orbitdist = min( orbitdist, trapValue );
+//      trap.trap(x);
 
     }
 
@@ -378,17 +382,17 @@ RT_PROGRAM void intersect(int primIdx)
         {
             uint iters = 14;
             const float eps = DEL;
-            float dx = do_work(x + make_float3(eps,    0,   0), iters, global_t) - do_work(x - make_float3(eps,   0,   0), iters, global_t);
-            float dy = do_work(x + make_float3(  0,  eps,   0), iters, global_t) - do_work(x - make_float3(  0, eps,   0), iters, global_t);
-            float dz = do_work(x + make_float3(  0,    0, eps), iters, global_t) - do_work(x - make_float3(  0,   0, eps), iters, global_t);
+            float2 dx = do_work(x + make_float3(eps,    0,   0), iters, global_t) - do_work(x - make_float3(eps,   0,   0), iters, global_t);
+            float2 dy = do_work(x + make_float3(  0,  eps,   0), iters, global_t) - do_work(x - make_float3(  0, eps,   0), iters, global_t);
+            float2 dz = do_work(x + make_float3(  0,    0, eps), iters, global_t) - do_work(x - make_float3(  0,   0, eps), iters, global_t);
 
-            normal = normalize( make_float3(dx, dy, dz) );
+            normal = normalize( make_float3(dx.x, dy.x, dz.x) );
         }
+
+          smallestdistance  = orbitdist;
 
         geometric_normal = normal;
         shading_normal = normal;
-
-        smallestdistance = trap.getTrapValue();
         rtReportIntersection( 0 );
       }
     }
@@ -553,15 +557,16 @@ RT_PROGRAM void diffuse()
   }
 
   float3 colourtrap = make_float3(iterations / float(max_iterations) );
-//  colourtrap = make_float3(smallestdistance) * 1.0f;
+  colourtrap = make_float3(smallestdistance) * 1.0f;
 
-  float3 a = make_float3(0.4f, 0.2f, 0.2f);
-  float3 b = make_float3(0.5f, 0.5f, 0.55f);
+  float3 a = make_float3(0.4f, 0.1f, 0.05f);
+  float3 b = make_float3(0.1f, 0.2f, 0.7f);
   colourtrap = lerp(a, b, powf(smallestdistance, 1.0f) );
 
   float3 ambient = make_float3(0.1f);
 
-  current_prd.result = make_float4(result/* * colourtrap*/, 1.0);
+  current_prd.result = make_float4(result * colourtrap, 1.0);
+//  current_prd.result = make_float4( colourtrap, 1.0f );
 //  current_prd.result = make_float4( do_work(), 1.0f );
   current_prd.result_nrm = shading_normal;
   current_prd.result_world = hitpoint;
