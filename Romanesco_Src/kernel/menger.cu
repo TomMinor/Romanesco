@@ -559,14 +559,17 @@ RT_PROGRAM void diffuse()
   float3 colourtrap = make_float3(iterations / float(max_iterations) );
   colourtrap = make_float3(smallestdistance) * 1.0f;
 
+  float t = smallestdistance;
+  t = tan( abs( cos( smallestdistance * 2 + global_t ) ) );
   float3 a = make_float3(0.4f, 0.1f, 0.05f);
   float3 b = make_float3(0.1f, 0.2f, 0.7f);
-  colourtrap = lerp(a, b, powf(smallestdistance, 1.0f) );
+  colourtrap = make_float3(t);
+//  colourtrap = lerp(a, b, powf(t, 1.0f) );
 
   float3 ambient = make_float3(0.1f);
 
-  current_prd.result = make_float4(result * colourtrap, 1.0);
-//  current_prd.result = make_float4( colourtrap, 1.0f );
+//  current_prd.result = make_float4(result * colourtrap, 1.0);
+  current_prd.result = make_float4( colourtrap, 1.0f );
 //  current_prd.result = make_float4( do_work(), 1.0f );
   current_prd.result_nrm = shading_normal;
   current_prd.result_world = hitpoint;
