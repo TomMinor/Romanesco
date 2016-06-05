@@ -205,6 +205,8 @@ MainWindow::MainWindow(QWidget *parent) :
     m_deferredScenePath = "";
 
     m_progressiveTimeout = 1;
+
+    loadHitFileDeferred( "scenes/default.cu" );
 }
 
 //http://doc.qt.io/qt-5/qcommandlineparser.html
@@ -823,6 +825,8 @@ void MainWindow::loadHitFile(QString _path)
     }
 
     m_editor->setText(cuSrc);
+
+    buildHitFunction();
 }
 
 void MainWindow::buildHitFunction()

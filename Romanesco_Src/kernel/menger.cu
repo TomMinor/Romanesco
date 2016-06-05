@@ -561,8 +561,8 @@ RT_PROGRAM void diffuse()
 
   float t = smallestdistance;
   t = tan( abs( cos( smallestdistance * 1 /*+ global_t*/ ) ) );
-  float3 a = make_float3(0.67f, 0.1f, 0.05f);
-  float3 b = make_float3(0.1f, 0.2f, 0.9f);
+  float3 b = make_float3(0.67f, 0.1f, 0.05f);
+  float3 a = make_float3(0.1f, 0.2f, 0.9f);
 //  colourtrap = make_float3(t);
   colourtrap = lerp(a, b, powf(t, 1.0f) );
 //  colourtrap = make_float3(1.0f);
