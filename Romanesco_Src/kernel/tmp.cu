@@ -105,11 +105,13 @@ protected:
     float3 m_limits;
 };
 
-HIT_PROGRAM float hit(float3 x, uint maxIterations, float global_t)
+HIT_PROGRAM float2 hit(float3 x, uint maxIterations, float global_t)
 {
 	TunnelTest sdf(maxIterations);
 	sdf.evalParameters();
-    	sdf.setTime(global_t);
+    	sdf.setTime(global_t); 
 
-	return sdf.evalDistance(x);
+    float t = sdf.evalDistance(x);
+    float trap = sdf.getTrap();
+	return make_float2( t, trap );
 }

@@ -674,7 +674,7 @@ void OptixScene::createWorld()
     m_context[ "max_iterations" ]->setUint( m_max_iterations );
     m_context[ "DEL" ]->setFloat( m_DEL );
 
-    optix::Program testcallable = m_context->createProgramFromPTXFile("/home/tom/src/Romanesco/Romanesco_Src/ptx/tmp.cu.ptx", "hit");
+    optix::Program testcallable = m_context->createProgramFromPTXFile("ptx/tmp.cu.ptx", "hit");
     m_context["do_work"]->set(testcallable);
 }
 
@@ -718,9 +718,9 @@ __device__ __noinline__ float3 distancehit_hook()
     {
         optix::Program testcallable = m_context->createProgramFromPTXString(ptx, "hit");
         m_context["do_work"]->set(testcallable);
-    } catch(Exception &e)
+    } catch(optix::Exception &e)
     {
-        qWarning("Failed to create program from ptx");
+        qWarning("Failed to create program from ptx: %s", e.getErrorString().c_str() );
         return;
     }
 }
@@ -789,6 +789,7 @@ float* OptixScene::getBufferContents(std::string _name, RTsize* _elementSize, RT
     float* hostPtr = new float[buffer->getElementSize() * bufferSize];
     CUdeviceptr devicePtr = buffer->getDevicePointer( 0 );
     cudaMemcpy( (void*)hostPtr,   (void*)devicePtr,    buffer->getElementSize() * bufferSize, cudaMemcpyDeviceToHost );
+    qDebug() << buffer->getElementSize() * bufferSize;
 
     return hostPtr;
 }

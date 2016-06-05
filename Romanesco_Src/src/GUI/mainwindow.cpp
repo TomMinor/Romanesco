@@ -596,6 +596,10 @@ void MainWindow::dumpRenderedFrame()
     }
 }
 
+float clip(float n, float lower, float upper) {
+  return std::max(lower, std::min(n, upper));
+}
+
 void MainWindow::dumpFlipbookFrame()
 {
     int currentFrame = m_timeline->getTime();
@@ -605,16 +609,32 @@ void MainWindow::dumpFlipbookFrame()
 
     OptixScene* optixscene = m_glViewport->m_optixScene;
     unsigned long elementSize, width, height;
-    float* buffer = optixscene->getBufferContents( optixscene->outputBuffer(), &elementSize, &width, &height );
+    float* buffer = optixscene->getBufferContents("output_buffer" /*optixscene->outputBuffer()*/, &elementSize, &width, &height );
 
     unsigned int totalbytes = width * height * elementSize;
     uchar* bufferbytes = new uchar[totalbytes];
-    for(int i = 0; i < totalbytes; i++)
+    for(unsigned int i = 0; i < (totalbytes / 4); i+=4)
     {
-        bufferbytes[i] = static_cast<uchar>(buffer[i] * 255);
-    }
+        uchar r = static_cast<uchar>( clip(buffer[i+0], 0.0f, 1.0f) * 255);
+        uchar g = static_cast<uchar>( clip(buffer[i+1], 0.0f, 1.0f) * 255);
+        uchar b = static_cast<uchar>( clip(buffer[i+2], 0.0f, 1.0f) * 255);
+        uchar a = static_cast<uchar>( clip(buffer[i+3], 0.0f, 1.0f) * 255);
 
-    QImage imageFrame;
+        bufferbytes[i+0] = r;//static_cast<uchar>(buffer[i+1] * 255);
+        bufferbytes[i+1] = g;//static_cast<uchar>(buffer[i+1] * 255);
+        bufferbytes[i+2] = b;//static_cast<uchar>(buffer[i+1] * 255);
+        bufferbytes[i+3] = 255;/// static_cast<uchar>(buffer[i+3] * 255);
+    }
+    const unsigned int totalPixels = static_cast<unsigned int>(width) * static_cast<unsigned int>(height);
+
+//    uchar pixels[totalPixels];
+
+//    ///@Todo move this into one loop, messing up my pointer arithmetic when i do so right now
+//    for(unsigned int i = 0; i < totalPixels; i+=4)
+//    {
+//        pixels[i] = qRgba( buffer[i + 0], buffer[i + 1], buffer[i + 2], buffer[i + 3] );
+//    }
+    QImage imageFrame;// = QImage( bufferbytes, width, height, QImage::Format_RGBA8888);
 
     switch(elementSize / sizeof(float))
     {

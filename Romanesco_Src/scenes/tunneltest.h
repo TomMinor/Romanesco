@@ -54,10 +54,16 @@ private:
 //        z.x = fabs(z.x + m_offset.x) - m_offset.x;
 //        z.x = fabs(z.x + offset.x) - offset.x;
 
+        const float s = 0.9f;
+        float k = 1.0f;
+        float m = 1e10;
+
 
         float d = 1000.0f;
         for(int n = 0; n < m_maxIterations; ++n)
         {
+            m = min(m, dot(z, z) / (k*k) );
+
             ///@todo rotate
             ///
             // y
@@ -87,7 +93,12 @@ private:
             z.z = r.y;
 
             d = min(d, length(z) * powf(m_scale, -float(n+1)));
+
+            k *= s;
         }
+
+        setTrap(m);
+
 
 //        d = max(d, d2);
         return d;

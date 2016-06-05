@@ -1,17 +1,22 @@
-// pos 3.075 0 5.70148e-06
-// rot 0 1.5708 0
-// fov 60
+// pos -2.97333 0 -1.96865
+// rot 0 -1.5292 0
+// fov 30
 
 #include "romanescocore.h"
-#include "tunneltest.h"
 
-HIT_PROGRAM float hit(float3 x, uint maxIterations, float global_t)
+HIT_PROGRAM float2 hit(float3 x, int maxIterations, float global_t)
 {
-	TunnelTest sdf(maxIterations);
-	sdf.evalParameters();
-    	sdf.setTime(global_t);
-    	sdf.x -= global_t;
-    	sdf.setTranslateHook( 0, x );
+	x.z += (global_t / 25.0f);
+	Matrix4x4 transform = Matrix4x4::rotate( global_t / 25.0f, make_float3(0,0,1) );
+	x = applyTransform(x, transform);
 
-	return sdf.evalDistance(x);
+	Mandelbulb sdf(maxIterations);
+	sdf.setTime(global_t);
+	sdf.evalParameters();
+	
+	float oscillatingTime = sin( global_t / 300.0f );
+	float p = (5.0f * oscillatingTime) + 3.0f;
+	sdf.setPower(p);
+
+	return make_float2( sdf.evalDistance(x), sdf.getTrap() );
 }
