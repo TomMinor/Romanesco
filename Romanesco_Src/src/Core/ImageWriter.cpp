@@ -25,15 +25,21 @@ bool ImageWriter::progressCallback(void* _data, float _progress)
 ImageWriter::ImageWriter(std::string _filename, unsigned int _width, unsigned int _height)
     : m_outFile(nullptr), m_spec(nullptr), m_fileName(_filename)
 {
-    m_spec = new OpenImageIO::ImageSpec(_width, _height, 11, OpenImageIO::TypeDesc::HALF);
+    m_spec = new OpenImageIO::ImageSpec(OpenImageIO::TypeDesc::UNKNOWN);
+
     m_spec->channelnames.clear();
     m_spec->attribute("compression", "zip");
 
     // Channel setup
     addChannelRGBA(OpenImageIO::TypeDesc::HALF);        // RGBA Channels
-    addChannel(OpenImageIO::TypeDesc::DOUBLE, "Z");     // Depth Channel
+    addChannel(OpenImageIO::TypeDesc::FLOAT, "Z");     // Depth Channel
+    addChannel(OpenImageIO::TypeDesc::HALF, "orbit.R");           // Trap Channel
     addChannelRGB(OpenImageIO::TypeDesc::HALF, "N");    // Normal Channels
-    addChannelRGB(OpenImageIO::TypeDesc::HALF, "P");    // World Position Channels
+    addChannelRGBA(OpenImageIO::TypeDesc::HALF, "P");    // World Position Channels
+
+    m_spec->nchannels = m_spec->channelnames.size();
+    m_spec->width = _width;
+    m_spec->height = _height;
 
     // Tell OIIO that these specific channels will store alpha/depth (helps for some formats)
     m_spec->alpha_channel = 3;
@@ -82,6 +88,8 @@ bool ImageWriter::write(std::vector<ImageWriter::Pixel> _pixels)
         m_outFile->close();
         throw std::runtime_error("Can't write per channel data (passes) in ImageWriter");
     }
+
+    qDebug() << sizeof( ImageWriter::Pixel );
 
     success = m_outFile->write_image (OpenImageIO::TypeDesc::UNKNOWN,
                             _pixels.data(),

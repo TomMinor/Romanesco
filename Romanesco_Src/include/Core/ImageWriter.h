@@ -18,6 +18,7 @@ public:
 
         // Depth
         float z;
+        half trap;
 
         // Pos/Normal
         half x_nrm, y_nrm, z_nrm;

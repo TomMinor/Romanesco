@@ -160,6 +160,7 @@ void OptixScene::createBuffers()
     m_glOutputBuffers.push_back( std::make_pair("output_buffer_nrm",     RT_FORMAT_FLOAT3) );
     m_glOutputBuffers.push_back( std::make_pair("output_buffer_world",   RT_FORMAT_FLOAT3) );
     m_glOutputBuffers.push_back( std::make_pair("output_buffer_depth",   RT_FORMAT_FLOAT) );
+    m_glOutputBuffers.push_back( std::make_pair("output_buffer_trap",   RT_FORMAT_FLOAT) );
 
     // Everything is gl for the sake of visualisation right now, but maybe we'd want to add export only buffers later
     m_outputBuffers.clear();
@@ -811,6 +812,7 @@ bool OptixScene::saveBuffersToDisk(std::string _filename)
     float* normal = getBufferContents("output_buffer_nrm");
     float* world = getBufferContents("output_buffer_world");
     float* depth = getBufferContents("output_buffer_depth");
+    float* trap = getBufferContents("output_buffer_trap");
 
     RTsize buffer_width, buffer_height;
     m_context["output_buffer"]->getBuffer()->getSize(buffer_width, buffer_height);
@@ -845,6 +847,8 @@ bool OptixScene::saveBuffersToDisk(std::string _filename)
     for(unsigned int k = 0; k < totalPixels; k++)
     {
         pixels[k].z = depth[k];
+
+        pixels[k].trap = trap[k];
     }
 
 
@@ -852,11 +856,13 @@ bool OptixScene::saveBuffersToDisk(std::string _filename)
     delete [] normal;
     delete [] world;
     delete [] depth;
+    delete [] trap;
 
     diffuse = nullptr;
     normal = nullptr;
     world = nullptr;
     depth = nullptr;
+    trap = nullptr;
 
     ImageWriter image(_filename, buffer_width, buffer_height);
     return image.write(pixels);

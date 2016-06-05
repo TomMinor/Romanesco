@@ -47,6 +47,7 @@ rtBuffer<float4, 2>              output_buffer;
 rtBuffer<float3, 2>              output_buffer_nrm;
 rtBuffer<float3, 2>              output_buffer_world;
 rtBuffer<float, 2>              output_buffer_depth;
+rtBuffer<float, 2>              output_buffer_trap;
 
 rtDeclareVariable( float3, eye, , );
 rtDeclareVariable( float,  delta , , );
@@ -108,6 +109,7 @@ struct PerRayData_pathtrace
   float3 result_nrm;
   float3 result_world;
   float result_depth;
+  float result_trap;
 
   float3 origin;
   float3 radiance;
@@ -145,6 +147,7 @@ RT_PROGRAM void exception()
   output_buffer_nrm[launch_index] = make_float3(0.0, 0.0, 0.0);
   output_buffer_world[launch_index] = make_float3(0.0, 0.0, 0.0);
   output_buffer_depth[launch_index] = RT_DEFAULT_MAX;
+  output_buffer_trap[launch_index] = 0.0f;
 
 #if USE_DEBUG_EXCEPTIONS
   const unsigned int code = rtGetExceptionCode();
@@ -177,6 +180,7 @@ RT_PROGRAM void pathtrace_camera()
     float3 normal = make_float3(0.0f);
     float3 world = make_float3(0.0f);
     float depth = 0.0f;
+    float trap =0.0f;
 
     unsigned int seed = tea<4>(screen.x * bufferLaunchIndex.y + bufferLaunchIndex.x, frame_number);
     do
@@ -195,6 +199,7 @@ RT_PROGRAM void pathtrace_camera()
         prd.result_nrm = make_float3(0.0f);
         prd.result_world = make_float3(0.0f);
         prd.result_depth = 0.0f;
+        prd.result_trap = 0.0f;
         prd.attenuation = make_float3(1.0);
         prd.radiance = make_float3(0.0);
         prd.countEmitted = true;
@@ -214,6 +219,7 @@ RT_PROGRAM void pathtrace_camera()
         normal += prd.result_nrm;
         world += prd.result_world;
         depth += prd.result_depth;
+        trap += prd.result_trap;
 
         seed = prd.seed;
     } while (--samples_per_pixel);
@@ -222,6 +228,7 @@ RT_PROGRAM void pathtrace_camera()
     float3 pixel_color_normal = normal/(sqrt_num_samples*sqrt_num_samples);
     float3 pixel_color_world = world/(sqrt_num_samples*sqrt_num_samples);
     float pixel_color_depth = depth/(sqrt_num_samples*sqrt_num_samples);
+    float pixel_color_trap = trap/(sqrt_num_samples*sqrt_num_samples);
 
     // Smoothly blend with previous frames value
     if (frame_number > 1){
@@ -239,6 +246,9 @@ RT_PROGRAM void pathtrace_camera()
 
         float old_depth = output_buffer_depth[bufferLaunchIndex];
         output_buffer_depth[bufferLaunchIndex] = a * pixel_color_depth + b * old_depth;
+
+        float old_trap = output_buffer_trap[bufferLaunchIndex];
+        output_buffer_trap[bufferLaunchIndex] = a * pixel_color_trap + b * old_trap;
     }
     else
     {
@@ -246,6 +256,7 @@ RT_PROGRAM void pathtrace_camera()
         output_buffer_nrm[bufferLaunchIndex] = pixel_color_normal;
         output_buffer_world[bufferLaunchIndex] = pixel_color_world;
         output_buffer_depth[bufferLaunchIndex] = pixel_color_depth;
+        output_buffer_trap[bufferLaunchIndex] = pixel_color_trap;
     }
 }
 
@@ -325,7 +336,7 @@ RT_PROGRAM void intersect(int primIdx)
     float orbitdist = 1e10;
     float3 originalDir = ray_direction;
 
-//    const float NonLinearPerspective = 1.3;
+    const float NonLinearPerspective = 0.8;
 
     const float Jitter = 0.05f;
     float totalDistance = 0.0;//Jitter * tea<4>(current_prd.seed, frame_number);
@@ -334,11 +345,14 @@ RT_PROGRAM void intersect(int primIdx)
     {
 //      dir.zy = rotate(dir2.zy,totalDistance * tan( atan( cos(iGlobalTime * 0.8) )) * NonLinearPerspective);
 
-//     float delta = sin( global_t * 0.1f ) * 30 + tan(global_t  * 0.001f) * 10;
-//      float2 rot = rotate( make_float2(originalDir.z, originalDir.y),
-//                           radians(totalDistance * delta) ) * NonLinearPerspective;
-//      ray_direction.z = -rot.x;
-//      ray_direction.y = rot.y;
+//        if(current_prd.depth < 1)
+//        {
+//            float delta = sin( global_t * 0.1f ) * 30 + tan(global_t  * 0.001f) * 10;
+//            float2 rot = rotate( make_float2(originalDir.z, originalDir.y),
+//                                 radians(totalDistance * delta) ) * NonLinearPerspective;
+//            ray_direction.z = -rot.x;
+//            ray_direction.y = rot.y;
+//        }
 
 //      sdf.setTranslateHook(0, make_float3( -global_t * 1.0f, 0.0f, 0.0f ) );
 //      sdf.setRotateHook( 0, make_float3( radians(-global_t / 18.0f), 0.0f, 0.0f) );
@@ -560,7 +574,7 @@ RT_PROGRAM void diffuse()
   colourtrap = make_float3(smallestdistance) * 1.0f;
 
   float t = smallestdistance;
-  t = tan( abs( cos( smallestdistance * 1 /*+ global_t*/ ) ) );
+//  t = tan( abs( cos( smallestdistance * 1 /*+ global_t*/ ) ) );
   float3 a = make_float3(0.67f, 0.1f, 0.05f);
   float3 b = make_float3(0.1f, 0.2f, 0.9f);
 //  colourtrap = make_float3(t);
@@ -569,12 +583,13 @@ RT_PROGRAM void diffuse()
 
   float3 ambient = make_float3(0.1f);
 
-  current_prd.result = make_float4(result * colourtrap, 1.0);
+  current_prd.result = make_float4(result, 1.0);
 //  current_prd.result = make_float4( colourtrap, 1.0f );
 //  current_prd.result = make_float4( do_work(), 1.0f );
   current_prd.result_nrm = shading_normal;
   current_prd.result_world = hitpoint;
   current_prd.result_depth = t_hit;
+  current_prd.result_trap = t;
   current_prd.done = true;
 }
 
@@ -588,6 +603,7 @@ RT_PROGRAM void miss(){
     current_prd.result_nrm = make_float3(0.0, 0.0, 0.0);
     current_prd.result_world = make_float3(0.0, 0.0, 0.0);
     current_prd.result_depth = RT_DEFAULT_MAX;
+    current_prd.result_trap = 0.0f;
 
     current_prd.done = true;
 }
@@ -627,5 +643,6 @@ RT_PROGRAM void envmap_miss()
   current_prd.result_nrm = make_float3(0.0, 0.0, 0.0);
   current_prd.result_world = make_float3(0.0, 0.0, 0.0);
   current_prd.result_depth = RT_DEFAULT_MAX;
+  current_prd.result_trap = 0.0f;
 //  rtTerminateRay();
 }
