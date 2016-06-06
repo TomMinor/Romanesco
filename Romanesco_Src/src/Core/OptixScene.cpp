@@ -842,13 +842,21 @@ bool OptixScene::saveBuffersToDisk(std::string _filename)
         pixels[j].x_pos = world[3*j + 0];
         pixels[j].y_pos = world[3*j + 1];
         pixels[j].z_pos = world[3*j + 2];
+
+        pixels[j].trapR = 0.25f;
+        pixels[j].trapG = 0.5f;
+        pixels[j].trapB = 0.7f;
+
+        pixels[j].diffuseR = 0.1f;
+        pixels[j].diffuseG = 0.6f;
+        pixels[j].diffuseB = 0.9f;
     }
 
     for(unsigned int k = 0; k < totalPixels; k++)
     {
         pixels[k].z = depth[k];
 
-        pixels[k].trap = trap[k];
+        pixels[k].iteration = 0.8f;
     }
 
 

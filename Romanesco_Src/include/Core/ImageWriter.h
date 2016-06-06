@@ -12,21 +12,41 @@ class ImageWriter
 public:
     struct Pixel
     {
-        // Default channels, we'll always need these
-        half r, g, b;
-        half a;
+        ///
+        /// \brief Default channels, we'll always need these
+        ///
+        half r, g, b, a;
 
-        // Depth
-        float z;
-//        half test;
-        half trap, iteration;
+        ///
+        /// \brief z depth
+        ///
+        half z;
 
-//        half u, v, w;
-//        half t1,t0,t2;
+        ///
+        /// \brief trapR 3 orbit trap channels
+        ///
+        half trapR, trapB, trapG;
 
-        // Pos/Normal
+        ///
+        /// \brief iteration count
+        ///
+        half iteration;
+
+        ///
+        /// \brief x_nrm
+        ///
         half x_nrm, y_nrm, z_nrm;
+
+        ///
+        /// \brief x_pos
+        ///
         half x_pos, y_pos, z_pos;
+
+        ///
+        /// \brief diffuseR
+        ///
+        half diffuseR, diffuseG, diffuseB;
+
     };
 
     ImageWriter(std::string _filename, unsigned int _width, unsigned int _height);
