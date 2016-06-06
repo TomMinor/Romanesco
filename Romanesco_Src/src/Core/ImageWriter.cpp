@@ -30,14 +30,24 @@ ImageWriter::ImageWriter(std::string _filename, unsigned int _width, unsigned in
     m_spec->channelnames.clear();
     m_spec->attribute("compression", "zip");
 
+    // HALF = 2 bytes
+
+
     // Channel setup
     addChannelRGBA(OpenImageIO::TypeDesc::HALF);        // RGBA Channels
-    addChannel(OpenImageIO::TypeDesc::FLOAT, "Z");     // Depth Channel
-    addChannel(OpenImageIO::TypeDesc::HALF, "orbit.R");           // Trap Channel
+    addChannel(OpenImageIO::TypeDesc::DOUBLE, "Z");     // Depth Channel
+    addChannel(OpenImageIO::TypeDesc::HALF, "orbit.R");     // Depth Channel
+    addChannel(OpenImageIO::TypeDesc::HALF, "iteration.R");     // Depth Channel
+//    addChannel(OpenImageIO::TypeDesc::HALF, "test.B");     // Depth Channel
+//    addChannelRGB(OpenImageIO::TypeDesc::HALF, "arse");     // Depth Channel
+//    addChannelRGB(OpenImageIO::TypeDesc::HALF, "orbit");           // Trap Channel
+//    addChannelRGB(OpenImageIO::TypeDesc::HALF, "dummy");           // Trap Channel
     addChannelRGB(OpenImageIO::TypeDesc::HALF, "N");    // Normal Channels
-    addChannelRGBA(OpenImageIO::TypeDesc::HALF, "P");    // World Position Channels
+    addChannelRGB(OpenImageIO::TypeDesc::HALF, "P");    // World Position Channels
 
-    m_spec->nchannels = m_spec->channelnames.size();
+    qDebug() << sizeof(ImageWriter::Pixel);
+
+    m_spec->nchannels = 14;//m_spec->channelnames.size();
     m_spec->width = _width;
     m_spec->height = _height;
 

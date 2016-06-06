@@ -18,7 +18,11 @@ public:
 
         // Depth
         float z;
-        half trap;
+//        half test;
+        half trap, iteration;
+
+//        half u, v, w;
+//        half t1,t0,t2;
 
         // Pos/Normal
         half x_nrm, y_nrm, z_nrm;
