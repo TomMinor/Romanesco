@@ -265,12 +265,12 @@ RT_PROGRAM void pathtrace_camera()
 
 
 
-//// Geometric orbit trap. Creates the 'cube' look.
-//float trap(vec3 p){
-//	return  length(p.x-0.5-0.5*sin(time/10.0)); // <- cube forms
-//	//return  length(p.x-1.0);
-//	//return length(p.xz-vec2(1.0,1.0))-0.05; // <- tube forms
-//	//return length(p); // <- no trap
+////// Geometric orbit trap. Creates the 'cube' look.
+//float trap(float3 p){
+//    return  length(p.x - 0.5f - 0.5f * sin(global_t / 10.0f) ); // <- cube forms
+//    //return  length(p.x-1.0);
+//    //return length(p.xz-vec2(1.0,1.0))-0.05; // <- tube forms
+//    //return length(p); // <- no trap
 //}
 
 RT_PROGRAM void intersect(int primIdx)
