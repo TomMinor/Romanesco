@@ -35,19 +35,22 @@ ImageWriter::ImageWriter(std::string _filename, unsigned int _width, unsigned in
 
     // Channel setup
     addChannelRGBA(OpenImageIO::TypeDesc::HALF);        // RGBA Channels
-    addChannel(OpenImageIO::TypeDesc::DOUBLE, "Z");     // Depth Channel
+    ///@todo Somehow get this to higher quality precision
+    addChannel(OpenImageIO::TypeDesc::HALF, "Z");     // Depth Channel
+
     addChannel(OpenImageIO::TypeDesc::HALF, "orbit.R");     // Depth Channel
-    addChannel(OpenImageIO::TypeDesc::HALF, "iteration.R");     // Depth Channel
-//    addChannel(OpenImageIO::TypeDesc::HALF, "test.B");     // Depth Channel
-//    addChannelRGB(OpenImageIO::TypeDesc::HALF, "arse");     // Depth Channel
-//    addChannelRGB(OpenImageIO::TypeDesc::HALF, "orbit");           // Trap Channel
-//    addChannelRGB(OpenImageIO::TypeDesc::HALF, "dummy");           // Trap Channel
+    addChannel(OpenImageIO::TypeDesc::HALF, "orbit.G");     // Depth Channel
+    addChannel(OpenImageIO::TypeDesc::HALF, "orbit.B");     // Depth Channel
+    addChannel(OpenImageIO::TypeDesc::HALF, "iteration.R");     // Normalized Iteration Channel
     addChannelRGB(OpenImageIO::TypeDesc::HALF, "N");    // Normal Channels
     addChannelRGB(OpenImageIO::TypeDesc::HALF, "P");    // World Position Channels
 
-    qDebug() << sizeof(ImageWriter::Pixel);
+    addChannelRGB(OpenImageIO::TypeDesc::HALF, "diffuse");
 
-    m_spec->nchannels = 14;//m_spec->channelnames.size();
+
+    qDebug() << sizeof(ImageWriter::Pixel) << "," << m_spec->channelnames.size();
+
+    m_spec->nchannels = m_spec->channelnames.size();
     m_spec->width = _width;
     m_spec->height = _height;
 
