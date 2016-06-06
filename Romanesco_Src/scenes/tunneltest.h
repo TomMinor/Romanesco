@@ -31,11 +31,29 @@ public:
     }
 
 private:
+    //// Geometric orbit trap. Creates the 'cube' look.
+    __device__ float trap(float3 p)
+    {
+        Mandelbulb sdf(5);
+        sdf.evalParameters();
+        sdf.setTime(m_time);
+        sdf.setPower( 4/*(3.0f * abs(sin(m_time / 40.f))) + 5.0f*/);
+
+        float d = sdf.evalDistance(p - 0.2f);
+//        setTrap( sdf.getTrap() );
+
+//        return  length( make_float3(p.x - 0.5f - 0.5f * sin(m_time / 10.0f)) ); // <- cube forms
+        //return  length(p.x-1.0);
+//        return length( make_float3(p.x, p.z, 0.0f) - make_float3(1.0,1.0,0.0f) )-0.05f; // <- tube forms
+        return d;
+        //return length(p); // <- no trap
+    }
+
     __device__ inline float map(float3 _p)
     {
         float t = m_time / 18.0f;
         t = tan(t);
-        Mandelbulb sdf(m_maxIterations, t);
+//        Mandelbulb sdf(m_maxIterations, t);
 
         float global_t = m_time;
         float3 offset = make_float3(1.0 + 0.2f * cos( 1.0f * (global_t / 5.7f)),
@@ -46,7 +64,7 @@ private:
         float3 z = _p;
 //        float d2 = sdf.evalDistance(z);
 //        z.x -= global_t * 0.01f;
-        translateHook(0, z);
+        z = translateHook(0, z);
 
 //        z.x = fmod(z.x, 3.5f);
 
@@ -93,11 +111,12 @@ private:
             z.z = r.y;
 
             d = min(d, length(z) * powf(m_scale, -float(n+1)));
+//            d = min(d, trap(z) * powf(m_scale, -float(n+1)));
 
             k *= s;
         }
 
-        setTrap(m);
+        setTrap( pow(m, 2) );
 
 
 //        d = max(d, d2);
