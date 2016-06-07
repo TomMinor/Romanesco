@@ -83,6 +83,11 @@ public slots:
         m_timeline->setEndFrame(_x);
     }
 
+    void setFrameOffset(int _x)
+    {
+        m_frameOffset = _x;
+    }
+
     void setProgressiveTimeout(int _t)
     {
         m_progressiveTimeout = _t;
@@ -99,6 +104,11 @@ public slots:
         m_fovSpinbox->setValue( _fov );
 
 //        m_glViewport->setFOV(_fov);
+    }
+
+    void setSamples(int _s)
+    {
+        m_glViewport->m_optixScene->setSamplesPerPixelSquared(_s);
     }
 
 private slots:
@@ -226,6 +236,8 @@ private:
     int m_renderY;
 
     float m_overrideFOV;
+
+    int m_frameOffset;
 
     Highlighter* m_highlighter;
     QTextEdit* m_editor;

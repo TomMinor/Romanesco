@@ -173,6 +173,7 @@ MainWindow::MainWindow(QWidget *parent) :
     m_batchMode = false;
     m_renderX = -1;
     m_renderY = -1;
+    m_frameOffset = -1;
 
     m_renderPath = "/tmp/out_%04d.exr";
 
@@ -183,7 +184,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     m_progressiveTimeout = 1;
 
-//    loadHitFileDeferred( "scenes/default.cu" );
+    loadHitFileDeferred( "scenes/default.cu" );
 }
 
 //http://doc.qt.io/qt-5/qcommandlineparser.html
@@ -209,6 +210,9 @@ CommandLineParseResult parseCommandLine(QCommandLineParser &parser, MainWindow *
     const QCommandLineOption endFrameOption("e", "End frame", "end");
     parser.addOption(endFrameOption);
 
+    const QCommandLineOption frameOffsetOption("offset", "Frame Offset", "offset");
+    parser.addOption(frameOffsetOption);
+
     const QCommandLineOption widthOption("width", "Render width", "width");
     parser.addOption(widthOption);
     const QCommandLineOption heightOption("height", "Render height", "height");
@@ -216,6 +220,9 @@ CommandLineParseResult parseCommandLine(QCommandLineParser &parser, MainWindow *
 
     const QCommandLineOption timeoutOption("timeout", "Progressive Timeout", "timeout");
     parser.addOption(timeoutOption);
+
+    const QCommandLineOption samplesOption("samples", "Samples Per Pixel", "spp");
+    parser.addOption(samplesOption);
 
 //    const QCommandLineOption fovOption("fov", "Field of View", "FOV");
 //    parser.addOption(fovOption);
@@ -261,14 +268,22 @@ CommandLineParseResult parseCommandLine(QCommandLineParser &parser, MainWindow *
     if (parser.isSet(endFrameOption))
     {
         const int endFrame = parser.value(endFrameOption).toInt();
-        qDebug() << endFrame;
         window->setEndFrame( endFrame );
     }
     if (parser.isSet(startFrameOption))
     {
         const int startFrame = parser.value(startFrameOption).toInt();
-        qDebug() << startFrame;
         window->setStartFrame( startFrame );
+    }
+    if(parser.isSet(frameOffsetOption))
+    {
+        const int frameOffset = parser.value(frameOffsetOption).toInt();
+        window->setFrameOffset( frameOffset );
+    }
+    if(parser.isSet(samplesOption))
+    {
+        const int samples = parser.value(samplesOption).toInt();
+        window->setSamples(samples);
     }
 
     if(parser.isSet(timeoutOption))
@@ -554,13 +569,14 @@ void MainWindow::dumpRenderedFrame()
 
     m_timeline->setTime( currentFrame + 1 );
     unsigned int currentRelativeFrame = currentFrame;
-    unsigned int frameRange = m_timeline->getStartFrame() - m_timeline->getStartFrame();
+    unsigned int frameRange = m_timeline->getEndFrame() - m_timeline->getStartFrame();
 
     std::string statusMessage = boost::str( boost::format("Rendering frame %d of %d") % currentRelativeFrame % frameRange );
     m_statusBar->showMessage( statusMessage.c_str() );
 
+    int fileFrame = (m_frameOffset == -1) ? currentFrame : m_frameOffset + currentRelativeFrame;
     std::string filepath = m_renderPath;
-    std::string imagePath = boost::str(boost::format(filepath) % currentFrame);
+    std::string imagePath = boost::str(boost::format(filepath) % fileFrame);
 
     OptixScene* optixscene = m_glViewport->m_optixScene;
     optixscene->saveBuffersToDisk(imagePath);
