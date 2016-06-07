@@ -11,10 +11,10 @@
 //	//return length(p); // <- no trap
 //}
 
-class OrbitTrap
+class orbitTrap
 {
 public:
-    __device__ OrbitTrap() {;}
+    __device__ orbitTrap() {;}
 
     __device__ inline virtual void trap( float3 _p ) = 0;
 

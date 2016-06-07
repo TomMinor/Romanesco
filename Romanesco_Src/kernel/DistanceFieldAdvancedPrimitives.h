@@ -4,8 +4,10 @@
 #include "romanescomath.h"
 #include "DistanceFieldMaths.h"
 #include "DistanceFieldPrimitives.h"
+#include "DistanceFieldTraps.h"
 
 #define TOTALXFORMHOOKS 3
+#define TOTALTRAPS 3
 
 ///
 /// \brief The DistanceEstimator class is an interface for the more complex fractal surfaces that require state and many parameters
@@ -17,10 +19,13 @@ public:
     {
         m_maxIterations = _maxIterations;
         m_time = 0.0f;
-        m_trap = 0.0f;
+
+        m_trap0 = 0.0f;
+        m_trap1 = 0.0f;
+        m_trap2 = 0.0f;
 
         // Initialise default hook values
-        for(uint i = 0; i < TOTALXFORMHOOKS; ++i)
+        for(uint i = 0; i < TOTALXFORMHOOKS; i++)
         {
             setScaleHook(i, make_float3(1.0f));
             setRotateHook(i, make_float3(0.0f));
@@ -32,15 +37,13 @@ public:
 
     __device__ inline virtual float evalDistance(float3 _p) = 0;
 
-    __device__ inline void setTrap(float _t)
-    {
-        m_trap = _t;
-    }
+    __device__ inline void setTrap0(float _t)      {   m_trap0 = _t; }
+    __device__ inline void setTrap1(float _t)      {   m_trap1 = _t; }
+    __device__ inline void setTrap2(float _t)      {   m_trap2 = _t; }
 
-    __device__ inline float getTrap()
-    {
-        return m_trap;
-    }
+    __device__ inline float getTrap0()      {   return m_trap0; }
+    __device__ inline float getTrap1()      {   return m_trap1; }
+    __device__ inline float getTrap2()      {   return m_trap2; }
 
     __device__ inline unsigned int getMaxIterations()
     {
@@ -137,7 +140,7 @@ public:
 protected:
     unsigned int m_maxIterations;
     float m_time;
-    float m_trap;
+    float m_trap0, m_trap1, m_trap2;
 
     float3 m_scale[TOTALXFORMHOOKS];
     float3 m_rotate[TOTALXFORMHOOKS];
@@ -186,13 +189,20 @@ public:
 
         const float s = 0.9f;
         float k = 1.0f;
-        float m = 1e10;
+        float m0 = 1e10, m1 = 1e10, m2 = 1e10;
+
+        SphereTrap trapA;
 
         // Iterate to compute f_n and fp_n for the distance estimator.
         int i = m_maxIterations;
         while( i-- )
         {
-            m = min(m, dot(zn, zn) / (k*k) );
+            trapA.trap(zn);
+
+            m0 = min(m0, dot(zn, zn) / (k * k) );
+            m1 = min(m1, trapA.getTrapValue() );
+            m2 = length( make_float3( zn.z, zn.x, 0.0f) - make_float3(0.25, 0.25, 0.0))-0.3; // <- tube forms
+
             rad = length(zn);
 
 //          zn = zn * m_scale - offset * (m_scale - 1.0);
@@ -224,7 +234,9 @@ public:
 //          zn.z = r.y;
         }
 
-        setTrap(m);
+        setTrap0( m0 );
+        setTrap1( m1 );
+        setTrap2( m2 );
 
         return dist;
     }

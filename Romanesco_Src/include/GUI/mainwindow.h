@@ -178,9 +178,9 @@ private:
         m_editorTabWidget->insertTab(0, editorWidget, "Scene Hit" );
         m_editorTabWidget->setCurrentIndex(0);
 
-        QFile file("kernel/tmp.cu");
-        if (file.open(QFile::ReadOnly | QFile::Text))
-            m_editor->setPlainText(file.readAll());
+//        QFile file("kernel/tmp.cu");
+//        if (file.open(QFile::ReadOnly | QFile::Text))
+//            m_editor->setPlainText(file.readAll());
     }
 
 private:

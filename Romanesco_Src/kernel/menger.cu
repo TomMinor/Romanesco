@@ -37,17 +37,22 @@
 
 using namespace optix;
 
-#define USE_DEBUG_EXCEPTIONS 1
+#define USE_DEBUG_EXCEPTIONS 0
 
 // References:
 // [1] Hart, J. C., Sandin, D. J., and Kauffman, L. H. 1989. Ray tracing deterministic 3D fractals
 // [2] http://www.devmaster.net/forums/showthread.php?t=4448
 
+// Declare buffers
 rtBuffer<float4, 2>              output_buffer;
+
 rtBuffer<float3, 2>              output_buffer_nrm;
 rtBuffer<float3, 2>              output_buffer_world;
+rtBuffer<float3, 2>              output_buffer_diffuse;
+rtBuffer<float3, 2>              output_buffer_trap;
+
 rtBuffer<float, 2>              output_buffer_depth;
-rtBuffer<float, 2>              output_buffer_trap;
+rtBuffer<float, 2>              output_buffer_iteration;
 
 rtDeclareVariable( float3, eye, , );
 rtDeclareVariable( float,  delta , , );
@@ -60,7 +65,7 @@ rtDeclareVariable(optix::Ray, ray, rtCurrentRay, );
 // julia set object outputs this
 rtDeclareVariable(float3, normal, attribute normal, );
 rtDeclareVariable(unsigned int, iterations, attribute iterations, );
-rtDeclareVariable(float, smallestdistance, attribute smallestdistance, );
+rtDeclareVariable(float3, orbitTrap, attribute orbitTrap, );
 
 // sphere outputs this
 rtDeclareVariable(float3, shading_normal, attribute shading_normal, );
@@ -100,7 +105,7 @@ rtDeclareVariable(uint2,        NoOfTiles, , );
 rtDeclareVariable(float3, bg_color, , );
 
 
-typedef rtCallableProgramX<float2(float3, int, float)> callT;
+typedef rtCallableProgramX<float4(float3, int, float)> callT;
 rtDeclareVariable(callT, do_work,,);
 
 struct PerRayData_pathtrace
@@ -108,8 +113,10 @@ struct PerRayData_pathtrace
   float4 result;
   float3 result_nrm;
   float3 result_world;
+  float3 result_diffuse;
+  float3 result_trap;
   float result_depth;
-  float result_trap;
+  float result_iteration;
 
   float3 origin;
   float3 radiance;
@@ -121,7 +128,6 @@ struct PerRayData_pathtrace
   int done;
   int inside;
 
-  unsigned int iteration;
 };
 
 struct PerRayData_pathtrace_shadow
@@ -147,7 +153,7 @@ RT_PROGRAM void exception()
   output_buffer_nrm[launch_index] = make_float3(0.0, 0.0, 0.0);
   output_buffer_world[launch_index] = make_float3(0.0, 0.0, 0.0);
   output_buffer_depth[launch_index] = RT_DEFAULT_MAX;
-  output_buffer_trap[launch_index] = 0.0f;
+  output_buffer_trap[launch_index] = make_float3(0.0, 0.0, 0.0);
 
 #if USE_DEBUG_EXCEPTIONS
   const unsigned int code = rtGetExceptionCode();
@@ -179,8 +185,10 @@ RT_PROGRAM void pathtrace_camera()
     float4 result = make_float4(0.0f);
     float3 normal = make_float3(0.0f);
     float3 world = make_float3(0.0f);
+    float3 trap = make_float3( 0.0f );
+    float3 diffuse = make_float3(0.0f);
+    float iteration = 0.0f;
     float depth = 0.0f;
-    float trap =0.0f;
 
     unsigned int seed = tea<4>(screen.x * bufferLaunchIndex.y + bufferLaunchIndex.x, frame_number);
     do
@@ -199,14 +207,14 @@ RT_PROGRAM void pathtrace_camera()
         prd.result_nrm = make_float3(0.0f);
         prd.result_world = make_float3(0.0f);
         prd.result_depth = 0.0f;
-        prd.result_trap = 0.0f;
+        prd.result_trap = make_float3(0.0f);
         prd.attenuation = make_float3(1.0);
         prd.radiance = make_float3(0.0);
         prd.countEmitted = true;
         prd.done = false;
         prd.seed = seed;
         prd.depth = 0;
-        prd.iteration = 0;
+        prd.result_iteration = 0;
 
         Ray ray = make_Ray(ray_origin, ray_direction, pathtrace_ray_type, scene_epsilon, RT_DEFAULT_MAX);
         rtTrace(top_object, ray, prd);
@@ -218,45 +226,54 @@ RT_PROGRAM void pathtrace_camera()
         result += prd.result;
         normal += prd.result_nrm;
         world += prd.result_world;
+        diffuse += prd.result_diffuse;
         depth += prd.result_depth;
         trap += prd.result_trap;
+        iteration += prd.result_iteration;
 
         seed = prd.seed;
     } while (--samples_per_pixel);
 
-    float4 pixel_color = result/(sqrt_num_samples*sqrt_num_samples);
-    float3 pixel_color_normal = normal/(sqrt_num_samples*sqrt_num_samples);
-    float3 pixel_color_world = world/(sqrt_num_samples*sqrt_num_samples);
-    float pixel_color_depth = depth/(sqrt_num_samples*sqrt_num_samples);
-    float pixel_color_trap = trap/(sqrt_num_samples*sqrt_num_samples);
+    const unsigned int num_samples = sqrt_num_samples*sqrt_num_samples;
+    float4 pixel_color                  = result / num_samples;
+    float3 pixel_color_normal     = normal  / num_samples;
+    float3 pixel_color_world        = world  / num_samples;
+    float3 pixel_color_diffuse      = diffuse  / num_samples;
+    float3 pixel_color_trap          = trap  / num_samples;
+    float pixel_color_depth         = depth / num_samples;
+    float pixel_color_iteration     = iteration / num_samples;
 
-    // Smoothly blend with previous frames value
-    if (frame_number > 1){
+    // Smoothly blend with previous frames value using linear interpolation
+    if (frame_number > 1)
+    {
         float a = 1.0f / (float)frame_number;
         float b = ((float)frame_number - 1.0f) * a;
 
-        float4 old_color = output_buffer[bufferLaunchIndex];
-        output_buffer[bufferLaunchIndex] = a * pixel_color + b * old_color;
+#define BlendBuffer(buffer, newColour) (buffer) = a * (newColour) + b * (buffer)
 
-        float3 old_nrm = output_buffer_nrm[bufferLaunchIndex];
-        output_buffer_nrm[bufferLaunchIndex] = a * pixel_color_normal + b * old_nrm;
+        BlendBuffer( output_buffer[bufferLaunchIndex],                  pixel_color );
 
-        float3 old_world = output_buffer_world[bufferLaunchIndex];
-        output_buffer_world[bufferLaunchIndex] = a * pixel_color_world + b * old_world;
+        BlendBuffer( output_buffer_nrm[bufferLaunchIndex],         pixel_color_normal );
 
-        float old_depth = output_buffer_depth[bufferLaunchIndex];
-        output_buffer_depth[bufferLaunchIndex] = a * pixel_color_depth + b * old_depth;
+        BlendBuffer( output_buffer_world[bufferLaunchIndex],       pixel_color_world );
 
-        float old_trap = output_buffer_trap[bufferLaunchIndex];
-        output_buffer_trap[bufferLaunchIndex] = a * pixel_color_trap + b * old_trap;
+        BlendBuffer( output_buffer_diffuse[bufferLaunchIndex],     pixel_color_diffuse);
+
+        BlendBuffer( output_buffer_trap[bufferLaunchIndex],         pixel_color_trap );
+
+        BlendBuffer( output_buffer_depth[bufferLaunchIndex],      pixel_color_depth );
+
+        BlendBuffer( output_buffer_iteration[bufferLaunchIndex],  pixel_color_iteration );
     }
     else
     {
-        output_buffer[bufferLaunchIndex] = pixel_color;
-        output_buffer_nrm[bufferLaunchIndex] = pixel_color_normal;
-        output_buffer_world[bufferLaunchIndex] = pixel_color_world;
-        output_buffer_depth[bufferLaunchIndex] = pixel_color_depth;
-        output_buffer_trap[bufferLaunchIndex] = pixel_color_trap;
+        output_buffer[bufferLaunchIndex]                = pixel_color;
+        output_buffer_nrm[bufferLaunchIndex]        = pixel_color_normal;
+        output_buffer_world[bufferLaunchIndex]      = pixel_color_world;
+        output_buffer_diffuse[bufferLaunchIndex]    = pixel_color_diffuse;
+        output_buffer_trap[bufferLaunchIndex]         = pixel_color_trap;
+        output_buffer_depth[bufferLaunchIndex]      = pixel_color_depth;
+        output_buffer_iteration[bufferLaunchIndex]  = pixel_color_iteration;
     }
 }
 
@@ -333,7 +350,8 @@ RT_PROGRAM void intersect(int primIdx)
     // const int maxSteps = 128;
     float dist = 0;
 
-    float orbitdist = 1e10;
+    // Support up to 3 simultaneous orbit traps
+    float3 orbitdist = make_float3( 1e10 );
     float3 originalDir = ray_direction;
 
     const float NonLinearPerspective = 0.8;
@@ -361,9 +379,9 @@ RT_PROGRAM void intersect(int primIdx)
 //      float3 offset = make_float3(0.92858,0.92858,0.32858);
 //      sdf.setScaleHook( 0, x * scale - offset * (scale - 1.0f));
 
-      float2 result = do_work(x, max_iterations, global_t);
+      float4 result = do_work(x, max_iterations, global_t);
       dist = result.x;
-      float trapValue = result.y;
+      float3 trapValue = make_float3( result.y, result.z, result.w);
 
 
       // Step along the ray and accumulate the distance from the origin.
@@ -379,7 +397,9 @@ RT_PROGRAM void intersect(int primIdx)
           break;
       }
 
-      orbitdist = min( orbitdist, trapValue );
+      orbitdist = make_float3( min( orbitdist.x, trapValue.x ),
+                                             min( orbitdist.y, trapValue.y ),
+                                             min( orbitdist.z, trapValue.z ) );
 //      trap.trap(x);
 
     }
@@ -396,14 +416,14 @@ RT_PROGRAM void intersect(int primIdx)
         {
             uint iters = 14;
             const float eps = DEL;
-            float2 dx = do_work(x + make_float3(eps,    0,   0), iters, global_t) - do_work(x - make_float3(eps,   0,   0), iters, global_t);
-            float2 dy = do_work(x + make_float3(  0,  eps,   0), iters, global_t) - do_work(x - make_float3(  0, eps,   0), iters, global_t);
-            float2 dz = do_work(x + make_float3(  0,    0, eps), iters, global_t) - do_work(x - make_float3(  0,   0, eps), iters, global_t);
+            float4 dx = do_work(x + make_float3(eps,    0,   0), iters, global_t) - do_work(x - make_float3(eps,   0,   0), iters, global_t);
+            float4 dy = do_work(x + make_float3(  0,  eps,   0), iters, global_t) - do_work(x - make_float3(  0, eps,   0), iters, global_t);
+            float4 dz = do_work(x + make_float3(  0,    0, eps), iters, global_t) - do_work(x - make_float3(  0,   0, eps), iters, global_t);
 
             normal = normalize( make_float3(dx.x, dy.x, dz.x) );
         }
 
-          smallestdistance  = orbitdist;
+        orbitTrap  = orbitdist;
 
         geometric_normal = normal;
         shading_normal = normal;
@@ -570,16 +590,14 @@ RT_PROGRAM void diffuse()
     }
   }
 
-  float3 colourtrap = make_float3(iterations / float(max_iterations) );
-  colourtrap = make_float3(smallestdistance) * 1.0f;
+  float iteration = iterations / float(max_iterations);
 
-  float t = smallestdistance;
 //  t = tan( abs( cos( smallestdistance * 1 /*+ global_t*/ ) ) );
+
   float3 a = make_float3(0.67f, 0.1f, 0.05f);
   float3 b = make_float3(0.1f, 0.2f, 0.9f);
-//  colourtrap = make_float3(t);
-  colourtrap = lerp(a, b, powf(t, 1.0f) );
-//  colourtrap = make_float3(1.0f);
+
+  float3 colourtrap = lerp(a, b, powf(orbitTrap.x, 1.0f) );
 
   float3 ambient = make_float3(0.1f);
 
@@ -589,7 +607,9 @@ RT_PROGRAM void diffuse()
   current_prd.result_nrm = shading_normal;
   current_prd.result_world = hitpoint;
   current_prd.result_depth = t_hit;
-  current_prd.result_trap = t;
+  current_prd.result_trap = orbitTrap;
+  current_prd.result_diffuse = colourtrap;
+  current_prd.result_iteration = iteration;
   current_prd.done = true;
 }
 
@@ -603,7 +623,9 @@ RT_PROGRAM void miss(){
     current_prd.result_nrm = make_float3(0.0, 0.0, 0.0);
     current_prd.result_world = make_float3(0.0, 0.0, 0.0);
     current_prd.result_depth = RT_DEFAULT_MAX;
-    current_prd.result_trap = 0.0f;
+    current_prd.result_diffuse = make_float3(0.0, 0.0, 0.0);
+    current_prd.result_trap = make_float3(0.0, 0.0, 0.0);
+    current_prd.result_iteration = 0.0f;
 
     current_prd.done = true;
 }
@@ -636,13 +658,15 @@ RT_PROGRAM void envmap_miss()
       current_prd.result += strength * tex2D(envmap, u, v);
   } else {
       current_prd.result = make_float4(bg_color, 0.0f);
-      current_prd.result = tex2D(envmap, u, v);
+//      current_prd.result = tex2D(envmap, u, v);
   }
 
   current_prd.result.w = 0.0; // Alpha should be 0 if we missed
   current_prd.result_nrm = make_float3(0.0, 0.0, 0.0);
   current_prd.result_world = make_float3(0.0, 0.0, 0.0);
+  current_prd.result_diffuse = make_float3(0.0, 0.0, 0.0);
   current_prd.result_depth = RT_DEFAULT_MAX;
-  current_prd.result_trap = 0.0f;
+  current_prd.result_trap = make_float3(0.0, 0.0, 0.0);
+  current_prd.result_iteration = 0.0f;
 //  rtTerminateRay();
 }

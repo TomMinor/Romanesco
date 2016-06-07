@@ -141,8 +141,6 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height, QObject *_pare
 //    createLightGeo();
     /// --------------------------------------------------------------
 
-
-
     m_context->validate();
     m_context->compile();
 
@@ -156,11 +154,16 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height, QObject *_pare
 void OptixScene::createBuffers()
 {
     m_glOutputBuffers.clear();
+
     m_glOutputBuffers.push_back( std::make_pair("output_buffer",         RT_FORMAT_FLOAT4) );
+
     m_glOutputBuffers.push_back( std::make_pair("output_buffer_nrm",     RT_FORMAT_FLOAT3) );
     m_glOutputBuffers.push_back( std::make_pair("output_buffer_world",   RT_FORMAT_FLOAT3) );
+    m_glOutputBuffers.push_back( std::make_pair("output_buffer_diffuse",     RT_FORMAT_FLOAT3) );
+    m_glOutputBuffers.push_back( std::make_pair("output_buffer_trap",       RT_FORMAT_FLOAT3) );
+
+    m_glOutputBuffers.push_back( std::make_pair("output_buffer_iteration",   RT_FORMAT_FLOAT) );
     m_glOutputBuffers.push_back( std::make_pair("output_buffer_depth",   RT_FORMAT_FLOAT) );
-    m_glOutputBuffers.push_back( std::make_pair("output_buffer_trap",   RT_FORMAT_FLOAT) );
 
     // Everything is gl for the sake of visualisation right now, but maybe we'd want to add export only buffers later
     m_outputBuffers.clear();
@@ -675,8 +678,25 @@ void OptixScene::createWorld()
     m_context[ "max_iterations" ]->setUint( m_max_iterations );
     m_context[ "DEL" ]->setFloat( m_DEL );
 
-    optix::Program testcallable = m_context->createProgramFromPTXFile("ptx/tmp.cu.ptx", "hit");
-    m_context["do_work"]->set(testcallable);
+    std::string defaultSrc = R"(\
+        #include "romanescocore.h"
+
+        HIT_PROGRAM float4 hit(float3 x, int maxIterations, float global_t)
+        {
+            Mandelbulb sdf(maxIterations);
+            sdf.evalParameters();
+            sdf.setTime(global_t);
+
+            float p = (3.0 * abs(sin(global_t / 40.0))) + 5.0;
+            sdf.setPower( p );
+
+            return make_float4( sdf.evalDistance(x), sdf.getTrap0(), sdf.getTrap1(), sdf.getTrap2() );
+        }
+            )";
+
+            setGeometryHitProgram(defaultSrc);
+//    optix::Program testcallable = m_context->createProgramFromPTXFile(  , "hit");
+//    m_context["do_work"]->set(testcallable);
 }
 
 
@@ -808,10 +828,12 @@ std::string OptixScene::outputBuffer()
 
 bool OptixScene::saveBuffersToDisk(std::string _filename)
 {
-    float* diffuse = getBufferContents("output_buffer");
+    float* rgba = getBufferContents("output_buffer");
     float* normal = getBufferContents("output_buffer_nrm");
     float* world = getBufferContents("output_buffer_world");
+    float* diffuse = getBufferContents("output_buffer_diffuse");
     float* depth = getBufferContents("output_buffer_depth");
+    float* iteration = getBufferContents("output_buffer_iteration");
     float* trap = getBufferContents("output_buffer_trap");
 
     RTsize buffer_width, buffer_height;
@@ -825,10 +847,10 @@ bool OptixScene::saveBuffersToDisk(std::string _filename)
     for(unsigned int i = 0; i < totalPixels * 4; i+=4)
     {
         ImageWriter::Pixel tmp;
-        tmp.r = diffuse[i + 0];
-        tmp.g = diffuse[i + 1];
-        tmp.b = diffuse[i + 2];
-        tmp.a = diffuse[i + 3];
+        tmp.r = rgba[i + 0];
+        tmp.g = rgba[i + 1];
+        tmp.b = rgba[i + 2];
+        tmp.a = rgba[i + 3];
 
         pixels.push_back(tmp);
     }
@@ -843,20 +865,20 @@ bool OptixScene::saveBuffersToDisk(std::string _filename)
         pixels[j].y_pos = world[3*j + 1];
         pixels[j].z_pos = world[3*j + 2];
 
-        pixels[j].trapR = 0.25f;
-        pixels[j].trapG = 0.5f;
-        pixels[j].trapB = 0.7f;
+        pixels[j].trapR = trap[3*j + 0];
+        pixels[j].trapG = trap[3*j + 1];
+        pixels[j].trapB = trap[3*j + 2];
 
-        pixels[j].diffuseR = 0.1f;
-        pixels[j].diffuseG = 0.6f;
-        pixels[j].diffuseB = 0.9f;
+        pixels[j].diffuseR = diffuse[3*j +0];
+        pixels[j].diffuseG = diffuse[3*j +1];
+        pixels[j].diffuseB = diffuse[3*j +2];
     }
 
     for(unsigned int k = 0; k < totalPixels; k++)
     {
         pixels[k].z = depth[k];
 
-        pixels[k].iteration = 0.8f;
+        pixels[k].iteration = iteration[k];
     }
 
 

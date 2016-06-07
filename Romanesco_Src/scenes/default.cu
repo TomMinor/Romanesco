@@ -4,13 +4,16 @@
 
 #include "romanescocore.h"
 
-HIT_PROGRAM float2 hit(float3 x, int maxIterations, float global_t)
+HIT_PROGRAM float4 hit(float3 x, int maxIterations, float global_t)
 {
-    MengerSponge sdf(maxIterations);
+    Mandelbulb sdf(maxIterations);
     sdf.evalParameters();
     sdf.setTime(global_t);
 //	float p = (5.0 * abs(sin(global_t / 40.0))) + 3.0;
 //	sdf.setPower( p );
 
-	return make_float2( sdf.evalDistance(x), sdf.getTrap() );
+	return make_float4( sdf.evalDistance(x), 
+						sdf.getTrap0(), 
+						sdf.getTrap1(), 
+						sdf.getTrap2() );
 }

@@ -76,13 +76,18 @@ private:
 
         const float s = 0.9f;
         float k = 1.0f;
-        float m = 1e10;
+        float m0 = 1e10, m1 = 1e10, m2 = 1e10;
 
+        SphereTrap trapA;
 
         float d = 1000.0f;
         for(int n = 0; n < m_maxIterations; ++n)
         {
-            m = min(m, dot(z, z) / (k*k) );
+            trapA.trap(z);
+
+            m0 = min(m0, dot(z, z) / (k*k) );
+            m1 = min(m1, trapA.getTrapValue() );
+            m2 = length( make_float3( z.z, z.x, 0.0f) - make_float3(0.25, 0.25, 0.0))-0.3; // <- tube forms
 
             ///@todo rotate
             ///
@@ -120,7 +125,9 @@ private:
             k *= s;
         }
 
-        setTrap( pow(m, 2) );
+        setTrap0( m0 );
+        setTrap1( m1 );
+        setTrap2( m2 );
 
 
 //        d = max(d, d2);

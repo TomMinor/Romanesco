@@ -291,6 +291,16 @@ void TestGLWidget::keyPressEvent(QKeyEvent *_event)
             m_optixScene->setOutputBuffer("output_buffer_trap");
             break;
         }
+        case Qt::Key_6:
+        {
+            m_optixScene->setOutputBuffer("output_buffer_iteration");
+            break;
+        }
+        case Qt::Key_7:
+        {
+            m_optixScene->setOutputBuffer("output_buffer_diffuse");
+            break;
+        }
 
         case Qt::Key_A:
             {
