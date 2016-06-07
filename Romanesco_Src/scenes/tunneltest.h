@@ -1,5 +1,7 @@
 #include "romanescocore.h"
 
+//#define MANDELTRAP
+
 class TunnelTest : public DistanceEstimator
 {
 public:
@@ -31,7 +33,7 @@ public:
     }
 
 private:
-    //// Geometric orbit trap. Creates the 'cube' look.
+    //// Geometric orbit trap
     __device__ float trap(float3 p)
     {
         Mandelbulb sdf(5);
@@ -111,7 +113,9 @@ private:
             z.z = r.y;
 
             d = min(d, length(z) * powf(m_scale, -float(n+1)));
-//            d = min(d, trap(z) * powf(m_scale, -float(n+1)));
+        #ifdef MANDELTRAP
+            d = min(d, trap(z) * powf(m_scale, -float(n+1)));
+        #endif
 
             k *= s;
         }

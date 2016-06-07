@@ -622,7 +622,7 @@ RT_PROGRAM void chrome_ah_shadow()
 rtTextureSampler<float4, 2> envmap;
 RT_PROGRAM void envmap_miss()
 {
-    float strength =1.0f;
+    float strength =4.0f;
 
   float theta = atan2f( ray.direction.x, ray.direction.z );
   float phi   = M_PIf * 0.5f -  acosf( ray.direction.y );
@@ -636,7 +636,7 @@ RT_PROGRAM void envmap_miss()
       current_prd.result += strength * tex2D(envmap, u, v);
   } else {
       current_prd.result = make_float4(bg_color, 0.0f);
-//      current_prd.result = tex2D(envmap, u, v);
+      current_prd.result = tex2D(envmap, u, v);
   }
 
   current_prd.result.w = 0.0; // Alpha should be 0 if we missed
