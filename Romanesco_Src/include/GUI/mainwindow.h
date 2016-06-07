@@ -108,7 +108,8 @@ public slots:
 
     void setSamples(int _s)
     {
-        m_glViewport->m_optixScene->setSamplesPerPixelSquared(_s);
+//        m_glViewport->m_optixScene->setSamplesPerPixelSquared(_s);
+        m_sqrtNumSamples->setValue(_s);
     }
 
 private slots:
@@ -212,6 +213,8 @@ private:
 
     QGraphicsView *view;
     QGraphicsScene *scene;
+
+    QSpinBox* m_sqrtNumSamples;
 
     TestGLWidget* m_glViewport;
     QAnimatedTimeline* m_timeline;
