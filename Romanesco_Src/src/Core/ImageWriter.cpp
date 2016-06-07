@@ -30,8 +30,6 @@ ImageWriter::ImageWriter(std::string _filename, unsigned int _width, unsigned in
     m_spec->channelnames.clear();
     m_spec->attribute("compression", "zip");
 
-    // HALF = 2 bytes
-
 
     // Channel setup
     addChannelRGBA(OpenImageIO::TypeDesc::HALF);        // RGBA Channels

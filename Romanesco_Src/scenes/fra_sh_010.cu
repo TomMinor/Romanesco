@@ -4,7 +4,7 @@
 
 #include "romanescocore.h"
 
-HIT_PROGRAM float2 hit(float3 x, int maxIterations, float global_t)
+HIT_PROGRAM float4 hit(float3 x, int maxIterations, float global_t)
 {
 	x.z += (global_t / 35.0f) * 0.8;
 	Matrix4x4 transform = Matrix4x4::rotate( global_t / 25.0f, make_float3(0,0,1) );
@@ -18,5 +18,8 @@ HIT_PROGRAM float2 hit(float3 x, int maxIterations, float global_t)
 	float p = (2.0f * oscillatingTime) + 5.0f;
 	sdf.setPower(p);
 
-	return make_float2( sdf.evalDistance(x), sdf.getTrap() );
+	return make_float4( sdf.evalDistance(x), 
+						sdf.getTrap0(), 
+						sdf.getTrap1(), 
+						sdf.getTrap2() );
 }
