@@ -42,13 +42,13 @@ array_contains () {
 # Light Gray   0;37     White         1;37
 
 highlight_color=3 # Yellow
-frame_color=4 
+frame_color=4 # Blue
 error_color=1 # Red
 
 echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 echo "~~~~~~~~~~~ Romanesco Render (Batch) ~~~~~~~~~~~~"
 echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-echo
+echo "Global Args: \"$GLOBALARGS\""
 echo "-------------------------------------------------"
 echo ".. Removing duplicate shot inputs..."
 sorted_unique_ids=($(echo "${@}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
@@ -86,7 +86,7 @@ do
 	printf "Starting render for shot $(tput setaf $highlight_color)$shot$(tput sgr0)... Start: $(tput setaf $frame_color)[%s]$(tput sgr0)\tEnd: $(tput setaf $frame_color)[%s]$(tput sgr0)\tOffset: $(tput setaf $frame_color)[%s]$(tput sgr0)\n" $startframe $endframe $frameoffset
 
 	SHOTFOLDER=$OUTPUTPATH/$shot; mkdir -p $SHOTFOLDER;
-	$EXECUTABLE $GLOBALARGS -s $startframe -e $endframe --offset $frameoffset -f $SHOTFOLDER/$OUTPUTFILENAME --width $WIDTH --height $HEIGHT -i ./scenes/$shot.cu
+	$EXECUTABLE $GLOBALARGS -s $startframe -e $endframe --offset $frameoffset -f $SHOTFOLDER/$OUTPUTFILENAME --width $WIDTH --height $HEIGHT -i ./scenes/$shot.cu;
 done
 
 # spc_sh_070 f115 start:2294 @todo fly towards camera

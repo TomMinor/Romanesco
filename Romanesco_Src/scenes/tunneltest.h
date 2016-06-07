@@ -26,9 +26,20 @@ public:
 
     __device__ inline virtual float evalDistance(float3 _p)
     {
-        float a = map(_p) * m_fudgeFactor;
-        _p.y += 1;
-        float b = sdBox(_p  - make_float3(-4.0f, 0.0f, 0.0f), m_limits);
+        float length = -4.0f;
+        float3 z = _p;
+        float3 x = _p;
+#ifdef FLIP
+        Matrix4x4 transform = Matrix4x4::scale( make_float3(-1,0,0));
+        z = applyTransform(_p, transform);
+
+        x.x += 2.0f;
+
+        length = -2.0f;
+#endif
+        float a = map( translateHook(0, z) ) * m_fudgeFactor;
+        x.y += 1;
+        float b = sdBox(x  - make_float3(length, 0.0f, 0.0f), m_limits);
         return max(a,b);
     }
 
@@ -66,7 +77,7 @@ private:
         float3 z = _p;
 //        float d2 = sdf.evalDistance(z);
 //        z.x -= global_t * 0.01f;
-        z = translateHook(0, z);
+//        z = translateHook(0, z);
 
 //        z.x = fmod(z.x, 3.5f);
 

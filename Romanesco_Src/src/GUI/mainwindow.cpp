@@ -417,10 +417,10 @@ void MainWindow::initializeGL()
         maxIterations->setMaximum(1000);
         maxIterations->setValue( optixscene->getMaximumIterations() );
 
-        QSpinBox* sqrtNumSamples = new QSpinBox;
-        sqrtNumSamples->setMinimum(1);
-        sqrtNumSamples->setMaximum(64);
-        sqrtNumSamples->setValue( optixscene->getNumPixelSamplesSqrt() );
+        m_sqrtNumSamples = new QSpinBox;
+        m_sqrtNumSamples->setMinimum(1);
+        m_sqrtNumSamples->setMaximum(64);
+        m_sqrtNumSamples->setValue( optixscene->getNumPixelSamplesSqrt() );
 
         QDoubleSpinBox* normalDelta = new QDoubleSpinBox;
         normalDelta->setMinimum(0.000001f);
@@ -436,7 +436,7 @@ void MainWindow::initializeGL()
 
         connect( m_progressiveSpinbox, SIGNAL(valueChanged(int)), optixscene, SLOT(setProgressiveTimeout(int)) );
         connect( maxIterations , SIGNAL(valueChanged(int)), optixscene, SLOT(setMaximumIterations(int)) );
-        connect( sqrtNumSamples , SIGNAL(valueChanged(int)), optixscene, SLOT(setSamplesPerPixelSquared(int)) );
+        connect( m_sqrtNumSamples , SIGNAL(valueChanged(int)), optixscene, SLOT(setSamplesPerPixelSquared(int)) );
         connect( normalDelta, SIGNAL(valueChanged(double)), optixscene, SLOT(setNormalDelta(double)) );
         connect( surfaceDelta, SIGNAL(valueChanged(double)), optixscene, SLOT(setSurfaceEpsilon(double)) );
 
@@ -444,7 +444,7 @@ void MainWindow::initializeGL()
         QFormLayout* cameraLayout = new QFormLayout;
         QFormLayout* viewportLayout = new QFormLayout;
 
-        samplingLayout->addRow( tr("&Pixel &Samples (&Square Root):"), sqrtNumSamples  );
+        samplingLayout->addRow( tr("&Pixel &Samples (&Square Root):"), m_sqrtNumSamples  );
 
         m_fovSpinbox = new QDoubleSpinBox;
         m_fovSpinbox->setMinimum(0.1f);

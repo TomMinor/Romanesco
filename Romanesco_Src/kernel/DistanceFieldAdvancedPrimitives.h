@@ -104,20 +104,20 @@ public:
 
     __device__ inline float3 translateHook(uint _idx, float3 _v)
     {
-        if(_idx > (TOTALXFORMHOOKS - 1)) {
-            return _v;
-        }
+//        if(_idx > (TOTALXFORMHOOKS - 1)) {
+//            return _v;
+//        }
 
         float3 amount = m_translate[_idx];
 
         // Special case for no translation
-        if( amount == make_float3(0.0f) )
-        {
-            return _v;
-        }
+//        if( amount == make_float3(0.0f) )
+//        {
+//            return _v;
+//        }
 
-        Matrix4x4 transform = Matrix4x4::translate(amount);
-        _v = applyTransform(_v, transform);
+//        Matrix4x4 transform = Matrix4x4::translate(amount);
+        _v += amount;//applyTransform(_v, transform);
 
         return _v;
     }
