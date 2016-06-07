@@ -39,7 +39,7 @@ public:
 
         ///
         /// \brief x_pos
-        ///
+        ///y
         half x_pos, y_pos, z_pos;
 
         ///
