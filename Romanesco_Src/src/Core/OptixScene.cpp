@@ -213,6 +213,11 @@ void OptixScene::setTime(float _t)
     m_context[ "global_t" ]->setFloat( m_time );
 }
 
+void OptixScene::setRelativeTime(float _t)
+{
+    m_context[ "relative_t" ]->setFloat( _t );
+}
+
 void OptixScene::setCamera(optix::float3 _eye, optix::float3 _lookat, float _fov, int _width, int _height)
 {
     m_camera->setParameters( _eye,
@@ -412,68 +417,90 @@ void OptixScene::createLights()
     m_context["test"]->set(test_buffer);
 
 
-//    {
-//        glm::mat4 rot = glm::mat4(1.0f);
-//        glm::rotate(rot, 30.0f, glm::vec3(1,0,0));
+    {
+        glm::mat4 rot = glm::mat4(1.0f);
+        glm::rotate(rot, 30.0f, glm::vec3(1,0,0));
 
-//        glm::vec3 v1(-130.0f, 0.0f, 0.0f);
-////        v1 = glm::vec3(glm::vec4(v1, 1.0) * rot);
-//        glm::vec3 v2( 0.0f, 0.0f, 105.0f);
-////        v2 = glm::vec3(glm::vec4(v2, 1.0) * rot);
+        glm::vec3 v1(-130.0f, 0.0f, 0.0f);
+//        v1 = glm::vec3(glm::vec4(v1, 1.0) * rot);
+        glm::vec3 v2( 0.0f, 0.0f, 105.0f);
+//        v2 = glm::vec3(glm::vec4(v2, 1.0) * rot);
 
-//        ParallelogramLight light;
-////        light.corner   = make_float3( 343.0f, 548.6f, 227.0f);
-//            light.corner   = make_float3( 0.0f, 300.0f, 0.0f);
-//        //    light.v1       = make_float3( -130.0f, 0.0f, 0.0f);
-//        //    light.v2       = make_float3( 0.0f, 0.0f, 105.0f);
-//        light.v1       = make_float3( v1.x, v1.y, v1.z );
-//        light.v2       = make_float3( v2.x, v2.y, v2.z );
-//        light.normal   = normalize( cross(light.v1, light.v2) );
-//        light.emission = make_float3( 3.0f );
+        ParallelogramLight light;
+//        light.corner   = make_float3( 343.0f, 548.6f, 227.0f);
+            light.corner   = make_float3( 0.0f, 300.0f, 0.0f);
+        //    light.v1       = make_float3( -130.0f, 0.0f, 0.0f);
+        //    light.v2       = make_float3( 0.0f, 0.0f, 105.0f);
+        light.v1       = make_float3( v1.x, v1.y, v1.z );
+        light.v2       = make_float3( v2.x, v2.y, v2.z );
+        light.normal   = normalize( cross(light.v1, light.v2) );
+        light.emission = make_float3( 3.0f );
 
-//        m_lights.push_back(light);
-//    }
+        m_lights.push_back(light);
+    }
 
-//    {
-//        glm::mat4 rot = glm::mat4(1.0f);
-//        glm::rotate(rot, 180.0f, glm::vec3(1,0,0));
+    {
+        glm::mat4 rot = glm::mat4(1.0f);
+        glm::rotate(rot, 180.0f, glm::vec3(1,0,0));
 
-//        glm::vec3 v1(-130.0f, 0.0f, 0.0f);
-////        v1 = glm::vec3(glm::vec4(v1, 1.0) * rot);
-//        glm::vec3 v2( 0.0f, 0.0f, 105.0f);
-////        v2 = glm::vec3(glm::vec4(v2, 1.0) * rot);
+        glm::vec3 v1(-130.0f, 0.0f, 0.0f);
+//        v1 = glm::vec3(glm::vec4(v1, 1.0) * rot);
+        glm::vec3 v2( 0.0f, 0.0f, 105.0f);
+//        v2 = glm::vec3(glm::vec4(v2, 1.0) * rot);
 
-//        ParallelogramLight light;
-////        light.corner   = make_float3( 343.0f, -148.6f, 227.0f);
-//            light.corner   = make_float3( 0.0f, -300.0f, 0.0f);
-//        //    light.v1       = make_float3( -130.0f, 0.0f, 0.0f);
-//        //    light.v2       = make_float3( 0.0f, 0.0f, 105.0f);
-//        light.v1       = make_float3( v1.x, v1.y, v1.z );
-//        light.v2       = make_float3( v2.x, v2.y, v2.z );
-//        light.normal   = normalize( cross(light.v1, light.v2) );
-//        light.emission = make_float3( 20.0f, 10.0f, 2.5f );
+        ParallelogramLight light;
+//        light.corner   = make_float3( 343.0f, -148.6f, 227.0f);
+            light.corner   = make_float3( 0.0f, -300.0f, 0.0f);
+        //    light.v1       = make_float3( -130.0f, 0.0f, 0.0f);
+        //    light.v2       = make_float3( 0.0f, 0.0f, 105.0f);
+        light.v1       = make_float3( v1.x, v1.y, v1.z );
+        light.v2       = make_float3( v2.x, v2.y, v2.z );
+        light.normal   = normalize( cross(light.v1, light.v2) );
+        light.emission = make_float3( 20.0f, 10.0f, 2.5f );
 
-//        m_lights.push_back(light);
-//    }
+        m_lights.push_back(light);
+    }
 
     {
         glm::mat4 rot = glm::mat4(1.0f);
         glm::rotate(rot, 30.0f, glm::vec3(1,0,0));
 
         glm::vec3 v1(0.0f, 0.0f, -130.0f);
-//        v1 = glm::vec3(glm::vec4(v1, 1.0) * rot);
+//      v1 = glm::vec3(glm::vec4(v1, 1.0) * rot);
         glm::vec3 v2( 0.0f, 105.0f, 0.0f);
-//        v2 = glm::vec3(glm::vec4(v2, 1.0) * rot);
+//      v2 = glm::vec3(glm::vec4(v2, 1.0) * rot);
 
         ParallelogramLight light;
-//        light.corner   = make_float3( 343.0f, 548.6f, 227.0f);
-            light.corner   = make_float3( 100.0f, -50.0f, 50.0f);
-        //    light.v1       = make_float3( -130.0f, 0.0f, 0.0f);
-        //    light.v2       = make_float3( 0.0f, 0.0f, 105.0f);
+//      light.corner   = make_float3( 343.0f, 548.6f, 227.0f );
+        light.corner   = make_float3( 100.0f, -50.0f, 0.0f );
+//      light.v1       = make_float3( -130.0f, 0.0f, 0.0f );
+//      light.v2       = make_float3( 0.0f, 0.0f, 105.0f );
         light.v1       = make_float3( v1.x, v1.y, v1.z );
         light.v2       = make_float3( v2.x, v2.y, v2.z );
         light.normal   = normalize( cross(light.v1, light.v2) );
-        light.emission = make_float3( .5f ) * 15.0f;
+        light.emission = make_float3( .5f ) * 13.0f;
+
+        m_lights.push_back(light);
+    }
+
+    {
+        glm::mat4 rot = glm::mat4(1.0f);
+        glm::rotate(rot, 30.0f, glm::vec3(1,0,0));
+
+        glm::vec3 v1(0.0f, 0.0f, -130.0f);
+//      v1 = glm::vec3(glm::vec4(v1, 1.0) * rot);
+        glm::vec3 v2( 0.0f, 105.0f, 0.0f);
+//      v2 = glm::vec3(glm::vec4(v2, 1.0) * rot);
+
+        ParallelogramLight light;
+//      light.corner   = make_float3( 343.0f, 548.6f, 227.0f );
+        light.corner   = make_float3( 100.0f, -50.0f, 130.0f );
+//      light.v1       = make_float3( -130.0f, 0.0f, 0.0f );
+//      light.v2       = make_float3( 0.0f, 0.0f, 105.0f );
+        light.v1       = make_float3( v1.x, v1.y, v1.z );
+        light.v2       = make_float3( v2.x, v2.y, v2.z );
+        light.normal   = normalize( cross(light.v1, light.v2) );
+        light.emission = make_float3( .5f ) * 13.0f;
 
         m_lights.push_back(light);
     }
@@ -695,8 +722,6 @@ void OptixScene::createWorld()
             )";
 
             setGeometryHitProgram(defaultSrc);
-//    optix::Program testcallable = m_context->createProgramFromPTXFile(  , "hit");
-//    m_context["do_work"]->set(testcallable);
 }
 
 
@@ -717,7 +742,7 @@ __device__ __noinline__ float3 distancehit_hook()
     std::string hit_src = _hit_src;//(_hit_src == "") ? geometryhook_src : _hit_src;
 
     // Compile function source to ptx
-    RuntimeCompiler program("distancehit_hook", _hit_src);
+    RuntimeCompiler program("hit", _hit_src);
     try
     {
         program.compile();
@@ -735,15 +760,27 @@ __device__ __noinline__ float3 distancehit_hook()
         return;
     }
 
+    optix::Program testcallable;
     try
     {
-        optix::Program testcallable = m_context->createProgramFromPTXString(ptx, "hit");
-        m_context["do_work"]->set(testcallable);
+        qDebug() << strlen(ptx);
+        testcallable = m_context->createProgramFromPTXString(ptx, "hit");
     } catch(optix::Exception &e)
     {
         qWarning("Failed to create program from ptx: %s", e.getErrorString().c_str() );
         return;
     }
+
+    try
+    {
+        m_context["hit_hook"]->set(testcallable);
+    } catch(optix::Exception &e)
+    {
+        qWarning("Failed to create program from ptx: %s", e.getErrorString().c_str() );
+        return;
+    }
+
+
 }
 
 void OptixScene::setShadingProgram(std::string _hit_src)
@@ -958,7 +995,7 @@ void OptixScene::drawToBuffer()
     // http://heart-touching-graphics.blogspot.co.uk/2012/04/bidirectional-path-tracing-using-nvidia_27.html
     // https://devtalk.nvidia.com/default/topic/806609/optix/splitting-work-on-multiple-launches/
     // http://graphics.cs.aueb.gr/graphics/docs/Constantinos%20Kalampokis%20Thesis.pdf
-    int2 NoOfTiles = make_int2(3,3);
+    int2 NoOfTiles = make_int2(12, 12);
     float2 launch_index_tileSize = make_float2( float(buffer_width) / NoOfTiles.x,
                                                 float(buffer_height) / NoOfTiles.y );
 
@@ -984,12 +1021,12 @@ void OptixScene::drawToBuffer()
                                       );
 
                     updateGLBuffer();
-//                    emit bucketReady(i, j);
+                    emit bucketReady(i, j);
                 }
             }
 
             updateGLBuffer();
-//            emit bucketRowReady(i);
+            emit bucketRowReady(i);
         }
     }
     else if(!m_frameDone) // We've hit the 'max' timeout
@@ -1002,7 +1039,7 @@ void OptixScene::drawToBuffer()
 
     if(isFrameReady)
     {
-        emit frameReady();
+        emit frameReady(m_progressiveTimeout);
     }
 
     /// ===========================================================

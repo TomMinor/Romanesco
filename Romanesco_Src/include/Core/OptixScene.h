@@ -118,6 +118,8 @@ public:
 
     void setTime(float _t);
 
+    void setRelativeTime(float _t);
+
     int getProgressiveTimeout()
     {
         return m_progressiveTimeout;
@@ -238,7 +240,7 @@ public slots:
 
 
 signals:
-    void frameReady();
+    void frameReady(unsigned int);
 
     void bucketRowReady(uint _row);
     void bucketReady(uint _i, uint _j);

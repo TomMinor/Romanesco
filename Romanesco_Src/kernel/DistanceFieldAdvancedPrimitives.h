@@ -201,7 +201,7 @@ public:
 
             m0 = min(m0, dot(zn, zn) / (k * k) );
             m1 = min(m1, trapA.getTrapValue() );
-            m2 = length( make_float3( zn.z, zn.x, 0.0f) - make_float3(0.25, 0.25, 0.0))-0.3; // <- tube forms
+            m2 = length( make_float3( zn.z, zn.x, 0.0f) - make_float3(0.25, 0.25, 0.0)) - 0.3; // <- tube forms
 
             rad = length(zn);
 

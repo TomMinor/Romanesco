@@ -45,6 +45,8 @@ public:
 
     void timerEvent(QTimerEvent *_event);
 
+    void showEvent(QShowEvent *_event);
+
     void keyPressEvent(QKeyEvent* _event);
 
     void setGlobalStyleSheet(const QString& _styleSheet);
@@ -125,7 +127,7 @@ private slots:
     void startRender();
     void cancelRender();
 
-    void dumpFrame();
+    void dumpFrame(unsigned int _frameIteration = 0);
     void dumpRenderedFrame();
     void dumpFlipbookFrame();
 
@@ -146,6 +148,15 @@ private slots:
 
 //        m_glViewport->overrideCameraRes(x,y);
         m_glViewport->setResolutionOverride( make_int2(x, y) );
+    }
+
+    void updateRelativeTime(float _t)
+    {
+        int currentFrame = m_timeline->getTime();
+        unsigned int currentRelativeFrame = currentFrame;
+        unsigned int frameRange = m_timeline->getEndFrame() - m_timeline->getStartFrame();
+
+         m_glViewport->updateRelativeTime( currentRelativeFrame );
     }
 
     void loadHitFile();
@@ -193,6 +204,11 @@ private:
 //        if (file.open(QFile::ReadOnly | QFile::Text))
 //            m_editor->setPlainText(file.readAll());
     }
+
+    void setupTabUI();
+    void setupSceneSettingsUI();
+    void setupMaterialSettingsUI();
+    void setupRenderSettingsUI();
 
 private:
     QFramebuffer *m_framebuffer;
