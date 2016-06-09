@@ -10,7 +10,7 @@
 # echo $OVERRIDEFRAMES
 # exit
 
-GLOBALARGS="-b --timeout 50 $EXTRAARGS"
+GLOBALARGS="-b --timeout 20 $EXTRAARGS"
 OUTPUTFILENAME=fractal.1%03d.exr
 OUTPUTPATH=$KYRANPC
 mkdir -p $OUTPUTPATH
@@ -108,6 +108,18 @@ do
 
 	SHOTFOLDER=$OUTPUTPATH/$shot/images/fractals; mkdir -p $SHOTFOLDER;
 	$EXECUTABLE $GLOBALARGS -s $startframe -e $endframe --offset $frameoffset -f $SHOTFOLDER/$OUTPUTFILENAME --width $WIDTH --height $HEIGHT -i ./scenes/$shot.cu
+done
 
-	$EXECUTABLE $GLOBALARGS -s $startframe -e $endframe --offset $frameoffset -f $SHOTFOLDER/$OUTPUTFILENAME --width $WIDTH --height $HEIGHT -i ./scenes/$shot.cu --spp 3
+
+for shot in "${final_shots[@]}"
+do
+	framedata=(${SHOTS[$shot]})
+	startframe="${framedata[0]}"
+	endframe="${framedata[1]}"
+	frameoffset="${framedata[2]}"
+
+	printf "Starting final quality render for shot $(tput setaf $highlight_color)$shot$(tput sgr0)... Start: $(tput setaf $frame_color)[%s]$(tput sgr0)\tEnd: $(tput setaf $frame_color)[%s]$(tput sgr0)\tOffset: $(tput setaf $frame_color)[%s]$(tput sgr0)\n" $startframe $endframe $frameoffset
+
+	SHOTFOLDER=$OUTPUTPATH/$shot/images/fractals; mkdir -p $SHOTFOLDER;
+	$EXECUTABLE $GLOBALARGS -s $startframe -e $endframe --offset $frameoffset -f $SHOTFOLDER/$OUTPUTFILENAME --width $WIDTH --height $HEIGHT -i ./scenes/$shot.cu -spp 3
 done

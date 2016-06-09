@@ -149,6 +149,8 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height, QObject *_pare
 //    m_future = std::async( std::launch::async, &OptixScene::asyncDraw, this );
 
 //    m_renderThread.start(QThread::LowPriority);
+
+    m_frame = 1;
 }
 
 void OptixScene::createBuffers()
@@ -1003,8 +1005,8 @@ void OptixScene::drawToBuffer()
     // Update Optix scene if necessary
     if(m_frame < m_progressiveTimeout)
     {
-        m_context["frame_number"]->setUint(m_frame++);
-
+        m_context["frame_number"]->setUint(m_frame);
+        m_frame++;
         m_context["TileSize"]->setFloat( launch_index_tileSize );
 
         for(int i=0; i<NoOfTiles.x; i++)
@@ -1020,17 +1022,16 @@ void OptixScene::drawToBuffer()
                                       static_cast<unsigned int>(launch_index_tileSize.y)
                                       );
 
-                    updateGLBuffer();
-                    emit bucketReady(i, j);
+//                    updateGLBuffer();
+//                    emit bucketReady(i, j);
                 }
             }
-
-            updateGLBuffer();
-            emit bucketRowReady(i);
+//            updateGLBuffer();
+//            emit bucketRowReady(i);
         }
 
         qDebug() << m_frame << "," << m_progressiveTimeout;
-        emit frameRefined(m_frame - 1);
+//        emit frameRefined(m_frame - 1);
     }
     else if(!m_frameDone) // We've hit the 'max' timeout
     {
