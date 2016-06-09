@@ -149,6 +149,7 @@ void TestGLWidget::updateCamera()
 
 void TestGLWidget::paintGL()
 {
+    // Quickfix to show window before painting
     static bool isInit = false;
 
     if(!isInit)
@@ -243,7 +244,7 @@ void TestGLWidget::paintGL()
 
     m_program->release();
 
-    ++m_frame;
+//    ++m_frame;
 }
 
 void TestGLWidget::mouseMoveEvent(QMouseEvent* _event)

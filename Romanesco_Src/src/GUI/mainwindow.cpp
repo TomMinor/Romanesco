@@ -546,7 +546,7 @@ void MainWindow::bucketRendered(uint i, uint j)
 
 void MainWindow::rowRendered(uint _row)
 {
-//    qDebug("Row %d completed", _row);
+    qDebug("Row %d completed", _row);
 
     m_glViewport->repaint();
 //    qApp->processEvents();
@@ -564,7 +564,8 @@ void MainWindow::updateFrameRefinement(int _frame)
 
 //    if(_frame == m_progressiveTimeout)
 //    {
-//        dumpFrame();
+//        qDebug() << "Completed frame";
+////        dumpFrame();
 //    }
 }
 
