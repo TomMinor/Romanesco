@@ -167,7 +167,7 @@ public:
 
     unsigned int   m_rr_begin_depth;
     unsigned int   m_sqrt_num_samples;
-    unsigned int   m_frame;
+    int   m_frame;
     unsigned int   m_sampling_strategy;
 
     bool m_camera_changed;
@@ -182,7 +182,7 @@ protected:
     std::vector<std::pair<std::string, RTformat>> m_glOutputBuffers;
     std::vector<std::pair<std::string, RTformat>> m_outputBuffers;
 
-    unsigned int m_progressiveTimeout;
+    int m_progressiveTimeout;
     bool m_frameDone;
 
     std::vector<ParallelogramLight> m_lights;
@@ -240,7 +240,8 @@ public slots:
 
 
 signals:
-    void frameReady(unsigned int);
+    void frameReady();
+    void frameRefined(int _refineFrame);
 
     void bucketRowReady(uint _row);
     void bucketReady(uint _i, uint _j);

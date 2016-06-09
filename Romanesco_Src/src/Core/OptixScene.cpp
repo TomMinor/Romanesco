@@ -763,7 +763,6 @@ __device__ __noinline__ float3 distancehit_hook()
     optix::Program testcallable;
     try
     {
-        qDebug() << strlen(ptx);
         testcallable = m_context->createProgramFromPTXString(ptx, "hit");
     } catch(optix::Exception &e)
     {
@@ -847,7 +846,7 @@ float* OptixScene::getBufferContents(std::string _name, RTsize* _elementSize, RT
     float* hostPtr = new float[buffer->getElementSize() * bufferSize];
     CUdeviceptr devicePtr = buffer->getDevicePointer( 0 );
     cudaMemcpy( (void*)hostPtr,   (void*)devicePtr,    buffer->getElementSize() * bufferSize, cudaMemcpyDeviceToHost );
-    qDebug() << buffer->getElementSize() * bufferSize;
+//    qDebug() << buffer->getElementSize() * bufferSize;
 
     return hostPtr;
 }
@@ -995,7 +994,8 @@ void OptixScene::drawToBuffer()
     // http://heart-touching-graphics.blogspot.co.uk/2012/04/bidirectional-path-tracing-using-nvidia_27.html
     // https://devtalk.nvidia.com/default/topic/806609/optix/splitting-work-on-multiple-launches/
     // http://graphics.cs.aueb.gr/graphics/docs/Constantinos%20Kalampokis%20Thesis.pdf
-    int2 NoOfTiles = make_int2(12, 12);
+//    int2 NoOfTiles = make_int2(12, 12);
+    int2 NoOfTiles = make_int2(4, 4);
     float2 launch_index_tileSize = make_float2( float(buffer_width) / NoOfTiles.x,
                                                 float(buffer_height) / NoOfTiles.y );
 
@@ -1028,6 +1028,9 @@ void OptixScene::drawToBuffer()
             updateGLBuffer();
             emit bucketRowReady(i);
         }
+
+        qDebug() << m_frame << "," << m_progressiveTimeout;
+        emit frameRefined(m_frame - 1);
     }
     else if(!m_frameDone) // We've hit the 'max' timeout
     {
@@ -1039,7 +1042,7 @@ void OptixScene::drawToBuffer()
 
     if(isFrameReady)
     {
-        emit frameReady(m_progressiveTimeout);
+        emit frameReady();
     }
 
     /// ===========================================================

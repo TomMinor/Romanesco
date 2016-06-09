@@ -199,12 +199,8 @@ enum CommandLineParseResult
 
 CommandLineParseResult parseCommandLine(QCommandLineParser &parser, MainWindow *window, QString *errorMessage)
 {
-//    parser.setSingleDashWordOptionMode(QCommandLineParser::ParseAsLongOptions);
-
     parser.addHelpOption();
     parser.addVersionOption();
-//    parser.addPositionalArgument("source",      QCoreApplication::translate("main", "Source file to copy."));
-//    parser.addPositionalArgument("destination", QCoreApplication::translate("main", "Destination directory."));
 
     const QCommandLineOption startFrameOption("s", "Start frame", "start");
     parser.addOption(startFrameOption);
@@ -234,12 +230,10 @@ CommandLineParseResult parseCommandLine(QCommandLineParser &parser, MainWindow *
     const QCommandLineOption outPathOption("f", "Output file path e.g. ./frames/out_%04d.exr", "file");
     parser.addOption(outPathOption);
 
-
     parser.addOptions({
                           {{"b", "batch"},
                            QCoreApplication::translate("main", "Quit when the render is complete")},
                       });
-
 
 //    const QCommandLineOption nameServerOption("n", "The name server to use.", "nameserver");
 //    parser.addOption(nameServerOption);
@@ -328,6 +322,7 @@ void MainWindow::setupTabUI()
 {
     OptixScene* optixscene = m_glViewport->m_optixScene;
     connect(optixscene, SIGNAL(frameReady()), this, SLOT(dumpFrame()));
+    connect(optixscene, SIGNAL(frameRefined(int)), this, SLOT(updateFrameRefinement(int)));
     connect(optixscene, SIGNAL(bucketRowReady(uint)), this, SLOT(rowRendered(uint)));
     connect(optixscene, SIGNAL(bucketReady(uint,uint)), this, SLOT(bucketRendered(uint,uint)));
 
@@ -381,7 +376,7 @@ void MainWindow::setupSceneSettingsUI()
         surfaceDelta->setDecimals(5);
         surfaceDelta->setValue( optixscene->getSurfaceEpsilon() );
 
-        connect( m_progressiveSpinbox, SIGNAL(valueChanged(int)), optixscene, SLOT(setProgressiveTimeout(int)) );
+        connect( m_progressiveSpinbox, SIGNAL(valueChanged(int)), this, SLOT(setProgressiveTimeout(int)) );
         connect( maxIterations , SIGNAL(valueChanged(int)), optixscene, SLOT(setMaximumIterations(int)) );
         connect( m_sqrtNumSamples , SIGNAL(valueChanged(int)), optixscene, SLOT(setSamplesPerPixelSquared(int)) );
         connect( normalDelta, SIGNAL(valueChanged(double)), optixscene, SLOT(setNormalDelta(double)) );
@@ -543,7 +538,7 @@ void MainWindow::initializeGL()
 
 void MainWindow::bucketRendered(uint i, uint j)
 {
-    qDebug("Bucket (%d, %d) completed", i, j);
+//    qDebug("Bucket (%d, %d) completed", i, j);
 
     m_glViewport->repaint();
 //    qApp->processEvents();
@@ -551,7 +546,7 @@ void MainWindow::bucketRendered(uint i, uint j)
 
 void MainWindow::rowRendered(uint _row)
 {
-    qDebug("Row %d completed", _row);
+//    qDebug("Row %d completed", _row);
 
     m_glViewport->repaint();
 //    qApp->processEvents();
@@ -563,9 +558,19 @@ void MainWindow::setGlobalStyleSheet(const QString& _styleSheet)
     m_framebuffer->setStyleSheet(_styleSheet);
 }
 
-void MainWindow::dumpFrame(unsigned int _frameIteration)
+void MainWindow::updateFrameRefinement(int _frame)
 {
-    qDebug("Completed %d/%d", _frameIteration, m_progressiveTimeout);
+    qDebug("Refined %d/%d", _frame, m_progressiveTimeout);
+
+//    if(_frame == m_progressiveTimeout)
+//    {
+//        dumpFrame();
+//    }
+}
+
+void MainWindow::dumpFrame()
+{
+    qDebug("Completed frame");
 
     // Cancel if the framebuffer was closed
     if(!m_framebuffer->isVisible())
@@ -591,7 +596,7 @@ void MainWindow::dumpRenderedFrame()
     m_cancelRenderAct->setEnabled(true);// Enable render cancel button
 
     m_timeline->setTime( currentFrame + 1 );
-    unsigned int currentRelativeFrame = currentFrame;
+    unsigned int currentRelativeFrame = currentFrame - m_timeline->getStartFrame();
     unsigned int frameRange = m_timeline->getEndFrame() - m_timeline->getStartFrame();
 
     std::string statusMessage = boost::str( boost::format("Rendering frame %d of %d") % currentRelativeFrame % frameRange );
@@ -769,7 +774,7 @@ void MainWindow::graphUpdated()
 
 void MainWindow::timeUpdated(float _t)
 {
-    qDebug() << "Time : " << _t;
+//    qDebug() << "Time : " << _t;
 }
 
 MainWindow::~MainWindow()
