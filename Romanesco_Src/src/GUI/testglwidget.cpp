@@ -91,6 +91,10 @@ void TestGLWidget::initializeGL()
 
 void TestGLWidget::resizeGL(int _w, int _h)
 {
+    if(m_overrideRes && m_previousHeight == m_overrideHeight && m_previousWidth == m_overrideWidth )
+    {
+        return;
+    }
 //        m_projection.setToIdentity();
 //        m_projection.perspective(60.0f, w / float(h), 0.01f, 1000.0f);
 
@@ -145,6 +149,14 @@ void TestGLWidget::updateCamera()
 
 void TestGLWidget::paintGL()
 {
+    static bool isInit = false;
+
+    if(!isInit)
+    {
+        isInit = true;
+        return;
+    }
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     m_camRot = m_desiredCamRot;

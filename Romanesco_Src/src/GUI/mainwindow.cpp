@@ -143,6 +143,7 @@ MainWindow::MainWindow(QWidget *parent) :
     m_timeline->setEndFrame(200);
 
     connect(m_timeline, SIGNAL(timeUpdated(float)), m_glViewport, SLOT(updateTime(float))) ;
+    connect(m_timeline, SIGNAL(timeUpdated(float)), this, SLOT(updateRelativeTime(float))) ;
     connect(m_timeline, SIGNAL(paused()), this, SLOT(cancelFlipbook()));
 
     layout->addWidget(splitter);
@@ -323,79 +324,25 @@ CommandLineParseResult parseCommandLine(QCommandLineParser &parser, MainWindow *
     return CommandLineOk;
 }
 
-void MainWindow::initializeGL()
+void MainWindow::setupTabUI()
 {
     OptixScene* optixscene = m_glViewport->m_optixScene;
     connect(optixscene, SIGNAL(frameReady()), this, SLOT(dumpFrame()));
+    connect(optixscene, SIGNAL(bucketRowReady(uint)), this, SLOT(rowRendered(uint)));
+    connect(optixscene, SIGNAL(bucketReady(uint,uint)), this, SLOT(bucketRendered(uint,uint)));
 
-//    connect(optixscene, SIGNAL(bucketReady(uint,uint)), this, SLOT(bucketRendered(uint,uint)));
-//    connect(optixscene, SIGNAL(bucketRowReady(uint)), this, SLOT(rowRendered(uint)));
+    setupSceneSettingsUI();
+    setupMaterialSettingsUI();
+    setupRenderSettingsUI();
 
+    m_mainTabWidget->addTab( m_sceneSettingsWidget,     "Scene Settings" );
+    m_mainTabWidget->addTab( m_materialSettingsWidget,  "Material Settings" );
+    m_mainTabWidget->addTab( m_renderSettingsWidget,    "Render Settings" );
+}
 
-    m_materialSettingsWidget = new QWidget;
-    {
-        QFormLayout* layout = new QFormLayout;
-
-        m_materialSettingsWidget->setLayout( layout );
-    }
-
-    m_renderSettingsWidget = new QWidget;
-    {
-        QVBoxLayout* layout = new QVBoxLayout;
-
-        QGroupBox* timeGrpBox = new QGroupBox("Time Settings");
-        QFormLayout* timeLayout = new QFormLayout;
-        timeGrpBox->setLayout(timeLayout);
-
-        QDoubleSpinBox* timeScale = new QDoubleSpinBox;
-        timeScale->setMinimum(0.01f);
-        timeScale->setMaximum(100.0f);
-        timeScale->setSingleStep( 0.1f );
-        timeScale->setDecimals(3);
-        timeScale->setValue( m_timeline->getTimeScale() );
-        timeLayout->addWidget(timeScale);
-
-        QGroupBox* viewportGrpBox = new QGroupBox("Viewport Settings");
-        QGridLayout* viewportLayout = new QGridLayout;
-        viewportGrpBox->setLayout(viewportLayout);
-
-        QLabel* toggleResOverrideLbl = new QLabel;
-        toggleResOverrideLbl->setText("Override viewport resolution");
-        viewportLayout->addWidget( toggleResOverrideLbl, 0, 0 );
-
-        QCheckBox* toggleResOverride = new QCheckBox;
-        toggleResOverride->setChecked( m_glViewport->getResolutionOverride() );
-        viewportLayout->addWidget( toggleResOverride, 0, 1 );
-
-        m_resX = new QSpinBox;
-        m_resX->setMinimum(1);
-        m_resX->setMaximum(9000);
-        m_resX->setValue( optixscene->getResolution().x );
-        m_resX->setEnabled( toggleResOverride->isChecked() );
-        viewportLayout->addWidget(m_resX, 1, 0);
-
-        m_resY = new QSpinBox;
-        m_resY->setMinimum(1);
-        m_resY->setMaximum(9000);
-        m_resY->setValue( optixscene->getResolution().y );
-        m_resY->setEnabled( toggleResOverride->isChecked() );
-        viewportLayout->addWidget(m_resY, 1, 1);
-
-        layout->addWidget(timeGrpBox);
-        layout->addWidget(viewportGrpBox);
-
-        connect( timeScale, SIGNAL(valueChanged(double)), this, SLOT(setTimeScale(double)) );
-        connect( m_resX, SIGNAL(editingFinished()), this, SLOT(forceViewportResolution()) );
-        connect( m_resY, SIGNAL(editingFinished()), this, SLOT(forceViewportResolution()) );
-
-        connect( toggleResOverride, SIGNAL(clicked(bool)), m_glViewport, SLOT(setShouldOverrideResolution(bool)));
-        connect( toggleResOverride, SIGNAL(clicked(bool)), m_resX, SLOT(setEnabled(bool)) );
-        connect( toggleResOverride, SIGNAL(clicked(bool)), m_resY, SLOT(setEnabled(bool)) );
-
-        m_renderSettingsWidget->setLayout( layout );
-
-
-    }
+void MainWindow::setupSceneSettingsUI()
+{
+    OptixScene* optixscene = m_glViewport->m_optixScene;
 
     m_sceneSettingsWidget = new QWidget;
     {
@@ -473,10 +420,84 @@ void MainWindow::initializeGL()
 
         m_sceneSettingsWidget->setLayout( layout );
     }
+}
 
-    m_mainTabWidget->addTab( m_sceneSettingsWidget,     "Scene Settings" );
-    m_mainTabWidget->addTab( m_materialSettingsWidget,  "Material Settings" );
-    m_mainTabWidget->addTab( m_renderSettingsWidget,    "Render Settings" );
+void MainWindow::setupMaterialSettingsUI()
+{
+    OptixScene* optixscene = m_glViewport->m_optixScene;
+
+    m_materialSettingsWidget = new QWidget;
+    {
+        QFormLayout* layout = new QFormLayout;
+
+        m_materialSettingsWidget->setLayout( layout );
+    }
+}
+
+void MainWindow::setupRenderSettingsUI()
+{
+    OptixScene* optixscene = m_glViewport->m_optixScene;
+
+    m_renderSettingsWidget = new QWidget;
+    {
+        QVBoxLayout* layout = new QVBoxLayout;
+
+        QGroupBox* timeGrpBox = new QGroupBox("Time Settings");
+        QFormLayout* timeLayout = new QFormLayout;
+        timeGrpBox->setLayout(timeLayout);
+
+        QDoubleSpinBox* timeScale = new QDoubleSpinBox;
+        timeScale->setMinimum(0.01f);
+        timeScale->setMaximum(100.0f);
+        timeScale->setSingleStep( 0.1f );
+        timeScale->setDecimals(3);
+        timeScale->setValue( m_timeline->getTimeScale() );
+        timeLayout->addWidget(timeScale);
+
+        QGroupBox* viewportGrpBox = new QGroupBox("Viewport Settings");
+        QGridLayout* viewportLayout = new QGridLayout;
+        viewportGrpBox->setLayout(viewportLayout);
+
+        QLabel* toggleResOverrideLbl = new QLabel;
+        toggleResOverrideLbl->setText("Override viewport resolution");
+        viewportLayout->addWidget( toggleResOverrideLbl, 0, 0 );
+
+        QCheckBox* toggleResOverride = new QCheckBox;
+        toggleResOverride->setChecked( m_glViewport->getResolutionOverride() );
+        viewportLayout->addWidget( toggleResOverride, 0, 1 );
+
+        m_resX = new QSpinBox;
+        m_resX->setMinimum(1);
+        m_resX->setMaximum(9000);
+        m_resX->setValue( optixscene->getResolution().x );
+        m_resX->setEnabled( toggleResOverride->isChecked() );
+        viewportLayout->addWidget(m_resX, 1, 0);
+
+        m_resY = new QSpinBox;
+        m_resY->setMinimum(1);
+        m_resY->setMaximum(9000);
+        m_resY->setValue( optixscene->getResolution().y );
+        m_resY->setEnabled( toggleResOverride->isChecked() );
+        viewportLayout->addWidget(m_resY, 1, 1);
+
+        layout->addWidget(timeGrpBox);
+        layout->addWidget(viewportGrpBox);
+
+        connect( timeScale, SIGNAL(valueChanged(double)), this, SLOT(setTimeScale(double)) );
+        connect( m_resX, SIGNAL(editingFinished()), this, SLOT(forceViewportResolution()) );
+        connect( m_resY, SIGNAL(editingFinished()), this, SLOT(forceViewportResolution()) );
+
+        connect( toggleResOverride, SIGNAL(clicked(bool)), m_glViewport, SLOT(setShouldOverrideResolution(bool)));
+        connect( toggleResOverride, SIGNAL(clicked(bool)), m_resX, SLOT(setEnabled(bool)) );
+        connect( toggleResOverride, SIGNAL(clicked(bool)), m_resY, SLOT(setEnabled(bool)) );
+
+        m_renderSettingsWidget->setLayout( layout );
+    }
+}
+
+void MainWindow::initializeGL()
+{
+    setupTabUI();
 
     {
         QCommandLineParser parser;
@@ -508,29 +529,29 @@ void MainWindow::initializeGL()
         m_deferredScenePath = "";
     }
 
-    if(m_batchMode)
+    if(m_renderX > -1 && m_renderY > -1)
     {
-        if(m_renderX > -1 && m_renderY > -1)
-        {
-            qDebug("Rendering at %dx%d", m_renderX, m_renderY );
-            m_glViewport->setShouldOverrideResolution(true);
-            m_glViewport->setResolutionOverride( make_int2(m_renderX, m_renderY) );
-        }
+        m_resX->setValue( m_renderX );
+        m_resY->setValue( m_renderY );
 
-        startRender();
+        qDebug("Rendering at %dx%d", m_renderX, m_renderY );
+        m_glViewport->setShouldOverrideResolution(true);
+        m_glViewport->setResolutionOverride( make_int2(m_renderX, m_renderY) );
+        m_glViewport->refreshScene();
     }
 }
 
 void MainWindow::bucketRendered(uint i, uint j)
 {
-//    qDebug("Bucket (%d, %d) completed", i, j);
+    qDebug("Bucket (%d, %d) completed", i, j);
 
+    m_glViewport->repaint();
 //    qApp->processEvents();
 }
 
 void MainWindow::rowRendered(uint _row)
 {
-//    qDebug("Row %d completed", _row);
+    qDebug("Row %d completed", _row);
 
     m_glViewport->repaint();
 //    qApp->processEvents();
@@ -542,8 +563,10 @@ void MainWindow::setGlobalStyleSheet(const QString& _styleSheet)
     m_framebuffer->setStyleSheet(_styleSheet);
 }
 
-void MainWindow::dumpFrame()
+void MainWindow::dumpFrame(unsigned int _frameIteration)
 {
+    qDebug("Completed %d/%d", _frameIteration, m_progressiveTimeout);
+
     // Cancel if the framebuffer was closed
     if(!m_framebuffer->isVisible())
     {
@@ -707,6 +730,16 @@ void MainWindow::cancelRender()
     m_renderProgress->setVisible(false);
 }
 
+void MainWindow::showEvent(QShowEvent *_event)
+{
+    QWidget::showEvent(_event);
+
+    if(m_batchMode)
+    {
+        startRender();
+    }
+}
+
 void MainWindow::keyPressEvent(QKeyEvent* _event)
 {
 
@@ -716,11 +749,13 @@ void MainWindow::timerEvent(QTimerEvent *_event)
 {
     if(_event->timerId() == m_updateTimer)
     {
-      //if (isExposed())
-      if(m_glViewport)
+//      if (isExposed())
       {
-          m_glViewport->update();
-          qApp->processEvents();
+          if(m_glViewport )
+          {
+              m_glViewport->update();
+              qApp->processEvents();
+          }
       }
     }
 }
@@ -827,7 +862,6 @@ void MainWindow::buildHitFunction()
     std::string src = m_editor->toPlainText().toStdString();
     m_glViewport->m_optixScene->setGeometryHitProgram(src);
     m_glViewport->refreshScene();
-
 }
 
 void MainWindow::addBlock()

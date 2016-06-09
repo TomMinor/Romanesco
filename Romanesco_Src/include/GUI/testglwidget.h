@@ -50,6 +50,13 @@ public slots:
         m_optixScene->setTime(_t);
     }
 
+    void updateRelativeTime(float _t)
+    {
+        m_updateCamera = true;
+
+        m_optixScene->setRelativeTime(_t);
+    }
+
     void setShouldOverrideResolution(bool _v)
     {
         m_overrideRes = _v;

@@ -1,8 +1,18 @@
 #/bin/bash
 
+
+# OVERRIDEFRAMES=false
+# if [[ -z ${START+x} && -z ${END+x} ]];
+# then 
+# 	OVERRIDEFRAMES=true
+# fi
+
+# echo $OVERRIDEFRAMES
+# exit
+
 GLOBALARGS="-b --timeout 50 $EXTRAARGS"
 OUTPUTFILENAME=fractal.1%03d.exr
-OUTPUTPATH=/transfer/fractals
+OUTPUTPATH=$KYRANPC
 mkdir -p $OUTPUTPATH
 
 EXECUTABLE=./romanesco
@@ -11,14 +21,25 @@ HEIGHT=1080
 
 # Associative array for easy shot data editing
 declare -A SHOTS
-SHOTS[spc_sh_070]="0 	115 0" #2294
-SHOTS[fra_sh_010]="0 	152 0" #2409
-SHOTS[fra_sh_020]="0 	106 0" #2561
-SHOTS[fra_sh_030]="107 	197 0" #2667
-SHOTS[fra_sh_040]="198	267 0" #2757
-SHOTS[fra_sh_050]="268 	346 0" #2826
-SHOTS[fra_sh_060]="347 	439 0" #2904
-SHOTS[fra_sh_070]="440 	501 0" #2996
+SHOTS[spc_sh_070]="0 	115 0" #2294  115
+SHOTS[fra_sh_010]="0 	152 0" #2409  152
+SHOTS[fra_sh_020]="0 	106 0" #2561  106
+SHOTS[fra_sh_030]="120 	210 0" #2667  90
+SHOTS[fra_sh_040]="198	267 0" #2757  69
+SHOTS[fra_sh_050]="268 	346 0" #2826  78
+SHOTS[fra_sh_060]="347 	439 0" #2904  92
+SHOTS[fra_sh_070]="440 	501 0" #2996  61
+
+# Bad frames
+# 66 - 120 # Gaps
+# ~149 - 160 # Boring shape
+
+# Good bits
+# 20   # Very organic
+# 120
+# 160 - 240 # Interesting shape, cauliflower
+# 450
+# 650
 
 array_contains () {
     local seeking=$1; shift
@@ -85,45 +106,6 @@ do
 
 	printf "Starting render for shot $(tput setaf $highlight_color)$shot$(tput sgr0)... Start: $(tput setaf $frame_color)[%s]$(tput sgr0)\tEnd: $(tput setaf $frame_color)[%s]$(tput sgr0)\tOffset: $(tput setaf $frame_color)[%s]$(tput sgr0)\n" $startframe $endframe $frameoffset
 
-	SHOTFOLDER=$OUTPUTPATH/$shot; mkdir -p $SHOTFOLDER;
-	$EXECUTABLE $GLOBALARGS -s $startframe -e $endframe --offset $frameoffset -f $SHOTFOLDER/$OUTPUTFILENAME --width $WIDTH --height $HEIGHT -i ./scenes/$shot.cu;
+	SHOTFOLDER=$OUTPUTPATH/$shot/images/fractals; mkdir -p $SHOTFOLDER;
+	$EXECUTABLE $GLOBALARGS -s $startframe -e $endframe --offset $frameoffset -f $SHOTFOLDER/$OUTPUTFILENAME --width $WIDTH --height $HEIGHT -i ./scenes/$shot.cu
 done
-
-# spc_sh_070 f115 start:2294 @todo fly towards camera
-#SHOTFOLDER=$OUTPUTPATH/spc_sh_070; mkdir -p $SHOTFOLDER;
-#./romanesco $GLOBALARGS -s 0 -e 115 -f $SHOTFOLDER/$OUTPUTFILENAME --width $WIDTH --height $HEIGHT -i ./scenes/spc_sh_070.cu --timeout 20
-
-# fra_sh_010 f152
-# SHOTFOLDER=$OUTPUTPATH/fra_sh_010; mkdir -p $SHOTFOLDER;
-# echo "./romanesco $GLOBALARGS -s 0 -e 152 -f $SHOTFOLDER/$OUTPUTFILENAME --width $WIDTH --height $HEIGHT -i ./scenes/fra_sh_010.cu"
-# ./romanesco $GLOBALARGS -s 0 -e 152 -f $SHOTFOLDER/$OUTPUTFILENAME --width $WIDTH --height $HEIGHT -i ./scenes/fra_sh_010.cu
-
-# fra_sh_020 f106 start:2561
-#SHOTFOLDER=$OUTPUTPATH/fra_sh_020; mkdir -p $SHOTFOLDER;
-#echo "./romanesco $GLOBALARGS -s 0 -e 106 -f $SHOTFOLDER/$OUTPUTFILENAME --width $WIDTH --height $HEIGHT -i ./scenes/fra_sh_020.cu"
-#./romanesco $GLOBALARGS -s 0 -e 106 -f $SHOTFOLDER/$OUTPUTFILENAME --width $WIDTH --height $HEIGHT -i ./scenes/fra_sh_020.cu
-
-# # fra_sh_030 f90 start:2667
-# SHOTFOLDER=$OUTPUTPATH/fra_sh_030; mkdir -p $SHOTFOLDER;
-# echo "./romanesco $GLOBALARGS -s 107 -e 197 -f $SHOTFOLDER/$OUTPUTFILENAME --width $WIDTH --height $HEIGHT -i ./scenes/fra_sh_030.cu"
-# ./romanesco $GLOBALARGS -s 107 -e 197 -f $SHOTFOLDER/$OUTPUTFILENAME --width $WIDTH --height $HEIGHT -i ./scenes/fra_sh_030.cu
-
-# # fra_sh_040 f69 start:2757
-# SHOTFOLDER=$OUTPUTPATH/fra_sh_040; mkdir -p $SHOTFOLDER;
-# echo "./romanesco $GLOBALARGS -s 198 -e 267 -f $SHOTFOLDER/$OUTPUTFILENAME --width $WIDTH --height $HEIGHT -i ./scenes/fra_sh_040.cu"
-# ./romanesco $GLOBALARGS -s 198 -e 267 -f $SHOTFOLDER/$OUTPUTFILENAME --width $WIDTH --height $HEIGHT -i ./scenes/fra_sh_040.cu
-
-# # fra_sh_050 f78 start:2826
-# SHOTFOLDER=$OUTPUTPATH/fra_sh_050; mkdir -p $SHOTFOLDER;
-# echo "./romanesco $GLOBALARGS -s 268 -e 346 -f $SHOTFOLDER/$OUTPUTFILENAME --width $WIDTH --height $HEIGHT -i ./scenes/fra_sh_050.cu"
-# ./romanesco $GLOBALARGS -s 268 -e 346 -f $SHOTFOLDER/$OUTPUTFILENAME --width $WIDTH --height $HEIGHT -i ./scenes/fra_sh_050.cu
-
-# # fra_sh_060 f92 start:2904
-# SHOTFOLDER=$OUTPUTPATH/fra_sh_060; mkdir -p $SHOTFOLDER;
-# echo "./romanesco $GLOBALARGS -s 347 -e 439 -f $SHOTFOLDER/$OUTPUTFILENAME --width $WIDTH --height $HEIGHT -i ./scenes/fra_sh_060.cu"
-# ./romanesco $GLOBALARGS -s 347 -e 439 -f $SHOTFOLDER/$OUTPUTFILENAME --width $WIDTH --height $HEIGHT -i ./scenes/fra_sh_060.cu
-
-# # fra_sh_070 f61 start:2996
-# SHOTFOLDER=$OUTPUTPATH/fra_sh_070; mkdir -p $SHOTFOLDER;
-# echo "./romanesco $GLOBALARGS -s 440 -e 501 -f $SHOTFOLDER/$OUTPUTFILENAME --width $WIDTH --height $HEIGHT -i ./scenes/fra_sh_070.cu"
-# ./romanesco $GLOBALARGS -s 440 -e 501 -f $SHOTFOLDER/$OUTPUTFILENAME --width $WIDTH --height $HEIGHT -i ./scenes/fra_sh_070.cu

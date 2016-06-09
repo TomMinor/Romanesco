@@ -59,6 +59,7 @@ rtDeclareVariable( float,  delta , , );
 rtDeclareVariable( float,  DEL , , );
 rtDeclareVariable( uint,   max_iterations , , );    // max iterations for divergence determination
 rtDeclareVariable( float, global_t, , );          // Global time
+rtDeclareVariable( float, relative_t, , );          // Global time
 
 rtDeclareVariable(optix::Ray, ray, rtCurrentRay, );
 
@@ -106,7 +107,7 @@ rtDeclareVariable(float3, bg_color, , );
 
 
 typedef rtCallableProgramX<float4(float3, int, float)> callT;
-rtDeclareVariable(callT, do_work,,);
+rtDeclareVariable(callT, hit_hook,,);
 
 struct PerRayData_pathtrace
 {
@@ -354,20 +355,18 @@ RT_PROGRAM void intersect(int primIdx)
     float3 orbitdist = make_float3( 1e10 );
     float3 originalDir = ray_direction;
 
-    const float NonLinearPerspective = 0.8;
+    const float NonLinearPerspective = 1.1;
 
     const float Jitter = 0.05f;
     float totalDistance = 0.0;//Jitter * tea<4>(current_prd.seed, frame_number);
 
     for( unsigned int i = 0; i < 800; ++i )
     {
-//      dir.zy = rotate(dir2.zy,totalDistance * tan( atan( cos(iGlobalTime * 0.8) )) * NonLinearPerspective);
-
-//        if(current_prd.depth < 1)
+//        if(current_prd.depth == 0)
 //        {
-//            float delta = sin( global_t * 0.1f ) * 30 + tan(global_t  * 0.001f) * 10;
+//            float delta = sin( relative_t * 0.1f ) * 10 + tan(relative_t  * 0.001f) * 4;
 //            float2 rot = rotate( make_float2(originalDir.z, originalDir.y),
-//                                 radians(totalDistance * delta) ) * NonLinearPerspective;
+//                                          radians(dist_from_origin * delta) ) * NonLinearPerspective;
 //            ray_direction.z = -rot.x;
 //            ray_direction.y = rot.y;
 //        }
@@ -379,7 +378,7 @@ RT_PROGRAM void intersect(int primIdx)
 //      float3 offset = make_float3(0.92858,0.92858,0.32858);
 //      sdf.setScaleHook( 0, x * scale - offset * (scale - 1.0f));
 
-      float4 result = do_work(x, max_iterations, global_t);
+      float4 result = hit_hook(x, max_iterations, global_t);
       dist = result.x;
       float3 trapValue = make_float3( result.y, result.z, result.w);
 
@@ -414,11 +413,11 @@ RT_PROGRAM void intersect(int primIdx)
 
         // Calculate normal with finite difference
         {
-            uint iters = 14;
+            uint iters = max_iterations * 0.5f;
             const float eps = DEL;
-            float4 dx = do_work(x + make_float3(eps,    0,   0), iters, global_t) - do_work(x - make_float3(eps,   0,   0), iters, global_t);
-            float4 dy = do_work(x + make_float3(  0,  eps,   0), iters, global_t) - do_work(x - make_float3(  0, eps,   0), iters, global_t);
-            float4 dz = do_work(x + make_float3(  0,    0, eps), iters, global_t) - do_work(x - make_float3(  0,   0, eps), iters, global_t);
+            float4 dx = hit_hook(x + make_float3(eps,    0,   0), iters, global_t) - hit_hook(x - make_float3(eps,   0,   0), iters, global_t);
+            float4 dy = hit_hook(x + make_float3(  0,  eps,   0), iters, global_t) - hit_hook(x - make_float3(  0, eps,   0), iters, global_t);
+            float4 dz = hit_hook(x + make_float3(  0,    0, eps), iters, global_t) - hit_hook(x - make_float3(  0,   0, eps), iters, global_t);
 
             normal = normalize( make_float3(dx.x, dy.x, dz.x) );
         }
@@ -446,8 +445,10 @@ RT_PROGRAM void bounds (int, float result[6])
 rtBuffer<ParallelogramLight>     lights;
 
 rtDeclareVariable(float3, emission_color, , );
-RT_PROGRAM void diffuseEmitter(){
-    if(current_prd.countEmitted){
+RT_PROGRAM void diffuseEmitter()
+{
+    if(current_prd.countEmitted)
+    {
         current_prd.result = make_float4(emission_color, 1.0f);
         current_prd.result_nrm = make_float3(0);
     }
@@ -644,7 +645,7 @@ RT_PROGRAM void chrome_ah_shadow()
 rtTextureSampler<float4, 2> envmap;
 RT_PROGRAM void envmap_miss()
 {
-    float strength =4.0f;
+    float strength = 0.3f;
 
   float theta = atan2f( ray.direction.x, ray.direction.z );
   float phi   = M_PIf * 0.5f -  acosf( ray.direction.y );
