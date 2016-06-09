@@ -108,4 +108,6 @@ do
 
 	SHOTFOLDER=$OUTPUTPATH/$shot/images/fractals; mkdir -p $SHOTFOLDER;
 	$EXECUTABLE $GLOBALARGS -s $startframe -e $endframe --offset $frameoffset -f $SHOTFOLDER/$OUTPUTFILENAME --width $WIDTH --height $HEIGHT -i ./scenes/$shot.cu
+
+	$EXECUTABLE $GLOBALARGS -s $startframe -e $endframe --offset $frameoffset -f $SHOTFOLDER/$OUTPUTFILENAME --width $WIDTH --height $HEIGHT -i ./scenes/$shot.cu --spp 3
 done

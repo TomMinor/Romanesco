@@ -94,6 +94,7 @@ public slots:
     {
         m_progressiveTimeout = _t;
         m_progressiveSpinbox->setValue(m_progressiveTimeout);
+        m_glViewport->m_optixScene->setProgressiveTimeout(_t);
     }
 
     void setFOV(float _fov)
@@ -127,7 +128,8 @@ private slots:
     void startRender();
     void cancelRender();
 
-    void dumpFrame(unsigned int _frameIteration = 0);
+    void updateFrameRefinement(int _frame);
+    void dumpFrame();
     void dumpRenderedFrame();
     void dumpFlipbookFrame();
 
@@ -149,6 +151,8 @@ private slots:
 //        m_glViewport->overrideCameraRes(x,y);
         m_glViewport->setResolutionOverride( make_int2(x, y) );
     }
+
+
 
     void updateRelativeTime(float _t)
     {

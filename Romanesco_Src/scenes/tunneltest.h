@@ -44,6 +44,12 @@ public:
     }
 
 private:
+    /// http://stackoverflow.com/questions/3451553/value-remapping
+    __device__ float remap(float value, float low1, float high1, float low2, float high2)
+    {
+        return low2 + (value - low1) * (high2 - low2) / (high1 - low1);
+    }
+
     //// Geometric orbit trap
      __device__ float trap(float3 p)
      {
@@ -89,7 +95,7 @@ private:
         float k = 1.0f;
         float m0 = 1e10, m1 = 1e10, m2 = 1e10;
 
-        SphereTrap trapA;
+        SphereTrap trapA(1);
 
         float d = 1000.0f;
         for(int n = 0; n < m_maxIterations; ++n)
@@ -98,7 +104,8 @@ private:
 
             m0 = min(m0, dot(z, z) / (k*k) );
             m1 = min(m1, trapA.getTrapValue() );
-            m2 = length( make_float3( z.z, z.x, 0.0f) - make_float3(0.25, 0.25, 0.0))-0.3; // <- tube forms
+            m2 = length( make_float3( z.z, z.x, 0.0f) - make_float3(1.0f, 1.0f, 0.0) ) - 0.3f; // <- tube forms
+            m2 = remap(m2, 0, 50000, 0.0, 1.0);
 
             ///@todo rotate
             ///
