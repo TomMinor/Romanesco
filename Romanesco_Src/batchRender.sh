@@ -1,14 +1,13 @@
 #/bin/bash
 
 
-# OVERRIDEFRAMES=false
-# if [[ -z ${START+x} && -z ${END+x} ]];
-# then 
-# 	OVERRIDEFRAMES=true
-# fi
+OVERRIDEFRAMES=true
 
-# echo $OVERRIDEFRAMES
-# exit
+if [[ -z ${START+x} && -z ${END+x} ]];
+then 
+	OVERRIDEFRAMES=false
+fi
+
 
 GLOBALARGS="-b --timeout 20 $EXTRAARGS"
 OUTPUTFILENAME=fractal.1%03d.exr
@@ -106,6 +105,12 @@ do
 
 	printf "Starting render for shot $(tput setaf $highlight_color)$shot$(tput sgr0)... Start: $(tput setaf $frame_color)[%s]$(tput sgr0)\tEnd: $(tput setaf $frame_color)[%s]$(tput sgr0)\tOffset: $(tput setaf $frame_color)[%s]$(tput sgr0)\n" $startframe $endframe $frameoffset
 
+	if [ "$OVERRIDEFRAMES" = true ]; then
+		echo "$(tput setaf $error_color)Overriding frame range to $START:$END$(tput sgr0)"
+		endframe=$END
+		startframe=$START
+	fi
+
 	SHOTFOLDER=$OUTPUTPATH/$shot/images/fractals; mkdir -p $SHOTFOLDER;
 	$EXECUTABLE $GLOBALARGS -s $startframe -e $endframe --offset $frameoffset -f $SHOTFOLDER/$OUTPUTFILENAME --width $WIDTH --height $HEIGHT -i ./scenes/$shot.cu
 done
@@ -118,8 +123,14 @@ do
 	endframe="${framedata[1]}"
 	frameoffset="${framedata[2]}"
 
+	if [ "$OVERRIDEFRAMES" = true ]; then
+		:
+		# $endframe = $END
+		# $startframe = $START
+	fi
+
 	printf "Starting final quality render for shot $(tput setaf $highlight_color)$shot$(tput sgr0)... Start: $(tput setaf $frame_color)[%s]$(tput sgr0)\tEnd: $(tput setaf $frame_color)[%s]$(tput sgr0)\tOffset: $(tput setaf $frame_color)[%s]$(tput sgr0)\n" $startframe $endframe $frameoffset
 
 	SHOTFOLDER=$OUTPUTPATH/$shot/images/fractals; mkdir -p $SHOTFOLDER;
-	$EXECUTABLE $GLOBALARGS -s $startframe -e $endframe --offset $frameoffset -f $SHOTFOLDER/$OUTPUTFILENAME --width $WIDTH --height $HEIGHT -i ./scenes/$shot.cu -spp 3
+	$EXECUTABLE $GLOBALARGS -spp 3 -s $startframe -e $endframe --offset $frameoffset -f $SHOTFOLDER/$OUTPUTFILENAME --width $WIDTH --height $HEIGHT -i ./scenes/$shot.cu
 done
