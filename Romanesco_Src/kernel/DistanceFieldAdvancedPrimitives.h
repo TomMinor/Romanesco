@@ -182,6 +182,9 @@ public:
 
         //            float2 tmp = make_float2(z.y, z.z);
 
+        zn = translateHook(0, zn);
+        zn = rotateHook(0, zn);
+        zn = scaleHook(0, zn);
 
 
         float m_scale = 1.0f;
@@ -344,7 +347,9 @@ private:
         float3 z = _p;
 //        float d2 = sdf.evalDistance(z);
 //        z.x -= global_t * 0.01f;
-        translateHook(0, z);
+        z = translateHook(0, z);
+        z = rotateHook(0, z);
+        z = scaleHook(0, z);
 
 //        z.x = fmod(z.x, 3.5f);
 
