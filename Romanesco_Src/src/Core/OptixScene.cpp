@@ -151,6 +151,8 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height, QObject *_pare
 //    m_renderThread.start(QThread::LowPriority);
 
     m_frame = 1;
+
+    m_tileX = m_tileY = 2;
 }
 
 void OptixScene::createBuffers()
@@ -997,13 +999,13 @@ void OptixScene::drawToBuffer()
     // https://devtalk.nvidia.com/default/topic/806609/optix/splitting-work-on-multiple-launches/
     // http://graphics.cs.aueb.gr/graphics/docs/Constantinos%20Kalampokis%20Thesis.pdf
 //    int2 NoOfTiles = make_int2(12, 12);
-    int2 NoOfTiles = make_int2(4, 4);
+    int2 NoOfTiles = make_int2(m_tileX, m_tileY);
     float2 launch_index_tileSize = make_float2( float(buffer_width) / NoOfTiles.x,
                                                 float(buffer_height) / NoOfTiles.y );
 
     bool isFrameReady = false;
     // Update Optix scene if necessary
-    if(m_frame < m_progressiveTimeout)
+    if( m_frame < m_progressiveTimeout )
     {
         m_context["frame_number"]->setUint(m_frame);
         m_frame++;
@@ -1022,11 +1024,11 @@ void OptixScene::drawToBuffer()
                                       static_cast<unsigned int>(launch_index_tileSize.y)
                                       );
 
-//                    updateGLBuffer();
+                    updateGLBuffer();
 //                    emit bucketReady(i, j);
                 }
             }
-//            updateGLBuffer();
+            updateGLBuffer();
 //            emit bucketRowReady(i);
         }
 

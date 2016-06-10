@@ -207,6 +207,11 @@ CommandLineParseResult parseCommandLine(QCommandLineParser &parser, MainWindow *
     const QCommandLineOption endFrameOption("e", "End frame", "end");
     parser.addOption(endFrameOption);
 
+    const QCommandLineOption tileXOption("tileX", "Horizontal Tile Count", "tilex");
+    parser.addOption(tileXOption);
+    const QCommandLineOption tileYOption("tileY", "Vertical Tile Count", "tily");
+    parser.addOption(tileYOption);
+
     const QCommandLineOption frameOffsetOption("offset", "Frame Offset", "offset");
     parser.addOption(frameOffsetOption);
 
@@ -286,6 +291,18 @@ CommandLineParseResult parseCommandLine(QCommandLineParser &parser, MainWindow *
         int timeout = parser.value(timeoutOption).toInt();
         window->setProgressiveTimeout(timeout);
     }
+
+    if(parser.isSet(tileXOption))
+    {
+        int tileX = parser.value(tileXOption).toInt();
+        window->setHorizontalTiles(tileX);
+    }
+    if(parser.isSet(tileYOption))
+    {
+        int tileY = parser.value(tileYOption).toInt();
+        window->setVerticalTiles(tileY);
+    }
+
 
     // Render Size
     if (parser.isSet(widthOption) && parser.isSet(heightOption))
@@ -490,6 +507,13 @@ void MainWindow::setupRenderSettingsUI()
     }
 }
 
+void asyncDraw()
+{
+    qDebug() << "Async draw";
+
+//    std::thread t1( asyncDraw );
+}
+
 void MainWindow::initializeGL()
 {
     setupTabUI();
@@ -534,6 +558,10 @@ void MainWindow::initializeGL()
         m_glViewport->setResolutionOverride( make_int2(m_renderX, m_renderY) );
         m_glViewport->refreshScene();
     }
+
+//    std::thread t1(asyncDraw);
+
+//    t1.join();
 }
 
 void MainWindow::bucketRendered(uint i, uint j)
