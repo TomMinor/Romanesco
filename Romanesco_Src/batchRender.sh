@@ -18,6 +18,9 @@ EXECUTABLE=./romanesco
 WIDTH=1920
 HEIGHT=1080
 
+TILEX=16
+TILEY=16
+
 # Associative array for easy shot data editing
 declare -A SHOTS
 SHOTS[spc_sh_070]="0 	115 0" #2294  115
@@ -112,7 +115,7 @@ do
 	fi
 
 	SHOTFOLDER=$OUTPUTPATH/$shot/images/fractals; mkdir -p $SHOTFOLDER;
-	$EXECUTABLE $GLOBALARGS -s $startframe -e $endframe --offset $frameoffset -f $SHOTFOLDER/$OUTPUTFILENAME --width $WIDTH --height $HEIGHT -i ./scenes/$shot.cu
+	$EXECUTABLE $GLOBALARGS -s $startframe -e $endframe --tileX $TILEX --tileY $TILEY --offset $frameoffset -f $SHOTFOLDER/$OUTPUTFILENAME --width $WIDTH --height $HEIGHT -i ./scenes/$shot.cu
 done
 
 
@@ -132,5 +135,5 @@ do
 	printf "Starting final quality render for shot $(tput setaf $highlight_color)$shot$(tput sgr0)... Start: $(tput setaf $frame_color)[%s]$(tput sgr0)\tEnd: $(tput setaf $frame_color)[%s]$(tput sgr0)\tOffset: $(tput setaf $frame_color)[%s]$(tput sgr0)\n" $startframe $endframe $frameoffset
 
 	SHOTFOLDER=$OUTPUTPATH/$shot/images/fractals; mkdir -p $SHOTFOLDER;
-	$EXECUTABLE $GLOBALARGS -spp 3 -s $startframe -e $endframe --offset $frameoffset -f $SHOTFOLDER/$OUTPUTFILENAME --width $WIDTH --height $HEIGHT -i ./scenes/$shot.cu
+	$EXECUTABLE $GLOBALARGS --samples 3 -s $startframe -e $endframe --tileX $TILEX --tileY $TILEY--offset $frameoffset -f $SHOTFOLDER/$OUTPUTFILENAME --width $WIDTH --height $HEIGHT -i ./scenes/$shot.cu
 done

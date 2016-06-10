@@ -1024,15 +1024,14 @@ void OptixScene::drawToBuffer()
                                       static_cast<unsigned int>(launch_index_tileSize.y)
                                       );
 
-                    updateGLBuffer();
+//                    updateGLBuffer();
 //                    emit bucketReady(i, j);
                 }
             }
-            updateGLBuffer();
+//            updateGLBuffer();
 //            emit bucketRowReady(i);
         }
-
-        qDebug() << m_frame << "," << m_progressiveTimeout;
+        qDebug( "%d/%d iterations completed", m_frame - 1, m_progressiveTimeout - 1);
 //        emit frameRefined(m_frame - 1);
     }
     else if(!m_frameDone) // We've hit the 'max' timeout
