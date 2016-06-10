@@ -175,6 +175,7 @@ public:
     unsigned int m_width;
     unsigned int m_height;
 
+    int m_tileX, m_tileY;
 
 protected:
     std::string m_outputBuffer;
@@ -237,6 +238,15 @@ public slots:
         m_camera_changed = true;
     }
 
+    void setHorizontalTiles(int _t)
+    {
+        m_tileX = _t;
+    }
+
+    void setVerticalTiles(int _t)
+    {
+        m_tileY = _t;
+    }
 
 
 signals:
