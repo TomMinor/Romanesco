@@ -9,7 +9,10 @@ then
 fi
 
 
-GLOBALARGS="-b --timeout 10 $EXTRAARGS"
+GLOBALARGS="-b $EXTRAARGS"
+PREVIEWARGS="--samples 1 --timeout 10"
+FINALARGS="--samples 2 --timeout 1"
+
 OUTPUTFILENAME=fractal.1%03d.exr
 OUTPUTPATH=$KYRANPC
 mkdir -p $OUTPUTPATH
@@ -31,6 +34,14 @@ SHOTS[fra_sh_040]="198	267 0" #2757  69
 SHOTS[fra_sh_050]="268 	346 0" #2826  78
 SHOTS[fra_sh_060]="347 	439 0" #2904  92
 SHOTS[fra_sh_070]="440 	501 0" #2996  61
+
+# Shots  broken up into pieces
+SHOTS[spc_sh_070_a]="0 	 28 0 spc_sh_070" # 152
+SHOTS[spc_sh_070_b]="28  58 28 spc_sh_070"
+SHOTS[spc_sh_070_c]="58  86 58 spc_sh_070"
+SHOTS[spc_sh_070_d]="86 115 86 spc_sh_070"
+
+
 
 # Bad frames
 # 66 - 120 # Gaps
@@ -99,42 +110,43 @@ printf ".. Shots to process: "; printf "$(tput setaf $highlight_color) ${sorted_
 echo
 
 final_shots=(${sorted_unique_ids[@]})
+
 for shot in "${final_shots[@]}"
 do
 	framedata=(${SHOTS[$shot]})
+
+	shotname=$shot
+	parentshotname=${framedata[3]}
+
+	# Is the parent shot defined?
+	if [[ -n  "$parentshotname" ]]
+	then
+		shotname="$parentshotname"
+	fi
+
 	startframe="${framedata[0]}"
 	endframe="${framedata[1]}"
 	frameoffset="${framedata[2]}"
-
-	printf "Starting render for shot $(tput setaf $highlight_color)$shot$(tput sgr0)... Start: $(tput setaf $frame_color)[%s]$(tput sgr0)\tEnd: $(tput setaf $frame_color)[%s]$(tput sgr0)\tOffset: $(tput setaf $frame_color)[%s]$(tput sgr0)\n" $startframe $endframe $frameoffset
 
 	if [ "$OVERRIDEFRAMES" = true ]; then
 		echo "$(tput setaf $error_color)Overriding frame range to $START:$END$(tput sgr0)"
 		endframe=$END
 		startframe=$START
-                frameoffset=$START
+        frameoffset=$START
 	fi
 
-	SHOTFOLDER=$OUTPUTPATH/$shot/images/fractals; mkdir -p $SHOTFOLDER;
-	$EXECUTABLE $GLOBALARGS -s $startframe -e $endframe --tileX $TILEX --tileY $TILEY --offset $frameoffset -f $SHOTFOLDER/$OUTPUTFILENAME --width $WIDTH --height $HEIGHT -i ./scenes/$shot.cu
-done
+	if [[ -z ${FINAL+x} ]];
+	then
+		SHOTFOLDER=$OUTPUTPATH/$shotname/images/fractals_hd; mkdir -p $SHOTFOLDER;
 
+		printf "Starting final quality render for shot $(tput setaf $highlight_color)$shot$(tput sgr0)... Start: $(tput setaf $frame_color)[%s]$(tput sgr0)\tEnd: $(tput setaf $frame_color)[%s]$(tput sgr0)\tOffset: $(tput setaf $frame_color)[%s]$(tput sgr0)\n" $startframe $endframe $frameoffset
+		printf "Output directory: $(tput setaf $frame_color)%s$(tput sgr0)" $SHOTFOLDER
+		$EXECUTABLE $GLOBALARGS $FINALARGS -s $startframe -e $endframe --tileX $TILEX --tileY $TILEY--offset $frameoffset -f $SHOTFOLDER/$OUTPUTFILENAME --width $WIDTH --height $HEIGHT -i ./scenes/$shotname.cu
+	else
+		SHOTFOLDER=$OUTPUTPATH/$shotname/images/fractals; mkdir -p $SHOTFOLDER;
 
-for shot in "${final_shots[@]}"
-do
-	framedata=(${SHOTS[$shot]})
-	startframe="${framedata[0]}"
-	endframe="${framedata[1]}"
-	frameoffset="${framedata[2]}"
-
-	if [ "$OVERRIDEFRAMES" = true ]; then
-		:
-		# $endframe = $END
-		# $startframe = $START
+		printf "Starting render for shot $(tput setaf $highlight_color)$shot$(tput sgr0)... Start: $(tput setaf $frame_color)[%s]$(tput sgr0)\tEnd: $(tput setaf $frame_color)[%s]$(tput sgr0)\tOffset: $(tput setaf $frame_color)[%s]$(tput sgr0)\n" $startframe $endframe $frameoffset
+		printf "Output directory: $(tput setaf $frame_color)%s$(tput sgr0)" $SHOTFOLDER
+		$EXECUTABLE $GLOBALARGS $PREVIEWARGS -s $startframe -e $endframe --tileX $TILEX --tileY $TILEY --offset $frameoffset -f $SHOTFOLDER/$OUTPUTFILENAME --width $WIDTH --height $HEIGHT -i ./scenes/$shot.cu
 	fi
-
-	printf "Starting final quality render for shot $(tput setaf $highlight_color)$shot$(tput sgr0)... Start: $(tput setaf $frame_color)[%s]$(tput sgr0)\tEnd: $(tput setaf $frame_color)[%s]$(tput sgr0)\tOffset: $(tput setaf $frame_color)[%s]$(tput sgr0)\n" $startframe $endframe $frameoffset
-
-	SHOTFOLDER=$OUTPUTPATH/$shot/images/fractals; mkdir -p $SHOTFOLDER;
-	$EXECUTABLE $GLOBALARGS --samples 3 -s $startframe -e $endframe --tileX $TILEX --tileY $TILEY--offset $frameoffset -f $SHOTFOLDER/$OUTPUTFILENAME --width $WIDTH --height $HEIGHT -i ./scenes/$shot.cu
 done
