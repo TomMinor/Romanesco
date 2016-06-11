@@ -9,7 +9,7 @@ then
 fi
 
 
-GLOBALARGS="-b --timeout 20 $EXTRAARGS"
+GLOBALARGS="-b --timeout 10 $EXTRAARGS"
 OUTPUTFILENAME=fractal.1%03d.exr
 OUTPUTPATH=$KYRANPC
 mkdir -p $OUTPUTPATH
@@ -112,6 +112,7 @@ do
 		echo "$(tput setaf $error_color)Overriding frame range to $START:$END$(tput sgr0)"
 		endframe=$END
 		startframe=$START
+                frameoffset=$START
 	fi
 
 	SHOTFOLDER=$OUTPUTPATH/$shot/images/fractals; mkdir -p $SHOTFOLDER;
