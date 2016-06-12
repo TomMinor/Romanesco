@@ -279,7 +279,138 @@ RT_PROGRAM void pathtrace_camera()
 }
 
 
+RT_PROGRAM void env_camera()
+{
+//  size_t2 screen = output_buffer.size();
 
+//  float2 d = make_float2(launch_index) / make_float2(screen) * make_float2(2.0f * M_PIf , M_PIf) + make_float2(M_PIf, 0);
+//  float3 angle = make_float3(cos(d.x) * sin(d.y), -cos(d.y), sin(d.x) * sin(d.y));
+//  float3 ray_origin = eye;
+//  float3 ray_direction = normalize(angle.x*normalize(U) + angle.y*normalize(V) + angle.z*normalize(W));
+
+//  optix::Ray ray(ray_origin, ray_direction, radiance_ray_type, scene_epsilon);
+
+//  PerRayData_radiance prd;
+//  prd.importance = 1.f;
+//  prd.depth = 0;
+
+//  rtTrace(top_object, ray, prd);
+
+
+
+
+  size_t2 screen = output_buffer.size();
+
+//    uint2 bufferLaunchIndex = launch_index;
+  uint2 bufferLaunchIndex = mapBufferSizes(make_uint2(screen.x, screen.y), make_uint2(TileSize), NoOfTiles) + launch_index;
+
+  float2 inv_screen = 1.0f/make_float2(screen) * 2.f;
+  float2 pixel = (make_float2(bufferLaunchIndex)) * inv_screen - 1.f;
+
+  float2 jitter_scale = inv_screen / sqrt_num_samples;
+  unsigned int samples_per_pixel = sqrt_num_samples*sqrt_num_samples;
+
+  // Store accumulated radiance, world position, normal and depth
+  float4 result = make_float4(0.0f);
+  float3 normal = make_float3(0.0f);
+  float3 world = make_float3(0.0f);
+  float3 trap = make_float3( 0.0f );
+  float3 diffuse = make_float3(0.0f);
+  float iteration = 0.0f;
+  float depth = 0.0f;
+
+  unsigned int seed = tea<4>(screen.x * bufferLaunchIndex.y + bufferLaunchIndex.x, frame_number);
+  do
+  {
+      unsigned int x = samples_per_pixel % sqrt_num_samples;
+      unsigned int y = samples_per_pixel / sqrt_num_samples;
+      float2 jitter = make_float2(x-rnd(seed), y-rnd(seed));
+//      float2 d = pixel + jitter * jitter_scale;
+
+//      float3 ray_origin = eye;
+//      float3 ray_direction = normalize(d.x*U + d.y*V + W);
+//      ray_direction = applyTransform(ray_direction, normalmatrix);
+
+      PerRayData_pathtrace prd;
+      prd.result = make_float4(0.f);
+      prd.result_nrm = make_float3(0.0f);
+      prd.result_world = make_float3(0.0f);
+      prd.result_depth = 0.0f;
+      prd.result_trap = make_float3(0.0f);
+      prd.attenuation = make_float3(1.0);
+      prd.radiance = make_float3(0.0);
+      prd.countEmitted = true;
+      prd.done = false;
+      prd.seed = seed;
+      prd.depth = 0;
+      prd.result_iteration = 0;
+
+      float2 d = make_float2(bufferLaunchIndex) / make_float2(screen) * make_float2(2.0f * M_PIf , M_PIf) + make_float2(M_PIf, 0);
+      float3 angle = make_float3(cos(d.x) * sin(d.y), -cos(d.y), sin(d.x) * sin(d.y));
+      float3 ray_origin = eye;
+      float3 ray_direction = normalize(angle.x*normalize(U) + angle.y*normalize(V) + angle.z*normalize(W));
+
+      Ray ray = make_Ray(ray_origin, ray_direction, pathtrace_ray_type, scene_epsilon, RT_DEFAULT_MAX);
+      ray_direction = applyTransform(ray_direction, normalmatrix);
+      rtTrace(top_object, ray, prd);
+
+//        prd.result_nrm.x = abs(prd.result_nrm.x);
+//        prd.result_nrm.y = abs(prd.result_nrm.y);
+//        prd.result_nrm.z = abs(prd.result_nrm.z);
+
+      result += prd.result;
+      normal += prd.result_nrm;
+      world += prd.result_world;
+      diffuse += prd.result_diffuse;
+      depth += prd.result_depth;
+      trap += prd.result_trap;
+      iteration += prd.result_iteration;
+
+      seed = prd.seed;
+  } while (--samples_per_pixel);
+
+  const unsigned int num_samples = sqrt_num_samples*sqrt_num_samples;
+  float4 pixel_color                  = result / num_samples;
+  float3 pixel_color_normal     = normal  / num_samples;
+  float3 pixel_color_world        = world  / num_samples;
+  float3 pixel_color_diffuse      = diffuse  / num_samples;
+  float3 pixel_color_trap          = trap  / num_samples;
+  float pixel_color_depth         = depth / num_samples;
+  float pixel_color_iteration     = iteration / num_samples;
+
+  // Smoothly blend with previous frames value using linear interpolation
+  if (frame_number > 1)
+  {
+      float a = 1.0f / (float)frame_number;
+      float b = ((float)frame_number - 1.0f) * a;
+
+#define BlendBuffer(buffer, newColour) (buffer) = a * (newColour) + b * (buffer)
+
+      BlendBuffer( output_buffer[bufferLaunchIndex],                  pixel_color );
+
+      BlendBuffer( output_buffer_nrm[bufferLaunchIndex],         pixel_color_normal );
+
+      BlendBuffer( output_buffer_world[bufferLaunchIndex],       pixel_color_world );
+
+      BlendBuffer( output_buffer_diffuse[bufferLaunchIndex],     pixel_color_diffuse);
+
+      BlendBuffer( output_buffer_trap[bufferLaunchIndex],         pixel_color_trap );
+
+      BlendBuffer( output_buffer_depth[bufferLaunchIndex],      pixel_color_depth );
+
+      BlendBuffer( output_buffer_iteration[bufferLaunchIndex],  pixel_color_iteration );
+  }
+  else
+  {
+      output_buffer[bufferLaunchIndex]                = pixel_color;
+      output_buffer_nrm[bufferLaunchIndex]        = pixel_color_normal;
+      output_buffer_world[bufferLaunchIndex]      = pixel_color_world;
+      output_buffer_diffuse[bufferLaunchIndex]    = pixel_color_diffuse;
+      output_buffer_trap[bufferLaunchIndex]         = pixel_color_trap;
+      output_buffer_depth[bufferLaunchIndex]      = pixel_color_depth;
+      output_buffer_iteration[bufferLaunchIndex]  = pixel_color_iteration;
+  }
+}
 
 
 
@@ -495,7 +626,8 @@ __device__ float3 cosineDirection(float _seed, float3 _n)
 rtDeclareVariable(float3,        diffuse_color, , );
 
 
-RT_PROGRAM void diffuse()
+
+RT_PROGRAM void pathtrace_diffuse()
 {
   float3 world_shading_normal   = normalize( rtTransformNormal( RT_OBJECT_TO_WORLD, shading_normal ) );
   float3 world_geometric_normal = normalize( rtTransformNormal( RT_OBJECT_TO_WORLD, geometric_normal ) );
@@ -588,6 +720,91 @@ RT_PROGRAM void diffuse()
 
         result += make_float3( current_prd.result );
       }
+    }
+  }
+
+  float iteration = iterations / float(max_iterations);
+
+//  t = tan( abs( cos( smallestdistance * 1 /*+ global_t*/ ) ) );
+
+  float3 a = make_float3(0.67f, 0.1f, 0.05f);
+  float3 b = make_float3(0.1f, 0.2f, 0.9f);
+
+  float3 colourtrap = lerp(a, b, powf(orbitTrap.x, 1.0f) );
+
+  float3 ambient = make_float3(0.1f);
+
+  current_prd.result = make_float4(result, 1.0);
+//  current_prd.result = make_float4( colourtrap, 1.0f );
+//  current_prd.result = make_float4( do_work(), 1.0f );
+  current_prd.result_nrm = shading_normal;
+  current_prd.result_world = hitpoint;
+  current_prd.result_depth = t_hit;
+  current_prd.result_trap = orbitTrap;
+  current_prd.result_diffuse = colourtrap;
+  current_prd.result_iteration = iteration;
+  current_prd.done = true;
+}
+
+
+RT_PROGRAM void diffuse()
+{
+  float3 world_shading_normal   = normalize( rtTransformNormal( RT_OBJECT_TO_WORLD, shading_normal ) );
+  float3 world_geometric_normal = normalize( rtTransformNormal( RT_OBJECT_TO_WORLD, geometric_normal ) );
+
+  float3 ffnormal = faceforward( world_shading_normal, -ray.direction, world_geometric_normal );
+
+  float3 hitpoint = ray.origin + ( t_hit * ray.direction);
+
+  float z1 = rnd(current_prd.seed);
+  float z2 = rnd(current_prd.seed);
+  float3 p;
+
+  cosine_sample_hemisphere(z1, z2, p);
+
+  float3 v1, v2;
+  createONB(ffnormal, v1, v2);
+
+//  current_prd.direction = v1 * p.x + v2 * p.y + ffnormal * p.z;
+  current_prd.direction = cosineDirection(current_prd.seed/* + frame_number*/, world_geometric_normal);
+  current_prd.attenuation = /*current_prd.attenuation * */diffuse_color; // use the diffuse_color as the diffuse response
+  current_prd.countEmitted = false;
+
+  float3 normal_color = (normalize(world_shading_normal)*0.5f + 0.5f)*0.9;
+
+  // @Todo, trace back from the hit to calculate a new sample point?
+//  PerRayData_pathtrace backwards_prd;
+//  backwards_prd.origin = hitpoint;
+//  backwards_prd.direction = -ray.direction;
+
+  // Compute direct light...
+  // Or shoot one...
+  unsigned int num_lights = lights.size();
+  float3 result = make_float3(0.0f);
+
+  for(int i = 0; i < num_lights; ++i)
+  {
+    ParallelogramLight light = lights[i];
+
+    // Sample random point on geo light
+    float z1 = rnd(current_prd.seed);
+    float z2 = rnd(current_prd.seed);
+    float3 light_pos = light.corner + light.v1 * z1 + light.v2 * z2;
+//    light_pos = make_float3(0, 1000, 0);
+
+//    hitpoint = rtTransformPoint(RT_OBJECT_TO_WORLD, hitpoint);
+
+    float Ldist = length(light_pos - hitpoint);
+    float3 L = normalize(light_pos - hitpoint);
+    float nDl = dot( shading_normal, L );
+    float LnDl = dot( light.normal, L );
+    float A = length(cross(light.v1, light.v2));
+
+    // cast shadow ray
+    if ( nDl > 0.0f && LnDl > 0.0f )
+    {
+        float weight= nDl * LnDl * A / (M_PIf*Ldist*Ldist);
+        result += light.emission * weight * 0.05f;
     }
   }
 

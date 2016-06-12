@@ -566,6 +566,9 @@ void OptixScene::createCameras()
     m_context->setRayGenerationProgram( 0, ray_gen_program );
     m_context->setExceptionProgram( 0, exception_program );
 
+//    optix::Program environment_ray_gen_program = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "env_camera" );
+//    m_context->setRayGenerationProgram( 1, environment_ray_gen_program );
+//    m_context->setExceptionProgram( 1, exception_program );
 
     // Miss programs
     m_context->setMissProgram( static_cast<unsigned int>(PathTraceRay::CAMERA), m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "envmap_miss" ) );
@@ -611,6 +614,11 @@ void OptixScene::createLightGeo()
     }
 }
 
+//void OptixScene::setMaterial(std::string _name)
+//{
+
+//}
+
 void OptixScene::createWorld()
 {
     ///@todo Optix error checking
@@ -626,7 +634,7 @@ void OptixScene::createWorld()
 
 
     Material diffuseMat = m_context->createMaterial();
-    Program diffuse_closestHit = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "diffuse" );
+    Program diffuse_closestHit = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "pathtrace_diffuse" );
     diffuseMat->setClosestHitProgram( static_cast<unsigned int>(PathTraceRay::CAMERA), diffuse_closestHit );
 
     Program diffuse_anyHit = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "shadow" );
