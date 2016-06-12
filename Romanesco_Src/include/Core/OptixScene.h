@@ -82,6 +82,8 @@ public:
     virtual void createLights();
     virtual void createLightGeo();
 
+//    virtual void setMaterial(std::string _name);
+
 //    virtual void addLight(  )
 
     virtual void setGeometryHitProgram(std::string _hit_src);
