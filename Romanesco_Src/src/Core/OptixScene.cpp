@@ -117,6 +117,7 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height, QObject *_pare
     m_context->setRayTypeCount( 3 );
     m_context->setEntryPointCount( 1 );
     m_context->setStackSize( 1800 );
+    m_context->setEntryPointCount( static_cast<unsigned int>(CameraTypes::TOTALCAMERATYPES) );
 
 #if USE_DEBUG_EXCEPTIONS
     // Disable this by default for performance, otherwise the stitched PTX code will have lots of exception handling inside.
@@ -153,6 +154,8 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height, QObject *_pare
     m_frame = 1;
 
     m_tileX = m_tileY = 2;
+
+    m_cameraMode = CameraTypes::PINHOLE;
 }
 
 void OptixScene::createBuffers()
@@ -563,12 +566,12 @@ void OptixScene::createCameras()
 
     optix::Program ray_gen_program = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "pathtrace_camera" );
     optix::Program exception_program = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "exception" );
-    m_context->setRayGenerationProgram( 0, ray_gen_program );
-    m_context->setExceptionProgram( 0, exception_program );
+    m_context->setRayGenerationProgram(  static_cast<unsigned int>( CameraTypes::PINHOLE ) , ray_gen_program );
+    m_context->setExceptionProgram(  static_cast<unsigned int>( CameraTypes::PINHOLE ), exception_program );
 
-//    optix::Program environment_ray_gen_program = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "env_camera" );
-//    m_context->setRayGenerationProgram( 1, environment_ray_gen_program );
-//    m_context->setExceptionProgram( 1, exception_program );
+    optix::Program environment_ray_gen_program = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "env_camera" );
+    m_context->setRayGenerationProgram(  static_cast<unsigned int>( CameraTypes::ENVIRONMENT ), environment_ray_gen_program );
+    m_context->setExceptionProgram(  static_cast<unsigned int>( CameraTypes::ENVIRONMENT ), exception_program );
 
     // Miss programs
     m_context->setMissProgram( static_cast<unsigned int>(PathTraceRay::CAMERA), m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "envmap_miss" ) );
@@ -614,10 +617,22 @@ void OptixScene::createLightGeo()
     }
 }
 
-//void OptixScene::setMaterial(std::string _name)
-//{
+void OptixScene::setCurrentMaterial(std::string _name)
+{
+    const float3 white = make_float3( 0.8f, 0.8f, 0.8f );
 
-//}
+    Material diffuseMat = m_context->createMaterial();
+    Program diffuse_closestHit = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", _name );
+    diffuseMat->setClosestHitProgram( static_cast<unsigned int>(PathTraceRay::CAMERA), diffuse_closestHit );
+
+    Program diffuse_anyHit = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "shadow" );
+    diffuseMat->setAnyHitProgram( static_cast<unsigned int>(PathTraceRay::SHADOW), diffuse_anyHit );
+
+    setMaterial(m_geoInstance, diffuseMat, "diffuse_color", white);
+
+    m_context->validate();
+    m_context->compile();
+}
 
 void OptixScene::createWorld()
 {
@@ -627,24 +642,24 @@ void OptixScene::createWorld()
     SDF_scene->setBoundingBoxProgram( m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "bounds" ) );
     SDF_scene->setIntersectionProgram( m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "intersect" ) );
 
-    GeometryInstance geoInstance = m_context->createGeometryInstance();
-    geoInstance->setGeometry(SDF_scene);
-
-    const float3 white = make_float3( 0.8f, 0.8f, 0.8f );
+    m_geoInstance = m_context->createGeometryInstance();
+    m_geoInstance->setGeometry(SDF_scene);
 
 
-    Material diffuseMat = m_context->createMaterial();
-    Program diffuse_closestHit = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "pathtrace_diffuse" );
-    diffuseMat->setClosestHitProgram( static_cast<unsigned int>(PathTraceRay::CAMERA), diffuse_closestHit );
-
-    Program diffuse_anyHit = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "shadow" );
-    diffuseMat->setAnyHitProgram( static_cast<unsigned int>(PathTraceRay::SHADOW), diffuse_anyHit );
 
 
-    setMaterial(geoInstance, diffuseMat, "diffuse_color", white);
+
+//    Material diffuseMat = m_context->createMaterial();
+//    Program diffuse_closestHit = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "pathtrace_diffuse" );
+//    diffuseMat->setClosestHitProgram( static_cast<unsigned int>(PathTraceRay::CAMERA), diffuse_closestHit );
+
+//    Program diffuse_anyHit = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "shadow" );
+//    diffuseMat->setAnyHitProgram( static_cast<unsigned int>(PathTraceRay::SHADOW), diffuse_anyHit );
+
+//    setMaterial(m_geoInstance, diffuseMat, "diffuse_color", white);
 
     GeometryGroup m_geometrygroup = m_context->createGeometryGroup();
-    m_geometrygroup->addChild(geoInstance);
+    m_geometrygroup->addChild(m_geoInstance);
 
 
 
@@ -686,16 +701,12 @@ void OptixScene::createWorld()
 //        m_geometrygroup->addChild( areaLights[i] );
 //    }
 
-
-
-
-
     m_geometrygroup->setAcceleration( m_context->createAcceleration("NoAccel","NoAccel") );
     m_context["top_object"]->set( m_geometrygroup );
 
     // Create shadow group (no light)
     GeometryGroup shadow_group = m_context->createGeometryGroup();
-    shadow_group->addChild(geoInstance);
+    shadow_group->addChild(m_geoInstance);
     shadow_group->setAcceleration( m_context->createAcceleration("NoAccel","NoAccel") );
     m_context["top_shadower"]->set( shadow_group );
 
@@ -734,6 +745,9 @@ void OptixScene::createWorld()
             )";
 
             setGeometryHitProgram(defaultSrc);
+
+//        setCurrentMaterial("pathtrace_diffuse");
+    setCurrentMaterial("simple_diffuse");
 }
 
 
@@ -1027,7 +1041,7 @@ void OptixScene::drawToBuffer()
                 {
                     m_context["NoOfTiles"]->setUint(i, j);
 
-                    m_context->launch( 0,
+                    m_context->launch( static_cast<unsigned int>( m_cameraMode ),
                                       static_cast<unsigned int>(launch_index_tileSize.x),
                                       static_cast<unsigned int>(launch_index_tileSize.y)
                                       );

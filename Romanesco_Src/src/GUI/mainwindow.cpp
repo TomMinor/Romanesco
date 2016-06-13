@@ -226,6 +226,8 @@ CommandLineParseResult parseCommandLine(QCommandLineParser &parser, MainWindow *
     const QCommandLineOption samplesOption("samples", "Samples Per Pixel", "spp");
     parser.addOption(samplesOption);
 
+
+
 //    const QCommandLineOption fovOption("fov", "Field of View", "FOV");
 //    parser.addOption(fovOption);
 
@@ -238,6 +240,8 @@ CommandLineParseResult parseCommandLine(QCommandLineParser &parser, MainWindow *
     parser.addOptions({
                           {{"b", "batch"},
                            QCoreApplication::translate("main", "Quit when the render is complete")},
+                          {"environmentCamera",
+                           QCoreApplication::translate("main", "Enable environment map camera")},
                       });
 
 //    const QCommandLineOption nameServerOption("n", "The name server to use.", "nameserver");
@@ -262,6 +266,11 @@ CommandLineParseResult parseCommandLine(QCommandLineParser &parser, MainWindow *
     if (parser.isSet("b"))
     {
         window->setBatchMode(true);
+    }
+
+    if (parser.isSet("environmentCamera"))
+    {
+        window->toggleEnvironmentCamera(true);
     }
 
     // Frame range

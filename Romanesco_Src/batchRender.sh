@@ -10,7 +10,7 @@ fi
 
 
 GLOBALARGS="-b $EXTRAARGS"
-PREVIEWARGS="--samples 1 --timeout 40"
+PREVIEWARGS="--samples 1 --timeout 10"
 FINALARGS="--samples 2 --timeout 1"
 
 OUTPUTFILENAME=fractal.1%03d.exr
@@ -37,25 +37,27 @@ SHOTS[fra_sh_060]="347 	439 0" #2904  92
 SHOTS[fra_sh_070]="440 	501 0" #2996  61
 
 # ================== Fix Up Shots ======================
-SHOTS[fra_sh_010_a]="0 	 	50 0 fra_sh_010"
-SHOTS[fra_sh_010_b]="50 	100 50 fra_sh_010"
-SHOTS[fra_sh_010_c]="100 	152 100 fra_sh_010"
+SHOTS[fra_sh_010_a]="0 	30 0 fra_sh_010"
+SHOTS[fra_sh_010_b]="30 60 30 fra_sh_010"
+SHOTS[fra_sh_010_c]="60 90 60 fra_sh_010"
+SHOTS[fra_sh_010_d]="90 120 90 fra_sh_010"
+SHOTS[fra_sh_010_e]="120 152 120 fra_sh_010"
 
-SHOTS[fra_sh_020_a]="44 44 44 fra_sh_020"
+SHOTS[fra_sh_020_a]="0 0 44 fra_sh_020"
 
-SHOTS[fra_sh_030_a]="56 56 56 fra_sh_030"
+SHOTS[fra_sh_030_a]="0 0 56 fra_sh_030"
 
-SHOTS[fra_sh_040_a]="13 28 13 fra_sh_040"
-SHOTS[fra_sh_040_b]="36 36 36 fra_sh_040"
+SHOTS[fra_sh_040_a]="13 28 -1 fra_sh_040"
+SHOTS[fra_sh_040_b]="0 0 36 fra_sh_040"
 
-SHOTS[fra_sh_050_a]="9 9 9 fra_sh_050"
-SHOTS[fra_sh_050_b]="18 18 18 fra_sh_050"
+SHOTS[fra_sh_050_a]="0 0 9 fra_sh_050"
+SHOTS[fra_sh_050_b]="0 0 18 fra_sh_050"
 
-SHOTS[fra_sh_060_a]="70 70 70 fra_sh_060"
-SHOTS[fra_sh_060_b]="76 76 76 fra_sh_060"
+SHOTS[fra_sh_060_a]="0 0 70 fra_sh_060"
+SHOTS[fra_sh_060_b]="0 0 76 fra_sh_060"
 
-SHOTS[fra_sh_070_a]="32 32 32 fra_sh_070"
-SHOTS[fra_sh_070_b]="41 41 41 fra_sh_070"
+SHOTS[fra_sh_070_a]="0 0 32 fra_sh_070"
+SHOTS[fra_sh_070_b]="0 0 41 fra_sh_070"
 
 # Shots  broken up into pieces
 SHOTS[spc_sh_070_a]="0 	 28 0 spc_sh_070" # 152
@@ -68,12 +70,6 @@ SHOTS[spc_sh_070_e]="116 130 116 spc_sh_070"
 SHOTS[spc_sh_070_f]="131 150 130 spc_sh_070"
 SHOTS[spc_sh_070_g]="150 180 150 spc_sh_070"
 
-
-declare -A ENVTEXTURES
-# ================== Core Environment Map Shots ======================
-ENVTEXTURES[fra_sh_030]="120 	210 0" #2667  90
-ENVTEXTURES[fra_sh_040]="198	267 0" #2757  69
-ENVTEXTURES[fra_sh_050]="268 	346 0" #2826  78
 
 
 # Bad frames
@@ -183,4 +179,72 @@ do
 		$EXECUTABLE $GLOBALARGS $PREVIEWARGS -s $startframe -e $endframe --tileX $TILEX --tileY $TILEY --offset $frameoffset -f $SHOTFOLDER/$OUTPUTFILENAME --width $WIDTH --height $HEIGHT -i ./scenes/$shotname.cu
 	fi
         echo
+done
+
+
+echo ".. Removing duplicate environment shot inputs..."
+sorted_unique_ids=($(echo "${@}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
+
+printf ".. Environment Shots to process: $(tput setaf $highlight_color) ${sorted_unique_ids[*]} $(tput sgr0)";
+tput sgr0
+echo
+
+echo "-------------------------------------------------"
+echo ".. Removing invalid environment shot inputs..."
+for shot in "${sorted_unique_ids[@]}"
+do
+	if array_contains "$shot" "${!ENVTEXTURES[@]}"; then
+		: # Shot is valid
+	else
+		delete=($shot)
+		sorted_unique_ids=("${sorted_unique_ids[@]/$delete}")
+
+		echo "$(tput setaf $error_color) Warning: Environment shot $shot doesn't exist, skipping $(tput sgr0)" 
+	fi
+done
+echo "-------------------------------------------------"
+echo ".. Final list of environment shots to process..."
+printf ".. Shots to process: "; printf "$(tput setaf $highlight_color) ${sorted_unique_ids[*]} $(tput sgr0)\n";
+echo
+
+final_shots=(${sorted_unique_ids[@]})
+for shot in "${final_shots[@]}"
+do
+	framedata=(${ENVTEXTURES[$shot]})
+
+	shotname=$shot
+	parentshotname=${framedata[3]}
+
+	# Is the parent shot defined?
+	if [[ -n  "$parentshotname" ]]
+	then
+		shotname="$parentshotname"
+	fi
+
+	startframe="${framedata[0]}"
+	endframe="${framedata[1]}"
+	frameoffset="${framedata[2]}"
+
+	if [ "$OVERRIDEFRAMES" = true ]; then
+		echo "$(tput setaf $error_color)Overriding frame range to $START:$END$(tput sgr0)"
+		endframe=$END
+		startframe=$START
+        frameoffset=$START
+	fi
+
+	if [[ -z ${FINAL+x} ]];
+	then
+		SHOTFOLDER=$OUTPUTPATH/$shotname/images/sphericalFractals_hd; mkdir -p $SHOTFOLDER;
+
+		printf "Starting final quality environment map render for shot $(tput setaf $highlight_color)$shotname$(tput sgr0)... Start: $(tput setaf $frame_color)[%s]$(tput sgr0)\tEnd: $(tput setaf $frame_color)[%s]$(tput sgr0)\tOffset: $(tput setaf $frame_color)[%s]$(tput sgr0)\n" $startframe $endframe $frameoffset
+		printf "Output directory: $(tput setaf $frame_color)%s$(tput sgr0)" $SHOTFOLDER
+		$EXECUTABLE $GLOBALARGS $FINALARGS --environmentCamera -s $startframe -e $endframe --tileX $TILEX --tileY $TILEY--offset $frameoffset -f $SHOTFOLDER/$OUTPUTFILENAME --width $WIDTH --height $HEIGHT -i ./scenes/$shotname.cu
+	else
+		SHOTFOLDER=$OUTPUTPATH/$shotname/images/sphericalFractals; mkdir -p $SHOTFOLDER;
+
+		printf "Starting environment map render for shot $(tput setaf $highlight_color)$shotname$(tput sgr0)... Start: $(tput setaf $frame_color)[%s]$(tput sgr0)\tEnd: $(tput setaf $frame_color)[%s]$(tput sgr0)\tOffset: $(tput setaf $frame_color)[%s]$(tput sgr0)\n" $startframe $endframe $frameoffset
+		printf "Output directory: $(tput setaf $frame_color)%s$(tput sgr0)" $SHOTFOLDER
+		$EXECUTABLE $GLOBALARGS $PREVIEWARGS --environmentCamera -s $startframe -e $endframe --tileX $TILEX --tileY $TILEY --offset $frameoffset -f $SHOTFOLDER/$OUTPUTFILENAME --width $WIDTH --height $HEIGHT -i ./scenes/$shotname.cu
+	fi
+	echo
 done
