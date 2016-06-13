@@ -33,6 +33,9 @@ void TestGLWidget::initializeGL()
     m_optixScene = 0;
     m_optixScene = new OptixScene(width(), height());
 
+    m_optixScene->setCameraType( OptixScene::CameraTypes::PINHOLE );
+//    m_optixScene->setCurrentMaterial( "pathtrace_diffuse" );
+
     QString vertexPath = QDir::currentPath() + "/shaders/raymarch.vert";
     QString fragmentPath = QDir::currentPath() + "/shaders/raymarch.frag";
 

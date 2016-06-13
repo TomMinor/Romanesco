@@ -1,4 +1,4 @@
-TARGET=romanesco
+TARGET=romanesco_TEST
 OBJECTS_DIR=obj
 
 # as I want to support 4.8 and 5 this will set a flag for some of the mac stuff
@@ -124,7 +124,7 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 SOURCES += src/main.cpp \
            src/Core/*.cpp \
-           src/GUI/*.cpp \
+           src/GUI/*.cpp\
            src/GUI/nodes/*.cpp \
            src/GUI/nodegraph/*.cpp \
            src/SDFOps/*.cpp \
@@ -137,7 +137,7 @@ SOURCES += src/main.cpp \
 HEADERS += include/Core/*.h \
                        include/GUI/*.h \
                        include/GUI/nodes/*.h \
-                       include/GUI/nodegraph/*.h \
+                       include/GUI/nodegraph/*.h\
                        include/SDFOps/*.h \
                        include/SDFOps/DistDeformer/*.h \
                        include/SDFOps/DistOp/*.h \

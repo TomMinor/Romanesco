@@ -121,6 +121,11 @@ public slots:
 //        m_glViewport->setFOV(_fov);
     }
 
+    void toggleEnvironmentCamera(bool _shouldEnable)
+    {
+        m_glViewport->m_optixScene->setCameraType( OptixScene::CameraTypes::ENVIRONMENT );
+    }
+
     void setSamples(int _s)
     {
 //        m_glViewport->m_optixScene->setSamplesPerPixelSquared(_s);

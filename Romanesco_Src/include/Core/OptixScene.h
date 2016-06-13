@@ -69,6 +69,14 @@ class OptixScene : public QObject
     };
 
 public:
+    enum class CameraTypes : unsigned int
+    {
+        PINHOLE = 0u,
+        ENVIRONMENT = 1u,
+
+        TOTALCAMERATYPES
+    };
+
     OptixScene(unsigned int _width, unsigned int _height, QObject *_parent = 0);
     virtual ~OptixScene();
 
@@ -88,6 +96,13 @@ public:
 
     virtual void setGeometryHitProgram(std::string _hit_src);
     virtual void setShadingProgram(std::string _hit_src);
+
+    void setCurrentMaterial(std::string _name);
+
+    void setCameraType(CameraTypes _type)
+    {
+        m_cameraMode = _type;
+    }
 
     optix::Buffer createGLOutputBuffer(RTformat _format, unsigned int _width, unsigned int _height);
     optix::Buffer createOutputBuffer(RTformat _format, unsigned int _width, unsigned int _height);
@@ -109,10 +124,6 @@ public:
     float* getBufferContents(std::string _name);
 
     int2 getResolution();
-
-
-
-
 
     bool saveBuffersToDisk(std::string _filename);
 
@@ -172,6 +183,7 @@ public:
     int   m_frame;
     unsigned int   m_sampling_strategy;
 
+    CameraTypes m_cameraMode;
     bool m_camera_changed;
 
     unsigned int m_width;
@@ -188,15 +200,13 @@ protected:
     int m_progressiveTimeout;
     bool m_frameDone;
 
+     GeometryInstance m_geoInstance;
+
     std::vector<ParallelogramLight> m_lights;
 
     std::future<void> m_future;
 
 private:
-    void asyncDraw()
-    {
-        std::cout << "Drawing" << std::endl;
-    }
 
     void updateGLBuffer();
 

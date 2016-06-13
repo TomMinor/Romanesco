@@ -747,7 +747,7 @@ RT_PROGRAM void pathtrace_diffuse()
 }
 
 
-RT_PROGRAM void diffuse()
+RT_PROGRAM void simple_diffuse()
 {
   float3 world_shading_normal   = normalize( rtTransformNormal( RT_OBJECT_TO_WORLD, shading_normal ) );
   float3 world_geometric_normal = normalize( rtTransformNormal( RT_OBJECT_TO_WORLD, geometric_normal ) );
