@@ -640,7 +640,7 @@ void MainWindow::dumpRenderedFrame()
     std::string statusMessage = boost::str( boost::format("Rendering frame %d of %d") % currentRelativeFrame % frameRange );
     m_statusBar->showMessage( statusMessage.c_str() );
 
-    int fileFrame = (m_frameOffset == -1) ? currentFrame : m_frameOffset + currentRelativeFrame;
+    int fileFrame = currentFrame;// (m_frameOffset == -1) ? currentFrame : m_frameOffset + currentRelativeFrame;
     std::string filepath = m_renderPath;
     std::string imagePath = boost::str(boost::format(filepath) % fileFrame);
 

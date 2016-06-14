@@ -746,8 +746,8 @@ void OptixScene::createWorld()
 
             setGeometryHitProgram(defaultSrc);
 
-//        setCurrentMaterial("pathtrace_diffuse");
-    setCurrentMaterial("simple_diffuse");
+        setCurrentMaterial("pathtrace_diffuse");
+//    setCurrentMaterial("simple_diffuse");
 }
 
 
@@ -1047,11 +1047,11 @@ void OptixScene::drawToBuffer()
                                       );
 
 //                    updateGLBuffer();
-//                    emit bucketReady(i, j);
+                    emit bucketReady(i, j);
                 }
             }
 //            updateGLBuffer();
-//            emit bucketRowReady(i);
+            emit bucketRowReady(i);
         }
         qDebug( "%d/%d iterations completed", m_frame - 1, m_progressiveTimeout - 1);
 //        emit frameRefined(m_frame - 1);
