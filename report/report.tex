@@ -50,8 +50,8 @@
 \date{}
 \maketitle
 
-\renewcommand{\abstractname}{Project Overview 
-\\We have crazy integration, crazy asset production, crazy pipeline and our own GPU renderer - that's quite cool when you put it that way \Lenny{} }
+\renewcommand{\abstractname}{Project Overview}
+%\\We have crazy integration, crazy asset production, crazy pipeline and our own GPU renderer - that's quite cool when you put it that way
 \begin{abstract}
 
 \textit{Main Aspects}
@@ -69,7 +69,7 @@
 
 \begin{itemize}
 	% Cite Odyssey?
-	\item Created the initial pitch idea alongside Kyran Bishop \Lenny{}, the result was his Space Odyssey inspired story that culminated in a dramatic psychedelic sequence, where my fractals were to be used. 
+	\item Created the initial pitch idea alongside Kyran Bishop, the result was his Space Odyssey inspired story that culminated in a dramatic psychedelic sequence, where my fractals were to be used. 
 	\item I always planned to create some form of fractal lookdev tool, by joining a team of artists I made my overall job harder (the result absolutely has to look professional quality and needs to be finished or else the piece will suffer) but provided such a tool with some context.
 	\item I took up additional roles as Pipeline TD and FX TD, given the large amount of work the team had to do it was unrealistic to expect myself to just work purely on the renderer.
 	\item <Explain report overview>
@@ -177,7 +177,7 @@ Why not develop a custom tool just for fractal lookdev
 	\item Modifying the scene at runtime using Reflection
 \end{itemize}
 
-\section{ Performance }
+\section{Performance}
 
 \begin{itemize}
 	\item Needs to be responsive, at least during the interactive preview
@@ -187,7 +187,76 @@ Why not develop a custom tool just for fractal lookdev
 \end{itemize}
 
 
+\section{Scene Management}
 
+\subsection{Saving and loading scenes}
+\begin{itemize}
+	\item Not usable if scenes can't be saved
+	\item Current implementation is more TD oriented, scenes are defined via CUDA functions that are compiled at runtime
+	\item Camera information is encoded in comments at the top of the file
+\end{itemize}
+
+\subsection{Code Reflection}
+Runtime compilation is necessary for allowing scene changes at runtime, specifically the ability to compile to .ptx code so it can be loaded into Optix as a callable function.
+\subsubsection{Methods}
+
+\begin{itemize}
+	\item NVRTC - Available in CUDA 6.5 and up, faster and built in way of compiling.
+	\item System NVCC - If using an older version of CUDA (such as on the university lab workstations), I try to use the system NVCC (hopefully available in path). This has the downsides of requiring the developer tools to be installed, as well as the performance overhead of launching and managing a subprocess. However, this allows me to render on a wider range of machines regardless of the performance impact.
+\end{itemize}
+
+\subsection{Runtime Patching}
+Once the code is compiled, I needed some way to tell Optix to use it.
+
+\begin{itemize}
+	\item Manually patching the generated PTX code ( prone to error )
+	\item Optix rtCallablePrograms ( officially supported way of doing it, found out later in the development process )
+\end{itemize}
+
+\subsection{Node Graph}
+
+\begin{itemize}
+	\item More artist friendly approach
+	\item Spent a lot of time trying to develop this in the hope that it would aid the lookdev process
+	\item Had to abandon the concept for the sake of getting the fractals lookdev'd on time
+	\item Influenced the current design, which is basically a pure code version of what the node graph does
+	\item An extra level of indirection, nodes -> CUDA code -> runtime patching
+\end{itemize}
+
+\subsubsection{Grammar Definition}
+In order to properly write a parser, it was important to treat the node graph like a simple language. This was helpful in figuring out error conditions, for example if a domain operation is plugged into a distance operation \ref{fig:grammar}
+
+\begin{figure}[h!]
+	\includegraphics[scale=0.22]{nodegrammar}
+	\caption{Grammar Definition}
+	\label{fig:grammar}
+\end{figure}
+
+\chapter{Dynamics FX}
+
+Had to create the effect of debris slowly drifting through space, so created the genesis of the destruction sequence as a base of the effect.
+
+\section{Setting up the simulation}
+\begin{itemize}
+	\item Import the Voyager model as an FBX (with UVs) and convert the Maya hierarchy setup to Houdini groups
+	\item Fracture a slightly pre-deformed version of the mesh, transfer the UVs and create new ones in the gaps
+	\item Generate constraints between all nearby fractured pieces
+	\item Manually paint on the strengths of each fractured piece, this is done by painting the strength onto the vertices and then finding the average strength of each fractured piece's vertices
+	\item The core unit of voyager has a very high strength so it does not fall apart, as it has to be intact for the shot
+	\item The manually painted strength values are multiplied by noise to get more variation
+	\item The strength values are remapped using a curve for a less linear falloff
+	\item Finally, transfer the strength values to the constraints and feed into the simulation
+\end{itemize}
+
+\section{Simulation Elements}
+\begin{itemize}
+	\item Fractured voyager with constraints
+	\item Phantom collision geometry that initiates the destruction effect
+	\item Zero gravity simulation, with torque and spin POP nodes to introduce interesting rotations into the simulation.
+\end{itemize}
+
+\section{Final Touches}
+In the end, the simulation was exported to an alembic cache and Lewis processed it with a simple script that baked the animation data into locators. Using this method, we preserved animation ability for individual pieces if necessary but otherwise the simulation looked identical. Slowing down the simulation 20x in the Alembic's time scale was sufficient to give a convincing effect that the debris was slowly drifting, without completely stopping the simulation.
 
 
 \chapter{Pipeline}
@@ -205,8 +274,11 @@ Why not develop a custom tool just for fractal lookdev
 	\item Main development time spent on PySide Qt GUI stuff, after the initial time spent learning the P4 API and commands
 	\item Technically cross application, the P4 and GUI side of things will work whereever pyside is available. Needs a few app specific tweaks such as file saving commands etc to work properly but wouldn't take long to port
 	\item Various wizards to automate asset/shot/lookdev file structure generation because kyran made the layout super complex
-	\item 
+	\item Allows us to analyse trends
 \end{itemize}
+
+
+\includegraphics[width=\textwidth]{images/graph.png}
 
 \chapter{Renderer}
 

@@ -1,0 +1,71 @@
+%% Creator: Inkscape inkscape 0.48.4, www.inkscape.org
+%% PDF/EPS/PS + LaTeX output extension by Johan Engelen, 2010
+%% Accompanies image file 'graph.pdf' (pdf, eps, ps)
+%%
+%% To include the image in your LaTeX document, write
+%%   \input{<filename>.pdf_tex}
+%%  instead of
+%%   \includegraphics{<filename>.pdf}
+%% To scale the image, write
+%%   \def\svgwidth{<desired width>}
+%%   \input{<filename>.pdf_tex}
+%%  instead of
+%%   \includegraphics[width=<desired width>]{<filename>.pdf}
+%%
+%% Images with a different path to the parent latex file can
+%% be accessed with the `import' package (which may need to be
+%% installed) using
+%%   \usepackage{import}
+%% in the preamble, and then including the image with
+%%   \import{<path to file>}{<filename>.pdf_tex}
+%% Alternatively, one can specify
+%%   \graphicspath{{<path to file>/}}
+%% 
+%% For more information, please see info/svg-inkscape on CTAN:
+%%   http://tug.ctan.org/tex-archive/info/svg-inkscape
+%%
+\begingroup%
+  \makeatletter%
+  \providecommand\color[2][]{%
+    \errmessage{(Inkscape) Color is used for the text in Inkscape, but the package 'color.sty' is not loaded}%
+    \renewcommand\color[2][]{}%
+  }%
+  \providecommand\transparent[1]{%
+    \errmessage{(Inkscape) Transparency is used (non-zero) for the text in Inkscape, but the package 'transparent.sty' is not loaded}%
+    \renewcommand\transparent[1]{}%
+  }%
+  \providecommand\rotatebox[2]{#2}%
+  \ifx\svgwidth\undefined%
+    \setlength{\unitlength}{640bp}%
+    \ifx\svgscale\undefined%
+      \relax%
+    \else%
+      \setlength{\unitlength}{\unitlength * \real{\svgscale}}%
+    \fi%
+  \else%
+    \setlength{\unitlength}{\svgwidth}%
+  \fi%
+  \global\let\svgwidth\undefined%
+  \global\let\svgscale\undefined%
+  \makeatother%
+  \begin{picture}(1,0.75)%
+    \put(0,0){\includegraphics[width=\unitlength]{graph.pdf}}%
+    \put(0.175,0.05798077){\makebox(0,0)[rb]{\smash{0}}}%
+    \put(0.175,0.12100586){\makebox(0,0)[rb]{\smash{0.1}}}%
+    \put(0.175,0.18403099){\makebox(0,0)[rb]{\smash{0.2}}}%
+    \put(0.175,0.24705608){\makebox(0,0)[rb]{\smash{0.3}}}%
+    \put(0.175,0.31008118){\makebox(0,0)[rb]{\smash{0.4}}}%
+    \put(0.175,0.37310629){\makebox(0,0)[rb]{\smash{0.5}}}%
+    \put(0.175,0.4361314){\makebox(0,0)[rb]{\smash{0.6}}}%
+    \put(0.175,0.49915651){\makebox(0,0)[rb]{\smash{0.7}}}%
+    \put(0.175,0.56218162){\makebox(0,0)[rb]{\smash{0.8}}}%
+    \put(0.175,0.62520672){\makebox(0,0)[rb]{\smash{0.9}}}%
+    \put(0.387125,0.03125){\makebox(0,0)[b]{\smash{Home}}}%
+    \put(0.76837502,0.03125){\makebox(0,0)[b]{\smash{University}}}%
+    \put(0.5,0.7175){\makebox(0,0)[b]{\smash{Asset Creation By Location (in %)}}}%
+    \put(0.03375,0.666){\makebox(0,0)[lb]{\smash{tminor}}}%
+    \put(0.03375,0.63975){\makebox(0,0)[lb]{\smash{kbishop}}}%
+    \put(0.03375,0.6135){\makebox(0,0)[lb]{\smash{lpickston}}}%
+    \put(0.03375,0.58725){\makebox(0,0)[lb]{\smash{mfiveash}}}%
+  \end{picture}%
+\endgroup%
