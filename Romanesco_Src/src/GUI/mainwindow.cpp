@@ -577,6 +577,7 @@ void MainWindow::bucketRendered(uint i, uint j)
 {
 //    qDebug("Bucket (%d, %d) completed", i, j);
 
+//    update();
     m_glViewport->repaint();
 //    qApp->processEvents();
 }

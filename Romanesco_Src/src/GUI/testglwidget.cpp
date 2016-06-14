@@ -17,11 +17,19 @@ TestGLWidget::TestGLWidget(QWidget *parent)
     m_updateCamera = true;
 
     m_overrideRes = false;
+
+    m_timer = new QTimer(this);
+    connect( m_timer, SIGNAL(timeout()), this, SLOT(updateScene()) );
 }
 
 TestGLWidget::~TestGLWidget()
 {
     delete m_optixScene;
+}
+
+void TestGLWidget::updateScene()
+{
+    m_optixScene->drawToBuffer();
 }
 
 void TestGLWidget::initializeGL()
@@ -124,6 +132,8 @@ void TestGLWidget::resizeGL(int _w, int _h)
     } else {
         m_updateCamera = false;
     }
+
+    m_timer->start(0);
 }
 
 #define EPSILON 0.01
@@ -236,7 +246,7 @@ void TestGLWidget::paintGL()
 
     if(m_optixScene)
     {
-        m_optixScene->drawToBuffer();
+//        m_optixScene->drawToBuffer();
     }
     glDrawArrays(GL_TRIANGLES, 0, 6);
 
