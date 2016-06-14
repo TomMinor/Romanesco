@@ -40,9 +40,14 @@
 \title{ Major Project Report }
 
 \author{ Tom Minor - Level H\\
-		Major Project\\
-		Bournemouth University - NCCA}
+ 		 Major Project\\
+ 		 Bournemouth University, NCCA\\
+ 		 \\
+ 		 Supervised by Oleg Fryazinov, Adam Redford
+		}
 
+% Remove date
+\date{}
 \maketitle
 
 \renewcommand{\abstractname}{Project Overview 
@@ -60,13 +65,25 @@
 
 \toccontents
 
+\chapter{Introduction}
 
-\noNumberChapter{1}{Initial Research}
+\begin{itemize}
+	% Cite Odyssey?
+	\item Created the initial pitch idea alongside Kyran Bishop \Lenny{}, the result was his Space Odyssey inspired story that culminated in a dramatic psychedelic sequence, where my fractals were to be used. 
+	\item I always planned to create some form of fractal lookdev tool, by joining a team of artists I made my overall job harder (the result absolutely has to look professional quality and needs to be finished or else the piece will suffer) but provided such a tool with some context.
+	\item I took up additional roles as Pipeline TD and FX TD, given the large amount of work the team had to do it was unrealistic to expect myself to just work purely on the renderer.
+	\item <Explain report overview>
+\end{itemize}
+
+\section{Goals}
+
+\chapter{Initial Research}
+
+\subsection{Fractal Sequence}
+\subsection{FX Shots}
+
 \section{Trying out existing stuff}
-
-
 \subsection{Fractals in FX Software}
-
 Looked at developing fractals in Houdini, may not need to develop a custom tool to visualise
 
 Volumetric mandelbulb
@@ -147,9 +164,23 @@ GPU Accelerated rendering of implicit surfaces really efficient
 
 Why not develop a custom tool just for fractal lookdev
 
+
+\chapter{Renderer Implementation}
+
+\begin{itemize}
+	\item Overview
+	\item Sphere tracing distance fields
+	\item Path Tracing
+	\item Progressive rendering
+	\item Tile Based Rendering
+	\item Modifying the scene at runtime using Reflection
+\end{itemize}
+
+
+
 \section{Reading the documentation and tutorials}
 
-\noNumberChapter{2}{Pipeline}
+\chapter{Pipeline}
 
 \begin{itemize}
 	\item Dropbox isn't enough
@@ -167,7 +198,7 @@ Why not develop a custom tool just for fractal lookdev
 	\item 
 \end{itemize}
 
-\noNumberChapter{3}{Renderer}
+\chapter{Renderer}
 
 \begin{itemize}
 	\item How best to make this artist friendly (Nodegraph)
@@ -210,7 +241,20 @@ Why not develop a custom tool just for fractal lookdev
 \end{itemize}
 
 
-\noNumberChapter{4}{Conclusion}
+\chapter{Conclusion}
+\section{Future Improvements}
+
+\begin{itemize}
+	\item Look into methods besides distance estimation for more fractal possibilities
+	\item Make the interface more artist friendly, with less reliance on understanding the maths
+	\item Improve the input handling and allow for multiple input methods such as gamepads
+	\item Some form of adaptive rendering to keep the viewport responsive
+	\item Improve the light sampling algorithms using methods such as Bidirectional Path Tracing, VCM or Metropolis light transport.
+	\item Provide a GUI interface for the lighting setup
+	\item Move the batch rendering script's capabilities directly into the main renderer
+	\item Screenspace CUDA shaders that make use of the various buffers available
+	
+\end{itemize}
 
 \nocite{*}
 
