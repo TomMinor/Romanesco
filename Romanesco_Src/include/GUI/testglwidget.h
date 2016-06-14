@@ -7,6 +7,7 @@
 #include <QMatrix4x4>
 #include <QDebug>
 #include <QKeyEvent>
+#include <QTimer>
 
 #include "OptixScene.h"
 
@@ -102,6 +103,8 @@ public slots:
         m_updateCamera = true;
     }
 
+    void updateScene();
+
 signals:
     void initializedGL();
 
@@ -128,6 +131,7 @@ private:
     unsigned int m_overrideWidth;
     unsigned int m_overrideHeight;
 
+    QTimer* m_timer;
 };
 
 #endif // TESTGLWIDGET_H

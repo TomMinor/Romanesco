@@ -93,6 +93,13 @@ void RenderThread::run()
     }
 }
 
+static int timeoutFunc()
+{
+    QCoreApplication::processEvents();
+
+    qDebug() << "TIMEOUT TEST";
+    return 0;
+}
 
 OptixScene::OptixScene(unsigned int _width, unsigned int _height, QObject *_parent)
     : QObject(_parent), m_time(0.0f), m_renderThread(this), m_camera(nullptr)
@@ -156,6 +163,8 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height, QObject *_pare
     m_tileX = m_tileY = 2;
 
     m_cameraMode = CameraTypes::PINHOLE;
+
+    m_context->setTimeoutCallback( timeoutFunc, 1  );
 }
 
 void OptixScene::createBuffers()
@@ -1006,6 +1015,8 @@ void OptixScene::updateGLBuffer()
     }
 }
 
+
+
 void OptixScene::drawToBuffer()
 {
     if( m_camera_changed ) {
@@ -1047,11 +1058,11 @@ void OptixScene::drawToBuffer()
                                       );
 
 //                    updateGLBuffer();
-                    emit bucketReady(i, j);
+//                    emit bucketReady(i, j);
                 }
             }
 //            updateGLBuffer();
-            emit bucketRowReady(i);
+//            emit bucketRowReady(i);
         }
         qDebug( "%d/%d iterations completed", m_frame - 1, m_progressiveTimeout - 1);
 //        emit frameRefined(m_frame - 1);
