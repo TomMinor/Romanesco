@@ -29,18 +29,11 @@ public:
         float length = 3.5f;
         float3 z = _p;
         float3 x = _p;
-#ifdef FLIP
-        Matrix4x4 transform = Matrix4x4::scale( make_float3(-1,0,0));
-        z = applyTransform(_p, transform);
 
-        x.x += 2.0f;
-
-        length = 2.0f;
-#endif
         float a = map( translateHook(0, z) ) * m_fudgeFactor;
         x.y += 1;
         float b = sdBox(x  + make_float3(length, 0.0f, 0.0f), m_limits);
-        return max(a,b);
+        return a;// max(a,b);
     }
 
 private:
@@ -85,7 +78,7 @@ private:
 //        z.x -= global_t * 0.01f;
 //        z = translateHook(0, z);
 
-//        z.x = fmod(z.x, 3.5f);
+        // z.x = fmod(z.x, 3.5f);
 
         z = fabs( make_float3(1.0f) - fmod(z, 2.0f));
 //        z.x = fabs(z.x + m_offset.x) - m_offset.x;
@@ -113,11 +106,10 @@ private:
             if(z.x + z.y < 0.0){ float3 tmp = z; z.x = -tmp.y; z.y = -tmp.x; }
             z = fabs(z);
 
-            // z
             if(z.x + z.z < 0.0){ float3 tmp = z; z.x = -tmp.z; z.z = -tmp.x; }
             z = fabs(z);
 
-            // y
+            //y
             if(z.x - z.y < 0.0){ float3 tmp = z; z.x = tmp.y; z.y = tmp.x; }
             z = fabs(z);
 
