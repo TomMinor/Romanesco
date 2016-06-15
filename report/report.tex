@@ -12,11 +12,13 @@
 \usepackage{textcomp}
 \usepackage{listings}
 \usepackage{varwidth}
+\usepackage{hyperref}
 
 \usepackage{caption}
 \usepackage{subcaption}
 
 \usepackage{stackengine,graphicx,trimclip,scalerel}
+
 
 \renewcommand{\baselinestretch}{1.25} %Increase 
 
@@ -77,55 +79,58 @@
 \toccontents
 
 \chapter{Introduction}
+I originally planned to create a Fractal LookDev Tool by creating my own renderer and working alone on an R\&D project, as pathtracing and fractals are a combination that I really find fascinating. However, after talking to Kyran Bishop we both came up with an initial pitch strongly inspired by the film A Space Odyssey \cite{hal} that culminates in a dramatic psychedelic sequence. This gave me a fantastic opportunity to develop a fractal tool that would actually be put to the test by a team of artists and be integrated in a piece to create something visually stunning. 
 
-\begin{itemize}
-	% Cite Odyssey?
-	\item Created the initial pitch idea alongside Kyran Bishop, the result was his Space Odyssey inspired story that culminated in a dramatic psychedelic sequence, where my fractals were to be used. 
-	\item I always planned to create some form of fractal lookdev tool, by joining a team of artists I made my overall job harder (the result absolutely has to look professional quality and needs to be finished or else the piece will suffer) but provided such a tool with some context.
-	\item I took up additional roles as Pipeline TD and FX TD, given the large amount of work the team had to do it was unrealistic to expect myself to just work purely on the renderer.
-	\item <Explain report overview>
-\end{itemize}
-
-\section{Goals}
+As an R\&D technical person, it is always more satisfying and gratifying to create a tool with an actual purpose that will be used by other people. Joining a team of artists made my overall job harder as the result had to be absolutely polished and of professional quality which really pushed me to develop the tool the best I could. Within the group, I set out initially to work on the renderer alone but given the large amount of work we had to do as a group it was unrealistic to expect myself to work purely on that. This meant I took up additional roles such as Pipeline TD and wrote a plugin that encompasses Perforce in Maya as this only existed for Windows and not Linux, and FX TD to create a destruction effect for our piece.
 
 \chapter{Initial Research}
 
-\subsection{Fractal Sequence}
-\subsection{FX Shots}
-
-\section{Trying out existing stuff}
+\section{Fractal Sequence}
 \subsection{Fractals in FX Software}
-Looked at developing fractals in Houdini, may not need to develop a custom tool to visualise
 
-Volumetric mandelbulb
+It would have made no sense to go ahead with the fractal tool idea if it was easily possible in existing renderers, Initially I looked into developing fractals in Houdini. The most common approach for the Mandelbulb  fractal shape I was focusing on was to calculate the voxel based shape and render it was a volume, The results were quite sucessful \ref{fig:voxelbulb} and while this did give an effect similiar to that achieved by Disney in the Big Hero 6 \cite{bh6} fractal sequence, it was far too slow to compute for any form of interactive tweaking to be used for our fractal sequence that would need several hundred frames rendered. 
 
-Voxel Based
+After a little more research, I found out faster alternatives in Houdini created by the FX team responsible for the fractal sequence in \textit{Lucy}. They implemented a Vex based raymarcher \cite{Kim:2014:CIU:2614106.2614166} that worked and rendered a lot  faster than a volumetric approach, but it still suffered from interactivity issues that specialised solutions like Shadertoy do not. 
 
-Slow to compute
+I decided Houdini wasn't the way to go for developing my tool but still used it several times during the project for several other tasks such as some creature FX R\&D work  \ref{fig:noise_shader} and Voyager destruction. Shadertoy and GPU Accelerated rendering of implicit surfaces seemed to be the efficient way of rendering, so I began moving in that direction for creating my custom lookdev tool.
 
+\begin{figure}
 \begin{center}
 \includegraphics[scale=0.2]{"images/houdini_mandelbulb"}
+\caption{Voxel Based Volumetric Mandelbulb}
+\label{fig:voxelbulb}
 \end{center}
+\end{figure}
 
-Disney used houdini on BH6, but it's much too slow for our needs.
-
-Need a custom tool
-
-Houdini is still good for creature effects though, example noise shader goes here
-
-Shadertoy has been a big deal in the past few years
-
-GPU Accelerated rendering of implicit surfaces really efficient
-
-Why not develop a custom tool just for fractal lookdev
-
-\section{Reading the documentation and tutorials}
+\begin{figure}
+\begin{center}
+\includegraphics[scale=0.2]{"images/noise_shader"}
+\caption{Houdini Plasma Shader Effect}
+\label{fig:noise_shader}
+\end{center}
+\end{figure}
 
 
+\subsection{Distance Estimated Fractals}
 
 
+\begin{figure}
+\begin{center}
+\includegraphics[width=\textwidth]{images/raymarchstep}
+\caption{Ray marching algorithm}
+\label{fig:raymarching}
+\end{center}
+\end{figure}
 
+The basic raymarching algorithm can be optimised through a technique known as Sphere Tracing \cite{Hart1996}, which requires knowing the nearest distance to a surface at any point. \ref{fig:sphere_tracing}
 
+\begin{figure}
+\begin{center}
+\includegraphics[width=\textwidth]{images/spheretracing}
+\caption{Sphere tracing algorithm}
+\label{fig:sphere_tracing}
+\end{center}
+\end{figure}
 
 
 
@@ -222,8 +227,10 @@ In the end, the simulation was exported to an alembic cache and Lewis processed 
 \end{itemize}
 
 \section{Rendering Strategy}
+The world is sampled using a simple pinhole camera \cite{pinhole}
+
 \begin{itemize}
-	\item Render tiles
+	\item Render tiles \cite[pp. 51-52]{kalamp}
 	\begin{itemize}
 		\item For larger frame sizes this will give an opportunity for the calling program to return quickly and handle events
 		\item Will use less GPU RAM, which is vital for HD frames on GPUs without lots of memory
@@ -272,7 +279,6 @@ as well as rotates the fractal shape slowly around the Z axis.
 \end{itemize}
 
 \subsection{Tunnel Sequence}
-The base shape was heavily inspired by the work of Syntopia's Shadertoy demos \cite{mengerjourney} \cite{kaljourney}.
 
 \begin{figure}
 \centering
@@ -280,21 +286,43 @@ The base shape was heavily inspired by the work of Syntopia's Shadertoy demos \c
   \centering
   \includegraphics[width=.95\linewidth]{images/mengerjourney.png}
   \caption{Menger Journey \cite{mengerjourney}}
-  \label{fig:sub1}
+  \label{fig:menger}
 \end{subfigure}%
 \begin{subfigure}{.5\textwidth}
   \centering
   \includegraphics[width=.95\linewidth]{images/kaljourney.png}
   \caption{Kaleidoscopic Journey \cite{kaljourney}}
-  \label{fig:sub2}
+  \label{fig:kal}
 \end{subfigure}
 \caption{Two tunnel variations created by Syntopia, on Shadertoy}
 \label{fig:test}
 \end{figure}
 
-\begin{itemize}
-	\item The main tunnel shape was originally less organic, the shape I used as reference
-\end{itemize}
+The main tunnel shape was originally less organic, the base shape was heavily inspired by the work of Syntopia's Shadertoy demos \cite{mengerjourney} \cite{kaljourney}. 
+
+My initial design was prototyped in shadertoy under the assumption I would port it over to the renderer, this prototype is visible here: \url{www.shadertoy.com/view/ls3SRs}. However, due to team feedback the design changed dramatically and only some elements survived into the iteration shown in \ref{fig:initialdesign}.
+
+The main desire of the team was to maintain symmetry, which disallowed the use of the twist effect that created such interesting motion in the Shadertoy iteration. However, I took some more inspiration from \ref{fig:kal} and applied the base shape to my IFS fractal, this created a very interesting pulsing and rotating motion that everyone liked. We were planning to use this in the final cut, but then I dug deeper into the workings of \ref{fig:kal} and discovered how the interesting surface details are created using \textit{geometry traps}.
+
+\ref{fig:finaldesign} shows the result of applying a Mandelbulb geometry trap to the shape of the original IFS tunnel, because it is simply stuck to the surface it follows the interesting rotating motion of the tunnel but has the organic surface of a bulb.
+
+\begin{figure}
+\centering
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=.95\linewidth]{images/ifs_tunnel.png}
+  \caption{The initial design}
+  \label{fig:initialdesign}
+\end{subfigure}%
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=.95\linewidth]{images/tunnelbulb.png}
+  \caption{The final design}
+  \label{fig:finaldesign}
+\end{subfigure}
+\caption{Tunnel Iterations for the piece}
+\label{fig:test}
+\end{figure}
 
 \subsection{Reflected Visor Sequence}
 This one was done last
@@ -326,7 +354,7 @@ it onto the visor.
 
 \chapter{Conclusion}
 
-\part{In conclusion} I believe Romanesco is a useful and novel way of developing fractal objects in a visual effects context. The majority of currently available renderers are more of a novelty, designed to create nice images for a desktop background instead of a usable plate. Attempting to use existing renderers to create fractals is a plausible method, but suffers from poor interactivity due to long calculation times for the fractal structure.
+\paragraph{In conclusion} I believe Romanesco is a useful and novel way of developing fractal objects in a visual effects context. The majority of currently available renderers are more of a novelty, designed to create nice images for a desktop background instead of a usable plate. Attempting to use existing renderers to create fractals is a plausible method, but suffers from poor interactivity due to long calculation times for the fractal structure.
 
 Romanesco begins to fill in the gap between the currently available approaches, with more polish and focus put towards artist usability the more important issues such as fractals not behaving well enough for real world VFX shots can be minimised by the ease in which it is possible to iterate on the fractal design using the renderer.
 

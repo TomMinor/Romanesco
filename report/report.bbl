@@ -1,4 +1,24 @@
-\begin{thebibliography}{1}
+\begin{thebibliography}{10}
+
+\bibitem{Hart1996}
+C.~John Hart.
+\newblock Sphere tracing: a geometric method for the antialiased ray tracing of
+  implicit surfaces.
+\newblock {\em The Visual Computer}, 12(10):527--545, 1996.
+
+
+\bibitem{Hart:1989:RTD:74333.74363}
+J.~C. Hart, D.~J. Sandin, and L.~H. Kauffman.
+\newblock Ray tracing deterministic 3-d fractals.
+\newblock In {\em Proceedings of the 16th Annual Conference on Computer
+  Graphics and Interactive Techniques}, SIGGRAPH '89, pages 289--296, New York,
+  NY, USA, 1989. ACM.
+
+\bibitem{Hart:1989:RTD:74334.74363}
+J.~C. Hart, D.~J. Sandin, and L.~H. Kauffman.
+\newblock Ray tracing deterministic 3-d fractals.
+\newblock {\em SIGGRAPH Comput. Graph.}, 23(3):289--296, July 1989.
+
 
 \bibitem{iqdistancefunctions}
 Quilez Inigo.
@@ -6,6 +26,37 @@ Quilez Inigo.
 \newblock
   \url{http://iquilezles.org/www/articles/distfunctions/distfunctions.htm}.
 \newblock Accessed: 20th December 2015.
+
+\bibitem{kalamp}
+Constantinos Kalampokis.
+\newblock Bidirectional path tracing implementation using nvidia optix.
+\newblock
+  \url{http://graphics.cs.aueb.gr/graphics/docs/Constantinos%20Kalampokis%20Thesis.pdf}.
+\newblock Accessed: 6th June 2016.
+
+\bibitem{Kim:2014:CIU:2614106.2614166}
+Alex Kim, Daniel~P. Ferreira, and Stephen Bevins.
+\newblock Capturing the infinite universe in "lucy": Fractal rendering in film
+  production.
+\newblock In {\em ACM SIGGRAPH 2014 Talks}, SIGGRAPH '14, pages 1:1--1:1, New
+  York, NY, USA, 2014. ACM.
+
+\bibitem{hal}
+Stanley Kubrick.
+\newblock 2001: A space odyssey.
+\newblock Metro-Goldwyn-Mayer, 1998.
+
+\bibitem{pinhole}
+Scratchapixel.
+\newblock 3d viewing: the pinhole camera model.
+\newblock
+  \url{http://www.scratchapixel.com/lessons/3d-basic-rendering/3d-viewing-pinhole-camera/how-pinhole-camera-works-part-2}.
+\newblock Accessed: 20th September 2015.
+
+\bibitem{bh6}
+Walt Disney~Animation Studios.
+\newblock Big hero 6.
+\newblock Walt Disney Pictures, 2014.
 
 \bibitem{kaljourney}
 Syntopia.

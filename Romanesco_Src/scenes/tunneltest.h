@@ -33,7 +33,7 @@ public:
         float a = map( translateHook(0, z) ) * m_fudgeFactor;
         x.y += 1;
         float b = sdBox(x  + make_float3(length, 0.0f, 0.0f), m_limits);
-        return a;// max(a,b);
+        return max(a,b);
     }
 
 private:

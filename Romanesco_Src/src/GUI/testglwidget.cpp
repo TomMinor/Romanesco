@@ -29,7 +29,7 @@ TestGLWidget::~TestGLWidget()
 
 void TestGLWidget::updateScene()
 {
-    m_optixScene->drawToBuffer();
+//    m_optixScene->drawToBuffer();
 }
 
 void TestGLWidget::initializeGL()
@@ -246,7 +246,7 @@ void TestGLWidget::paintGL()
 
     if(m_optixScene)
     {
-//        m_optixScene->drawToBuffer();
+        m_optixScene->drawToBuffer();
     }
     glDrawArrays(GL_TRIANGLES, 0, 6);
 
