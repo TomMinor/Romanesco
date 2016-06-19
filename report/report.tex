@@ -88,7 +88,7 @@ As an R\&D technical person, it is always more satisfying and gratifying to crea
 \section{Fractal Sequence}
 \subsection{Fractals in FX Software}
 
-It would have made no sense to go ahead with the fractal tool idea if it was easily possible in existing renderers, Initially I looked into developing fractals in Houdini. The most common approach for the Mandelbulb  fractal shape I was focusing on was to calculate the voxel based shape and render it was a volume, The results were quite sucessful \ref{fig:voxelbulb} and while this did give an effect similiar to that achieved by Disney in the Big Hero 6 \cite{bh6} fractal sequence, it was far too slow to compute for any form of interactive tweaking to be used for our fractal sequence that would need several hundred frames rendered. 
+It would have made no sense to go ahead with the fractal tool idea if it was easily possible in existing renderers, initially I looked into developing fractals in Houdini. The most common approach for the Mandelbulb  fractal shape I was focusing on was to calculate the voxel based shape and render it was a volume, The results were quite sucessful \ref{fig:voxelbulb} and while this did give an effect similiar to that achieved by Disney in the Big Hero 6 \cite{bh6} fractal sequence, it was far too slow to compute for any form of interactive tweaking to be used for our fractal sequence that would need several hundred frames rendered. 
 
 After a little more research, I found out faster alternatives in Houdini created by the FX team responsible for the fractal sequence in \textit{Lucy}. They implemented a Vex based raymarcher \cite{Kim:2014:CIU:2614106.2614166} that worked and rendered a lot  faster than a volumetric approach, but it still suffered from interactivity issues that specialised solutions like Shadertoy do not. 
 
@@ -122,7 +122,7 @@ I decided Houdini wasn't the way to go for developing my tool but still used it 
 \end{center}
 \end{figure}
 
-The basic raymarching algorithm can be optimised through a technique known as Sphere Tracing \cite{Hart1996}, which requires knowing the nearest distance to a surface at any point. \ref{fig:sphere_tracing}
+The basic raymarching algorithm can be optimised through a technique known as Sphere Tracing \cite{Hart1996}, which requires knowing the nearest distance to a surface at any point \ref{fig:sphere_tracing}. A function known as a distance estimator can be used to find this distance, which makes the basic process becomes something like 
 
 \begin{figure}
 \begin{center}
@@ -134,60 +134,12 @@ The basic raymarching algorithm can be optimised through a technique known as Sp
 
 
 
+\subsection{Raymarching in a shader}
 
+As a proof of concept, I created a Qt project that drew a fullscreen quad onscreen. I then experimented with the GLSL shader to try and recreate Shadertoy myself, this was the result:
 
-\chapter{Dynamics FX}
+\includegraphics[width=\textwidth]{images/gl_bulb}
 
-Had to create the effect of debris slowly drifting through space, so created the genesis of the destruction sequence as a base of the effect.
-
-\section{Setting up the simulation}
-\begin{itemize}
-	\item Import the Voyager model as an FBX (with UVs) and convert the Maya hierarchy setup to Houdini groups
-	\item Fracture a slightly pre-deformed version of the mesh, transfer the UVs and create new ones in the gaps
-	\item Generate constraints between all nearby fractured pieces
-	\item Manually paint on the strengths of each fractured piece, this is done by painting the strength onto the vertices and then finding the average strength of each fractured piece's vertices
-	\item The core unit of voyager has a very high strength so it does not fall apart, as it has to be intact for the shot
-	\item The manually painted strength values are multiplied by noise to get more variation
-	\item The strength values are remapped using a curve for a less linear falloff
-	\item Finally, transfer the strength values to the constraints and feed into the simulation
-\end{itemize}
-
-\section{Simulation Elements}
-\begin{itemize}
-	\item Fractured voyager with constraints
-	\item Phantom collision geometry that initiates the destruction effect
-	\item Zero gravity simulation, with torque and spin POP nodes to introduce interesting rotations into the simulation.
-\end{itemize}
-
-\section{Final Touches}
-In the end, the simulation was exported to an alembic cache and Lewis processed it with a simple script that baked the animation data into locators. Using this method, we preserved animation ability for individual pieces if necessary but otherwise the simulation looked identical. Slowing down the simulation 20x in the Alembic's time scale was sufficient to give a convincing effect that the debris was slowly drifting, without completely stopping the simulation.
-
-
-
-
-
-
-\chapter{Pipeline}
-
-\begin{itemize}
-	\item Dropbox isn't enough
-	\item Need to version
-	\item More effort at beginning of the project, having backups of every asset could save our asses in the end
-	\item use perforce
-	\item Other scripts can be added to the main pipeline suite
-	\item Referencing pipeline required custom hooks that modify all referenced paths to be relative to \$CONTACTROOT, automated, idiot proof
-	\item Referencing in 10 files and manually clicking student popup is tedious, on save and submit remove student/education flags
-	\item Forces the team to think in a collaborative way, they literally cannot work on the same asset at the same time
-	\item Took some getting used to, but now the artists are used to version control and it's benefits even if it's tedious at times
-	\item Main development time spent on PySide Qt GUI stuff, after the initial time spent learning the P4 API and commands
-	\item Technically cross application, the P4 and GUI side of things will work whereever pyside is available. Needs a few app specific tweaks such as file saving commands etc to work properly but wouldn't take long to port
-	\item Various wizards to automate asset/shot/lookdev file structure generation because kyran made the layout super complex
-	\item Allows us to analyse trends
-	\item I setup Zync on Linux
-\end{itemize}
-
-
-\includegraphics[width=\textwidth]{images/graph.png}
 
 
 
@@ -195,88 +147,145 @@ In the end, the simulation was exported to an alembic cache and Lewis processed 
 
 \chapter{Fractal Sequence}
 
+Armed with the knowledge that raymarching in a shader is the way to go, I looked into writing my renderer in CUDA for more control. I soon found out that NVIDIA Optix would be a much better choice, as it does a lot of the difficult work like ray batching for me but is still highly programmable.
+
+\section{Romanesco (Fractal Tool) Requirements}
+
+Initially, I wanted the tool to be used by the rest of the team, so my requirements were more in line with usability. However I needed to get visuals out of it as soon as possible, so this was put on the backburner while I worked on getting the rendering component working.
+
+\section{Rendering Strategy}
+The world is rendered using a simple pinhole camera \cite{pinhole}. To get realistic lighting I decided to implement path tracing \ref{fig:path_tracing}, this was completed late in the project and is not the most efficient lighting algorithm. This is just because of how path tracing works, as rays hit geometry in the scene many more rays are recursively bounced around the scene. However, given the rendering speed of the frames thanks to the GPU even HD renders don't take long to complete.
+
+Progressive rendering and path tracing go hand in hand, so this was a natural progression of that. It allows the user to work in a preview mode with very noisy lighting that is fast, while still allowing the samples to be pushed up for renders where interactivity isn't as important.
 
 
-\section{Fractal Tool Requirements}
+\begin{figure}
+\begin{center}
+\includegraphics[scale=0.5]{images/pathtracing}
+\caption{The path tracing process}
+\label{fig:path_tracing}
+\end{center}
+\end{figure}
+
+
+I ran into issues while rendering large frames with many samples per pixel however, especially on slower GPUs. This was because the kernel launch would timeout if the calculations took too long. An elegant solution was to make use of tile based rendering \cite[pp. 51-52]{kalamp}, which basically cuts up the image into multiple chunks of tiles which then get rendered one by one in a serial fashion. There is an overhead in launching an Optix render multiple times per frame instead of once, but it is not as intrusive as a full crash that would occur in a timeout. It also has the potential to simplify implementation of other rendering algorithms in the future, for example Bidirectional Path Tracing stores light paths in an array that can become very large for huge images but is manageable for small tiles.
+
+\section{Output}
+In order to be useful in a VFX scenario I need to at least output channels such as normal, position and depth. Additional channels such as iteration count are also useful.
+
+To achieve this, the Optix shading programs are setup to write to predefined buffer layouts. This does make it tedious to extend with new channels when needed, but it is unlikely to change often. When an EXR file is saved (using OpenImageIO), I load in the data from all the Optix buffers into the appropriate EXR channel. This data can then be accessed in Nuke for compositing work. \ref{fig:exr}
+
+One potential issue that was fixed was compression, I knew we needed to render 650 1080p frames at some point and with 6 channels worth of data in each that would rapidly eat up disk space. The elegant fix to this was to turn on ZIP compression in the EXR spec before saving.
+
+\begin{figure}[h!]
+	\includegraphics[width=\textwidth]{images/contactsheet}
+	\caption{A contact sheet of all the EXR passes exported from the renderer}
+	\label{fig:exr}
+\end{figure}
+
+
+\subsection{Environment Camera}
+Although it was a last minute request, getting an environment camera working was vital for relighting the astronaut. I fixed it quickly to avoid holding back production, and thankfully the way I setup the various buffers maps directly onto the new camera model with no modification, adding the camera was as simple as defining a new ray generation program.
+
+This means that EXRs can be rendered with either the pinhole or environment camera and they will have identical data passes, this allowed us to use the exact same compositing networks to calculate the environment colour and have a 1:1 match for the relighting of the astronaut. Nuke and Maya accept the generated maps as environment maps with no issues.
+
+\begin{figure}
+\begin{center}
+\includegraphics[scale=0.5]{images/orbitenv}
+\caption{An environment map render with the orbit trap pass visible}
+\label{fig:path_tracing}
+\end{center}
+\end{figure}
+
+
+\section{Colouring the fractal consistently}
+
+A major issue we ran into during production was colouring the fractals, initially comp only tests were attempted but they didn't work very well because the form changes so rapidly.
+
+Iteration count would work as a basic 0-1 range that can be used to remap some colour ramp onto it, but the result is very boring and doesn't have any fractal qualities.
+
+The solution was orbit traps, where by the value given is determined by how close the fractal iterative function approaches a chosen shape. Although we not limited by the type of orbit traps we can use, I didn't have time to research much beyond the examples I found people using on shadertoy.
+
+In the current shot setup there are three types of orbit traps employed:
+\begin{enumerate}
+	\item A spherical orbit trap that stays consistent as the shape changes
+	\item Another spherical trap, except as the iteration count gets deeper the size of the sphere it is trapping gets smaller.
+	\item A tube orbit trap that produces interesting spots and 'petals' across the shape
+\end{enumerate}
+
+These orbit traps are encoded in the orbit.RGB channels of the EXR pass. This was configurable on a per scene basis if necessary (in the case of the tunnel scenes it was, the tube orbit trap gave useless values and needed manual tweaking)
+
+Although the colours straight out of the render are odd looking, the values are intended more as a data pass to drive more complex recolouring setups.
+
+
+\section{Scene Management}
+In an effort to get everything working on time, I ended up having to fallback to simpler ways of saving the scene. If I were to use a nodegraph, I'd have to wrestle with JSON or XML files, but at this stage I simply decided to save the scenes as .cu files containing CUDA hit functions. The camera information is encoded in the comments at the top of the file, for example
+\begin{lstlisting}
+// 0 34 0
+// 1.5 0 1.3
+// 30
+\end{lstlisting}
+
+Would start the camera at (0,34,0), rotated by (1.5, 0, 1.3) with an FOV of 30.
+
+These scenes are compiled at runtime using code reflection techniques.
+
+\subsection{Code Reflection}
+Runtime compilation is necessary for allowing scene changes at runtime, specifically the ability to compile to .ptx code so it can be loaded into Optix as a callable function.
+\subsubsection{Methods}
 
 \begin{itemize}
-	\item How best to make this artist friendly (Nodegraph)
-	\item What technique (ray marching)
-	\item Use Optix because it's faster than what i can do
-	\item Nodegraph needs runtime compilation, at least for geo
-	\item Does require a little hacking to get runtime code generation
-	\item Use NVRTC to compile code at runtime and plug into preexisting functions in the optix code
-	\item Use hacky system commands to call nvcc directly if using CUDA 6.5 or less, aka, the uni systems
-	\item Initial dev time for node graph, runtime compilation etc is long, but in theory will allow for rapid iteration once it works
-	\item Everything is based on demo scene stuff, can use shadertoy as reference for loads of effects
-	\section{Scene Management - Code Reflection}
-		Need to change scene based on node graph
-	\subsection{PTX Patching}
+	\item NVRTC - Available in CUDA 6.5 and up, faster and built in way of compiling.
+	\item System NVCC - If using an older version of CUDA (such as on the university lab workstations), I try to use the system NVCC (hopefully available in path). This has the downsides of requiring the developer tools to be installed, as well as the performance overhead of launching and managing a subprocess. However, this allows me to render on a wider range of machines regardless of the performance impact.
+\end{itemize}
+
+\subsection{Runtime Patching}
+Once the code is compiled, I needed some way to tell Optix to use it.
+
+\subsubsection{PTX Patching}
 		\begin{itemize}
-			\item Initial attempt, required research into the .ptx format
+			\item My initial attempt, required research into the .ptx format.
 			\item Use NVCC to compile CUDA program into ptx code and patch into the Optix ptx code, then load into Optix
 			\item Works on my machine and university workstations, but potentially undefined behaviour and not officially supported
 			\item Relies on my own string handling functions
+			\item Manually patching the generated PTX code ( prone to error )
 		\end{itemize}
-	\subsection{Optix Callable Programs}
-		\begin{itemize}
+
+
+
+\subsubsection{Optix Callable Programs}
+
+\begin{itemize}
 			\item Discovered this later in the project after reading the Optix documentation fully, initially didn't notice what it was because it's not used very often compared to the other aspects of optix and isn't really clear unless you know what it does.
 			\item Use NVCC to compile CUDA program into ptx code and then tell Optix to use this as a 'callable program', basically replacing the ptx patching process with a well defined, built in functionality.
+				\item Optix rtCallablePrograms ( officially supported way of doing it, found out later in the development process )
 			
-		\end{itemize}
 \end{itemize}
 
-\section{Rendering Strategy}
-The world is sampled using a simple pinhole camera \cite{pinhole}
+\subsection{Node Graph}
+An alternative to the TD style CUDA 'scene file' approach is to use a node graph to replace it's functionality. This has a number of benefits for the artist and was my original plan, but had to be abandoned due to time constraints. 
 
-\begin{itemize}
-	\item Render tiles \cite[pp. 51-52]{kalamp}
-	\begin{itemize}
-		\item For larger frame sizes this will give an opportunity for the calling program to return quickly and handle events
-		\item Will use less GPU RAM, which is vital for HD frames on GPUs without lots of memory
-		\item Has the potential to simplify implementation of other rendering algorithms in the future, for example Bidirectional Path Tracing stores light paths in an array that can become very large for huge images but is manageable for small tiles
-	\end{itemize}
+It influenced the current design, which is a simplified form of what the node graph would have been.
 
-	\item Monitor the Optix rendering in a separate thread and copy over to host memory every half a second or so, this keeps the GUI responsive without over saturating the PCI-E bus (GPU -> CPU memory transfer) with constant memory copies.
-	
-\end{itemize}
+\subsubsection{Grammar Definition}
+In order to properly write a parser for the node graph, it was important to treat the node graph like a simple language. This was helpful in figuring out error conditions, for example if a domain operation is plugged into a distance operation \ref{fig:grammar}
 
-\section{Output}
-\begin{itemize}
-	\item Save to EXR
-	\item ZIP Compression, we need to render 650 1080p frames, a lot of data
-	\item Multichannel
-	\item Store each channel in a separate optix buffer
-	\item Issue: Tedious to extend, but unlikely to be changed often
-	
-\end{itemize}
+\begin{figure}[h!]
+	\includegraphics[scale=0.25]{nodegrammar}
+	\caption{My Nodegraph Grammar Definition}
+	\label{fig:grammar}
+\end{figure}
 
-\subsection{Environment Camera}
-\begin{itemize}
-	\item Last minute request
-	\item Required for relighting astronaut
-	\item Optix makes this an easy thing to change, just fire rays in such a way that all possible directions are drawn at once like a fish eye lens.
-	\item Thankfully the way I setup the various buffers maps directly onto the new camera model with no modification, adding the camera was as simple as defining a new ray generation program. This means that EXRs can be rendered with either the pinhole or environment camera and they will have identical data passes, this allowed us to use the exact same compositing networks to calculate the environment colour and have a 1:1 match for the relighting of the astronaut. Nuke and Maya accept the generated maps as environment maps with no issues.
-\end{itemize}
 
-\section{Colouring the fractal consistently}
-\begin{itemize}
-	\item Tried iteration count
-	\item Tried comp only approaches
-	\item Orbit traps are the way to go
-	\item In the end we decided to use 3 different orbit traps encoded in the RGB channels of an EXR pass. This was configurable on a per scene basis if necessary (in the case of the tunnel scenes it was, the tube orbit trap gave useless values and needed manual tweaking)
-\end{itemize}
 
 \section{How the Shots were achieved}
 \subsection{Side Sequence}
 
-\begin{itemize}
-	\item Use a mandelbulb, that slowly morphs from power 2 to power 5 as the sequence goes on. This
-produces a growing effect.
-	\item Apply a simple scene wide transformation that moves the mandelbulb slowly along the Z axis,
-as well as rotates the fractal shape slowly around the Z axis.
-	\item Set a low FOV of 30 to give the impression that the fractal shape is huge
-\end{itemize}
+The side sequence was much simpler compared to the tunnel shot, as it didn't even require a complex new fractal in the end. I realised that the Mandelbulb's pole looks like a chomping 'maw' as the powers increase, so the effect basically consists of the bulb's power slowly morphing from 2 through to 5 as the scene goes on. This also helps create the effect that the shape is growing.
+
+To physically move the shape towards the astronaut, I simply applied a scene wide transformation that moves the Mandelbulb along the Z axis. Another transform slowly rotates it around the Z axis too.
+
+Finally, a low FOV of 30 helps give the impression that the shape is huge.
 
 \subsection{Tunnel Sequence}
 
@@ -300,11 +309,21 @@ as well as rotates the fractal shape slowly around the Z axis.
 
 The main tunnel shape was originally less organic, the base shape was heavily inspired by the work of Syntopia's Shadertoy demos \cite{mengerjourney} \cite{kaljourney}. 
 
-My initial design was prototyped in shadertoy under the assumption I would port it over to the renderer, this prototype is visible here: \url{www.shadertoy.com/view/ls3SRs}. However, due to team feedback the design changed dramatically and only some elements survived into the iteration shown in \ref{fig:initialdesign}.
+My initial design was prototyped in shadertoy under the assumption I would port it over to the renderer, this prototype is visible here: \url{www.shadertoy.com/view/ls3SRs} \ref{fig:shadertoy}. However, due to team feedback the design changed dramatically and only some elements survived into the iteration shown in \ref{fig:initialdesign}.
+
 
 The main desire of the team was to maintain symmetry, which disallowed the use of the twist effect that created such interesting motion in the Shadertoy iteration. However, I took some more inspiration from \ref{fig:kal} and applied the base shape to my IFS fractal, this created a very interesting pulsing and rotating motion that everyone liked. We were planning to use this in the final cut, but then I dug deeper into the workings of \ref{fig:kal} and discovered how the interesting surface details are created using \textit{geometry traps}.
 
 \ref{fig:finaldesign} shows the result of applying a Mandelbulb geometry trap to the shape of the original IFS tunnel, because it is simply stuck to the surface it follows the interesting rotating motion of the tunnel but has the organic surface of a bulb.
+
+\begin{figure}
+\begin{center}
+  \includegraphics[width=.95\linewidth]{images/tunnelbulb.png}
+  \caption{The final design}
+  \label{fig:finaldesign}
+\end{center}
+\end{figure}
+
 
 \begin{figure}
 \centering
@@ -316,9 +335,9 @@ The main desire of the team was to maintain symmetry, which disallowed the use o
 \end{subfigure}%
 \begin{subfigure}{.5\textwidth}
   \centering
-  \includegraphics[width=.95\linewidth]{images/tunnelbulb.png}
-  \caption{The final design}
-  \label{fig:finaldesign}
+  \includegraphics[width=\textwidth]{images/shadertoy_test}
+\caption{Shadertoy Prototype}
+\label{fig:shadertoy}
 \end{subfigure}
 \caption{Tunnel Iterations for the piece}
 \label{fig:test}
@@ -352,6 +371,70 @@ it onto the visor.
 \end{itemize}
 
 
+
+
+
+\chapter{Dynamics FX}
+
+For the voyager sequence I had to create the effect of debris slowly drifting through space, so created the genesis of the destruction sequence as a base of the effect.
+
+\section{Setting up the simulation process}
+\begin{itemize}
+	\item Import the Voyager model as an FBX (with UVs) and convert the Maya hierarchy setup to Houdini groups
+	\item Fracture a slightly pre-deformed version of the mesh, transfer the UVs and create new ones in the gaps
+	\item Generate constraints between all nearby fractured pieces
+	\item Manually paint on the strengths of each fractured piece, this is done by painting the strength onto the vertices and then finding the average strength of each fractured piece's vertices
+	\item The core unit of voyager has a very high strength so it does not fall apart, as it has to be intact for the shot
+	\item The manually painted strength values are multiplied by noise to get more variation
+	\item The strength values are remapped using a curve for a less linear falloff
+	\item Finally, transfer the strength values to the constraints and feed into the simulation
+\end{itemize}
+
+\section{Simulation Elements}
+\begin{itemize}
+	\item Fractured voyager with constraints
+	\item Phantom collision geometry that initiates the destruction effect
+	\item Zero gravity simulation, with torque and spin POP nodes to introduce interesting rotations into the simulation.
+\end{itemize}
+
+\section{Final Touches}
+In the end, the simulation was exported to an alembic cache and Lewis processed it with a simple script that baked the animation data into locators. Using this method, we preserved animation ability for individual pieces if necessary but otherwise the simulation looked identical. Slowing down the simulation 20x in the Alembic's time scale was sufficient to give a convincing effect that the debris was slowly drifting, without completely stopping the simulation.
+
+
+
+\chapter{Pipeline}
+
+I decided to develop a strong pipeline at the beginning of the year because I felt with such an ambitious project a simple Dropbox pipeline would run into many probles. Given our needs, I decided to choose Perforce as it is capable of versioning binary files efficiently and it has built in mechanisms to prevent team members from accidentally overwriting each others work.
+
+The first few months were spent learning how Perforce works, then learning it's Python API before finally figuring out the best ways to expose this in a GUI.
+The initial effort was worth it in the end, as many times during the project files were randomly corrupted or work would have been overwritten if we hadn't decided to take the chance and use version control.
+
+I spent a short while developing a Perforce wrapper for Maya using Python, Pyside and P4Python. None of the dependencies are platform or program specific, and in theory could allow the plugin to work not just in Maya but Nuke, Mari or anywhere that has Pyside available (with a few tweaks). It is also crossplatform and should work on Windows/Mac/Linux with little modification.
+
+The end result is a pipeline suite in addition to the Perforce tools, it provides:
+\begin{itemize}
+	\item Asset version control and offsite backup on a remote server I configured to run Perforce (located on \textit{Amazon Web Services}).
+	\item Changelist management.
+	\item GUI ability to check out files and submit changelists.
+	\item Preview an old file revision directly in maya with one button click.
+	\item Revert to old revisions if necessary.
+	\item Shot and asset wizards to automatically generate the folder. structures required by the pipeline that are tedious to do by hand.
+	\item Student popup removal on save.
+	\item Automatically makes any references relative to the \$CONTACTROOT environment variable, which was a necessary fix to work around our folder structure's limitations and worked well in the end.
+\end{itemize}
+
+Besides being a tool, it also changed the teams workflow. At the start of the year it was normal for people to get confused and try to edit the same file, despite Perforce preventing it. Now that never happens, as the team dynamic has changed to accommodate a more careful workflow.
+
+There is also a lot of server side data that could have been used to analyse how the group was working, how much work was being done and by who, etc. We didn't approach this area as it could encourage faking work to look good, but the fact that the logs are available is a handy thing to have. 
+
+\begin{figure}[h!]
+	\includegraphics[width=\textwidth]{images/graph.png}
+	\caption{Analytics generated with my python script to see how useful the log data is}
+	\label{fig:graph}
+\end{figure}
+
+
+
 \chapter{Conclusion}
 
 \paragraph{In conclusion} I believe Romanesco is a useful and novel way of developing fractal objects in a visual effects context. The majority of currently available renderers are more of a novelty, designed to create nice images for a desktop background instead of a usable plate. Attempting to use existing renderers to create fractals is a plausible method, but suffers from poor interactivity due to long calculation times for the fractal structure.
@@ -359,74 +442,6 @@ it onto the visor.
 Romanesco begins to fill in the gap between the currently available approaches, with more polish and focus put towards artist usability the more important issues such as fractals not behaving well enough for real world VFX shots can be minimised by the ease in which it is possible to iterate on the fractal design using the renderer.
 
 Despite the final result being a fairly technical tool to use, the artistic feedback from the rest of the team has been vital in getting it to this stage. If I had decided to do this project solo, I don't believe it would have developed beyond the tech demo stage. By having a strong team surrounding me, especially in the compositing department, I saw first hand which features were actually important instead of focusing on the ones that I personally had an interest in. In the end, this is the reason we ended up with 600 frames worth of fractal sequence that was successfully used in integration with a live action piece.
-%========================================================
-
-\chapter{Renderer Implementation}
-
-\begin{itemize}
-	\item Overview
-	\item Sphere tracing distance fields
-	\item Path Tracing
-	\item Progressive rendering
-	\item Tile Based Rendering
-	\item Modifying the scene at runtime using Reflection
-\end{itemize}
-
-\section{Performance}
-
-\begin{itemize}
-	\item Needs to be responsive, at least during the interactive preview
-	\item Thought tile based rendering would help
-	\item 
-	\item rtContextSetTimeoutCallback
-\end{itemize}
-
-
-\section{Scene Management}
-
-\subsection{Saving and loading scenes}
-\begin{itemize}
-	\item Not usable if scenes can't be saved
-	\item Current implementation is more TD oriented, scenes are defined via CUDA functions that are compiled at runtime
-	\item Camera information is encoded in comments at the top of the file
-\end{itemize}
-
-\subsection{Code Reflection}
-Runtime compilation is necessary for allowing scene changes at runtime, specifically the ability to compile to .ptx code so it can be loaded into Optix as a callable function.
-\subsubsection{Methods}
-
-\begin{itemize}
-	\item NVRTC - Available in CUDA 6.5 and up, faster and built in way of compiling.
-	\item System NVCC - If using an older version of CUDA (such as on the university lab workstations), I try to use the system NVCC (hopefully available in path). This has the downsides of requiring the developer tools to be installed, as well as the performance overhead of launching and managing a subprocess. However, this allows me to render on a wider range of machines regardless of the performance impact.
-\end{itemize}
-
-\subsection{Runtime Patching}
-Once the code is compiled, I needed some way to tell Optix to use it.
-
-\begin{itemize}
-	\item Manually patching the generated PTX code ( prone to error )
-	\item Optix rtCallablePrograms ( officially supported way of doing it, found out later in the development process )
-\end{itemize}
-
-\subsection{Node Graph}
-
-\begin{itemize}
-	\item More artist friendly approach
-	\item Spent a lot of time trying to develop this in the hope that it would aid the lookdev process
-	\item Had to abandon the concept for the sake of getting the fractals lookdev'd on time
-	\item Influenced the current design, which is basically a pure code version of what the node graph does
-	\item An extra level of indirection, nodes -> CUDA code -> runtime patching
-\end{itemize}
-
-\subsubsection{Grammar Definition}
-In order to properly write a parser, it was important to treat the node graph like a simple language. This was helpful in figuring out error conditions, for example if a domain operation is plugged into a distance operation \ref{fig:grammar}
-
-\begin{figure}[h!]
-	\includegraphics[scale=0.22]{nodegrammar}
-	\caption{Grammar Definition}
-	\label{fig:grammar}
-\end{figure}
-
 %========================================================
 
 

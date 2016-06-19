@@ -3,31 +3,25 @@
 \BOOKMARK [1][-]{section.2.1}{Fractal Sequence}{chapter.2}% 3
 \BOOKMARK [2][-]{subsection.2.1.1}{Fractals in FX Software}{section.2.1}% 4
 \BOOKMARK [2][-]{subsection.2.1.2}{Distance Estimated Fractals}{section.2.1}% 5
-\BOOKMARK [1][-]{section.2.2}{Reading the documentation and tutorials}{chapter.2}% 6
-\BOOKMARK [0][-]{chapter.3}{Dynamics FX}{}% 7
-\BOOKMARK [1][-]{section.3.1}{Setting up the simulation}{chapter.3}% 8
-\BOOKMARK [1][-]{section.3.2}{Simulation Elements}{chapter.3}% 9
-\BOOKMARK [1][-]{section.3.3}{Final Touches}{chapter.3}% 10
-\BOOKMARK [0][-]{chapter.4}{Pipeline}{}% 11
-\BOOKMARK [0][-]{chapter.5}{Fractal Sequence}{}% 12
-\BOOKMARK [1][-]{section.5.1}{Fractal Tool Requirements}{chapter.5}% 13
-\BOOKMARK [1][-]{section.5.2}{Scene Management - Code Reflection}{chapter.5}% 14
-\BOOKMARK [2][-]{subsection.5.2.1}{PTX Patching}{section.5.2}% 15
-\BOOKMARK [2][-]{subsection.5.2.2}{Optix Callable Programs}{section.5.2}% 16
-\BOOKMARK [1][-]{section.5.3}{Rendering Strategy}{chapter.5}% 17
-\BOOKMARK [1][-]{section.5.4}{Output}{chapter.5}% 18
-\BOOKMARK [2][-]{subsection.5.4.1}{Environment Camera}{section.5.4}% 19
-\BOOKMARK [1][-]{section.5.5}{Colouring the fractal consistently}{chapter.5}% 20
-\BOOKMARK [1][-]{section.5.6}{How the Shots were achieved}{chapter.5}% 21
-\BOOKMARK [2][-]{subsection.5.6.1}{Side Sequence}{section.5.6}% 22
-\BOOKMARK [2][-]{subsection.5.6.2}{Tunnel Sequence}{section.5.6}% 23
-\BOOKMARK [2][-]{subsection.5.6.3}{Reflected Visor Sequence}{section.5.6}% 24
-\BOOKMARK [0][-]{chapter.6}{Future Improvements}{}% 25
-\BOOKMARK [0][-]{chapter.7}{Conclusion}{}% 26
-\BOOKMARK [0][-]{chapter.8}{Renderer Implementation}{}% 27
-\BOOKMARK [1][-]{section.8.1}{Performance}{chapter.8}% 28
-\BOOKMARK [1][-]{section.8.2}{Scene Management}{chapter.8}% 29
-\BOOKMARK [2][-]{subsection.8.2.1}{Saving and loading scenes}{section.8.2}% 30
-\BOOKMARK [2][-]{subsection.8.2.2}{Code Reflection}{section.8.2}% 31
-\BOOKMARK [2][-]{subsection.8.2.3}{Runtime Patching}{section.8.2}% 32
-\BOOKMARK [2][-]{subsection.8.2.4}{Node Graph}{section.8.2}% 33
+\BOOKMARK [2][-]{subsection.2.1.3}{Raymarching in a shader}{section.2.1}% 6
+\BOOKMARK [0][-]{chapter.3}{Fractal Sequence}{}% 7
+\BOOKMARK [1][-]{section.3.1}{Romanesco \(Fractal Tool\) Requirements}{chapter.3}% 8
+\BOOKMARK [1][-]{section.3.2}{Rendering Strategy}{chapter.3}% 9
+\BOOKMARK [1][-]{section.3.3}{Output}{chapter.3}% 10
+\BOOKMARK [2][-]{subsection.3.3.1}{Environment Camera}{section.3.3}% 11
+\BOOKMARK [1][-]{section.3.4}{Colouring the fractal consistently}{chapter.3}% 12
+\BOOKMARK [1][-]{section.3.5}{Scene Management}{chapter.3}% 13
+\BOOKMARK [2][-]{subsection.3.5.1}{Code Reflection}{section.3.5}% 14
+\BOOKMARK [2][-]{subsection.3.5.2}{Runtime Patching}{section.3.5}% 15
+\BOOKMARK [2][-]{subsection.3.5.3}{Node Graph}{section.3.5}% 16
+\BOOKMARK [1][-]{section.3.6}{How the Shots were achieved}{chapter.3}% 17
+\BOOKMARK [2][-]{subsection.3.6.1}{Side Sequence}{section.3.6}% 18
+\BOOKMARK [2][-]{subsection.3.6.2}{Tunnel Sequence}{section.3.6}% 19
+\BOOKMARK [2][-]{subsection.3.6.3}{Reflected Visor Sequence}{section.3.6}% 20
+\BOOKMARK [0][-]{chapter.4}{Future Improvements}{}% 21
+\BOOKMARK [0][-]{chapter.5}{Dynamics FX}{}% 22
+\BOOKMARK [1][-]{section.5.1}{Setting up the simulation process}{chapter.5}% 23
+\BOOKMARK [1][-]{section.5.2}{Simulation Elements}{chapter.5}% 24
+\BOOKMARK [1][-]{section.5.3}{Final Touches}{chapter.5}% 25
+\BOOKMARK [0][-]{chapter.6}{Pipeline}{}% 26
+\BOOKMARK [0][-]{chapter.7}{Conclusion}{}% 27
