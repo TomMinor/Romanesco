@@ -1,6 +1,0 @@
-superquads
-light transport
-index of refraction
-take pictures of ice cube
-roughness changes as it melts, melted -> smooth, frozen -> rough
-
