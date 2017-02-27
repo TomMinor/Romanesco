@@ -1,0 +1,5 @@
+[0] Config.pm:322> INFO - This is Biber 2.0 (beta)
+[0] Config.pm:325> INFO - Logfile is 'backend=biber.blg'
+[29] biber:277> INFO - === Fri May 20, 2016, 00:27:17
+[71] Utils.pm:160> ERROR - Cannot find control file 'backend=biber.bcf'! - did you pass the "backend=biber" option to BibLaTeX?
+[71] Biber.pm:110> INFO - ERRORS: 1
