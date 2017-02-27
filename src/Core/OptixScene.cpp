@@ -1,7 +1,10 @@
 #define GL_GLEXT_PROTOTYPES
+#ifdef _WIN32
+#include <windows.h>
+#endif
 #include <GL/gl.h>
 #include <GL/glu.h>
-#include <GL/glut.h>
+
 
 #include <QWindow>
 #include <QOpenGLFunctions>
@@ -14,7 +17,10 @@
 #include <QDir>
 #include <QCoreApplication>
 
+#ifndef _WIN32
 #include <unistd.h>
+#endif
+
 #include <math.h>
 #include <fstream>
 #include <string>
