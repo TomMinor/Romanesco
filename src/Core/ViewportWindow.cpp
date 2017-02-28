@@ -1,7 +1,10 @@
 #include <QScreen>
 #include <QDebug>
 #include <QKeyEvent>
+#ifndef __WIN32
 #include <unistd.h>
+#endif
+
 #include <math.h>
 #include <QtMath>
 #include <QDir>

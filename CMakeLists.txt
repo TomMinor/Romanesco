@@ -11,8 +11,26 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
 # Find at least a 4.0 version of CUDA.
 find_package(CUDA 4.0 REQUIRED)
+include_directories( ${CUDA_INCLUDE_DIR} )
+link_directories( ${CUDA_LIB} )
+
 find_package(OPTIX REQUIRED)
+include_directories( ${OPTIX_INCLUDE_DIR} )
+link_directories( ${OPTIX_LIB} )
+
 find_package(Qt5Widgets REQUIRED)
+
+find_package(Boost REQUIRED)
+include_directories( ${BOOST_INCLUDE_DIR} )
+link_directories( ${BOOST_LIB} )
+
+find_package(OpenEXR REQUIRED)
+include_directories( ${OPENEXR_INCLUDE_DIRS} )
+link_directories( ${OPENEXR_LIBRARIES} )
+
+find_package(OpenImageIO REQUIRED)
+include_directories( ${OpenImageIO_INCLUDE_DIR} )
+link_directories( ${OpenImageIO_LIBRARY} )
 
 include_directories( ${Qt5Widgets_INCLUDE_DIRS} )
 include_directories( ${Qt5Widgets_LIBRARIES} )
@@ -22,13 +40,7 @@ add_definitions(${Qt5Widgets_DEFINITIONS})
 
 # Executables fail to build with Qt 5 in the default configuration
 # without -fPIE. We add that here.
-set(CMAKE_CXX_FLAGS "${Qt5Widgets_EXECUTABLE_COMPILE_FLAGS}")
-
-
-include_directories( ${OPTIX_INCLUDE_DIR} )
-link_directories( ${OPTIX_LIB} )
-
-
+# set(CMAKE_CXX_FLAGS "${Qt5Widgets_EXECUTABLE_COMPILE_FLAGS}")
 
 # set(SDL2_ROOT ${CMAKE_SOURCE_DIR}/thirdparty/SDL2-2.0.5)
 # set(GLM_ROOT ${CMAKE_SOURCE_DIR}/thirdparty/glm)
@@ -84,7 +96,9 @@ file(GLOB_RECURSE HEADERS_SDFOPS
 
 file(GLOB_RECURSE HEADERS 
 		${CMAKE_SOURCE_DIR}/include/*.h
- 		${HEADERS_CORE} ${HEADERS_GUI} ${HEADERS_SDFOPS}
+ 		${HEADERS_CORE}
+ 		${HEADERS_GUI}
+ 		${HEADERS_SDFOPS}
  	)
 
 file(GLOB_RECURSE VERTEX_SOURCES ${CMAKE_SOURCE_DIR}/shaders/*.frag)
@@ -93,7 +107,18 @@ file(GLOB_RECURSE FRAGMENT_SOURCES ${CMAKE_SOURCE_DIR}/shaders/*.vert)
 file(GLOB_RECURSE KERNEL_HEADERS ${CMAKE_SOURCE_DIR}/kernel/*.h)
 file(GLOB_RECURSE KERNEL_SOURCES ${CMAKE_SOURCE_DIR}/kernel/*.cu)
 
-include_directories(${HEADERS})
+include_directories(
+			${CMAKE_SOURCE_DIR}/include/Core
+        	${CMAKE_SOURCE_DIR}/include/GUI
+        	${CMAKE_SOURCE_DIR}/include/GUI/nodes
+        	${CMAKE_SOURCE_DIR}/include/GUI/nodegraph
+        	${CMAKE_SOURCE_DIR}/include/SDFOps
+        	${CMAKE_SOURCE_DIR}/include/SDFOps/DistDeformer
+        	${CMAKE_SOURCE_DIR}/include/SDFOps/DistOp
+        	${CMAKE_SOURCE_DIR}/include/SDFOps/DomainOp
+        	${CMAKE_SOURCE_DIR}/include/SDFOps/DomainDeformer
+        	${CMAKE_SOURCE_DIR}/include/SDFOps/Primitive
+	)
 
 add_executable(romanesco ${CPP_SOURCES} ${HEADERS})
 
