@@ -1,3 +1,6 @@
 [submodule "shared_optix"]
 	path = shared_optix
 	url = https://github.com/nvpro-samples/shared_optix
+[submodule "thirdparty/glm"]
+	path = thirdparty/glm
+	url = https://github.com/g-truc/glm.git
