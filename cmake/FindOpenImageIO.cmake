@@ -1,155 +1,90 @@
+# - Find OpenImageIO library
+# Find the native OpenImageIO includes and library
+# This module defines
+#  OPENIMAGEIO_INCLUDE_DIRS, where to find openimageio.h, Set when
+#                            OPENIMAGEIO_INCLUDE_DIR is found.
+#  OPENIMAGEIO_LIBRARIES, libraries to link against to use OpenImageIO.
+#  OPENIMAGEIO_ROOT_DIR, The base directory to search for OpenImageIO.
+#                        This can also be an environment variable.
+#  OPENIMAGEIO_FOUND, If false, do not try to use OpenImageIO.
+#  OPENIMAGEIO_PUGIXML_FOUND, Indicates whether OIIO has biltin PuguXML parser.
+#  OPENIMAGEIO_IDIFF, full path to idiff application if found.
 #
-# Copyright 2016 Pixar
-#
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
-#
+# also defined, but not for general use are
+#  OPENIMAGEIO_LIBRARY, where to find the OpenImageIO library.
 
-if(UNIX)
-    find_path(OIIO_BASE_DIR
-            include/OpenImageIO/oiioversion.h
-        HINTS
-            "${OIIO_LOCATION}"
-            "$ENV{OIIO_LOCATION}"
-            "/opt/oiio"
-    )
-    find_path(OIIO_LIBRARY_DIR
-            libOpenImageIO.so
-        HINTS
-            "${OIIO_LOCATION}"
-            "$ENV{OIIO_LOCATION}"
-            "${OIIO_BASE_DIR}"
-        PATH_SUFFIXES
-            lib/
-        DOC
-            "OpenImageIO library path"
-    )
-elseif(WIN32)
-    find_path(OIIO_BASE_DIR
-            include/OpenImageIO/oiioversion.h
-        HINTS
-            "${OIIO_LOCATION}"
-            "$ENV{OIIO_LOCATION}"
-    )
-    find_path(OIIO_LIBRARY_DIR
-            OpenImageIO.lib
-        HINTS
-            "${OIIO_LOCATION}"
-            "$ENV{OIIO_LOCATION}"
-            "${OIIO_BASE_DIR}"
-        PATH_SUFFIXES
-            lib/
-        DOC
-            "OpenImageIO library path"
-    )
-endif()
+#=============================================================================
+# Copyright 2011 Blender Foundation.
+#
+# Distributed under the OSI-approved BSD License (the "License");
+# see accompanying file Copyright.txt for details.
+#
+# This software is distributed WITHOUT ANY WARRANTY; without even the
+# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the License for more information.
+#=============================================================================
 
-find_path(OIIO_INCLUDE_DIR
-        OpenImageIO/oiioversion.h
-    HINTS
-        "${OIIO_LOCATION}"
-        "$ENV{OIIO_LOCATION}"
-        "${OIIO_BASE_DIR}"
-    PATH_SUFFIXES
-        include/
-    DOC
-        "OpenImageIO headers path"
+# If OPENIMAGEIO_ROOT_DIR was defined in the environment, use it.
+IF(NOT OPENIMAGEIO_ROOT_DIR AND NOT $ENV{OPENIMAGEIO_ROOT_DIR} STREQUAL "")
+  SET(OPENIMAGEIO_ROOT_DIR $ENV{OPENIMAGEIO_ROOT_DIR})
+ENDIF()
+
+SET(_openimageio_SEARCH_DIRS
+  ${OPENIMAGEIO_ROOT_DIR}
+  /usr/local
+  /sw # Fink
+  /opt/local # DarwinPorts
+  /opt/csw # Blastwave
+  /opt/lib/oiio
 )
 
-list(APPEND OIIO_INCLUDE_DIRS ${OIIO_INCLUDE_DIR})
+FIND_PATH(OPENIMAGEIO_INCLUDE_DIR
+  NAMES
+    OpenImageIO/imageio.h
+  HINTS
+    ${_openimageio_SEARCH_DIRS}
+  PATH_SUFFIXES
+    include
+)
 
-foreach(OIIO_LIB
+FIND_LIBRARY(OPENIMAGEIO_LIBRARY
+  NAMES
     OpenImageIO
-    OpenImageIO_Util
-    )
+  HINTS
+    ${_openimageio_SEARCH_DIRS}
+  PATH_SUFFIXES
+    lib64 lib
+  )
 
-    find_library(OIIO_${OIIO_LIB}_LIBRARY
-            ${OIIO_LIB}
-        HINTS
-            "${OIIO_LOCATION}"
-            "$ENV{OIIO_LOCATION}"
-            "${OIIO_BASE_DIR}"
-        PATH_SUFFIXES
-            lib/
-        DOC
-            "OIIO's ${OIIO_LIB} library path"
-    )
-
-    if(OIIO_${OIIO_LIB}_LIBRARY)
-        list(APPEND OIIO_LIBRARIES ${OIIO_${OIIO_LIB}_LIBRARY})
-    endif()
-endforeach(OIIO_LIB)
-
-foreach(OIIO_BIN
-        iconvert
-        idiff
-        igrep
-        iinfo
-        iv
-        maketx
-        oiiotool)
-
-    find_program(OIIO_${OIIO_BIN}_BINARY
-            ${OIIO_BIN}
-        HINTS
-            "${OIIO_LOCATION}"
-            "$ENV{OIIO_LOCATION}"
-            "${OIIO_BASE_DIR}"
-        PATH_SUFFIXES
-            bin/
-        DOC
-            "OIIO's ${OIIO_BIN} binary"
-    )
-    if(OIIO_${OIIO_BIN}_BINARY)
-        list(APPEND OIIO_BINARIES ${OIIO_${OIIO_BIN}_BINARY})
-    endif()
-endforeach(OIIO_BIN)
-
-if(OIIO_INCLUDE_DIRS AND EXISTS "${OIIO_INCLUDE_DIR}/OpenImageIO/oiioversion.h")
-    file(STRINGS ${OIIO_INCLUDE_DIR}/OpenImageIO/oiioversion.h
-        MAJOR
-        REGEX
-        "#define OIIO_VERSION_MAJOR.*$")
-    file(STRINGS ${OIIO_INCLUDE_DIR}/OpenImageIO/oiioversion.h
-        MINOR
-        REGEX
-        "#define OIIO_VERSION_MINOR.*$")
-    file(STRINGS ${OIIO_INCLUDE_DIR}/OpenImageIO/oiioversion.h
-        PATCH
-        REGEX
-        "#define OIIO_VERSION_PATCH.*$")
-    string(REGEX MATCHALL "[0-9]+" MAJOR ${MAJOR})
-    string(REGEX MATCHALL "[0-9]+" MINOR ${MINOR})
-    string(REGEX MATCHALL "[0-9]+" PATCH ${PATCH})
-    set(OIIO_VERSION "${MAJOR}.${MINOR}.${PATCH}")
-endif()
-
-# handle the QUIETLY and REQUIRED arguments and set OIIO_FOUND to TRUE if
-# all listed variables are TRUE
-include(FindPackageHandleStandardArgs)
-
-find_package_handle_standard_args(OpenImageIO
-    REQUIRED_VARS
-        OIIO_LIBRARIES
-        OIIO_BINARIES
-        OIIO_INCLUDE_DIRS
-    VERSION_VAR
-        OIIO_VERSION
+FIND_FILE(OPENIMAGEIO_IDIFF
+  NAMES
+    idiff
+  HINTS
+    ${OPENIMAGEIO_ROOT_DIR}
+  PATH_SUFFIXES
+    bin
 )
+
+# handle the QUIETLY and REQUIRED arguments and set OPENIMAGEIO_FOUND to TRUE if 
+# all listed variables are TRUE
+INCLUDE(FindPackageHandleStandardArgs)
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(OpenImageIO DEFAULT_MSG
+    OPENIMAGEIO_LIBRARY OPENIMAGEIO_INCLUDE_DIR)
+
+IF(OPENIMAGEIO_FOUND)
+  SET(OPENIMAGEIO_LIBRARIES ${OPENIMAGEIO_LIBRARY})
+  SET(OPENIMAGEIO_INCLUDE_DIRS ${OPENIMAGEIO_INCLUDE_DIR})
+  IF(EXISTS ${OPENIMAGEIO_INCLUDE_DIR}/OpenImageIO/pugixml.hpp)
+    SET(OPENIMAGEIO_PUGIXML_FOUND TRUE)
+  ENDIF()
+ELSE()
+  SET(OPENIMAGEIO_PUGIXML_FOUND FALSE)
+ENDIF()
+
+MARK_AS_ADVANCED(
+  OPENIMAGEIO_INCLUDE_DIR
+  OPENIMAGEIO_LIBRARY
+  OPENIMAGEIO_IDIFF
+)
+
+UNSET(_openimageio_SEARCH_DIRS)
