@@ -7,7 +7,7 @@
 #include <QImage>
 #include <QList>
 
-#include "GUI/qtimelineanimated.h"
+#include "qtimelineanimated.h"
 
 class QFramebuffer : public QMainWindow
 {

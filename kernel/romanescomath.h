@@ -18,9 +18,9 @@
 # define M_SQRT1_2	0.70710678118654752440	/* 1/sqrt(2) */
 
 #else
-#include <optix_math.h>
-#include <optixu/optixu_math_namespace.h>
-#include <optixu/optixu_matrix_namespace.h>
+//#include <optix_math.h>
+//#include <optixu/optixu_math_namespace.h>
+//#include <optixu/optixu_matrix_namespace.h>
 
-using namespace optix;
+//using namespace optix;
 #endif

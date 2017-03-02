@@ -3,8 +3,8 @@
 static const std::vector<Argument> args = {
 };
 
-Mandelbulb_SDFOP::Mandelbulb_SDFOP() :
-    BaseSDFOP::BaseSDFOP()
+Mandelbulb_SDFOP::Mandelbulb_SDFOP()// :
+    //BaseSDFOP::BaseSDFOP()
 {
 m_returnType = ReturnType::Float;
 }

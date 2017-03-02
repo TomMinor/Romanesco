@@ -4,8 +4,8 @@
 static const std::vector<Argument> args = {
 };
 
-Box_SDFOP::Box_SDFOP()  :
-    BaseSDFOP::BaseSDFOP()
+Box_SDFOP::Box_SDFOP() // :
+    //BaseSDFOP::BaseSDFOP()
 {
     m_returnType = ReturnType::Float;
 } 

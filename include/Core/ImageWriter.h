@@ -3,6 +3,10 @@
 
 #include <vector>
 
+//#ifdef __WIN32
+#undef max
+#undef min
+//#endif
 #include <OpenImageIO/imageio.h>
 #include <OpenEXR/half.h>
 

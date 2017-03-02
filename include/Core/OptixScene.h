@@ -1,6 +1,9 @@
 #ifndef OPTIXSCENE_H
 #define OPTIXSCENE_H
 
+#ifdef _WIN32
+#define NOMINMAX
+#endif
 #include <optix.h>
 #include <sutil.h>
 #include <optixu/optixu.h>
@@ -8,20 +11,20 @@
 #include <optixu/optixu_matrix_namespace.h>
 #include <optixu/optixpp_namespace.h>
 
-using namespace optix;
+//using namespace optix;
 
-#include <cuda.h>
-#include <cuda_runtime.h>
+//#include <cuda.h>
+//#include <cuda_runtime.h>
 
-//#include <sutil/Mouse.h>
+#include <Mouse.h>
 
 #include "commonStructs.h"
 #include "PinholeCamera.h"
 
-#include "path_tracer/path_tracer.h"
+#include "path_tracer.h"
 
 #include <QObject>
-
+#ifdef ROMANESCO_RENDER_WITH_THREADS
 #include <future>
 #include <iostream>
 #include <QThread>
@@ -56,10 +59,11 @@ private:
     bool restart;
     bool abort;
 };
+#endif
 
 class OptixScene : public QObject
 {
-    Q_OBJECT
+	Q_OBJECT
 
     enum class PathTraceRay : unsigned int
     {
@@ -77,7 +81,7 @@ public:
         TOTALCAMERATYPES
     };
 
-    OptixScene(unsigned int _width, unsigned int _height, QObject *_parent = 0);
+    OptixScene(unsigned int _width, unsigned int _height/*, QObject *_parent = 0*/);
     virtual ~OptixScene();
 
     virtual void updateBufferSize(unsigned int _width, unsigned int _height);
@@ -123,7 +127,7 @@ public:
 
     float* getBufferContents(std::string _name);
 
-    int2 getResolution();
+	optix::int2 getResolution();
 
     bool saveBuffersToDisk(std::string _filename);
 
@@ -200,17 +204,21 @@ protected:
     int m_progressiveTimeout;
     bool m_frameDone;
 
-     GeometryInstance m_geoInstance;
+	optix::GeometryInstance m_geoInstance;
 
     std::vector<ParallelogramLight> m_lights;
 
+#ifdef ROMANESCO_RENDER_WITH_THREADS
     std::future<void> m_future;
+#endif
 
 private:
 
     void updateGLBuffer();
 
+#ifdef ROMANESCO_RENDER_WITH_THREADS
     RenderThread m_renderThread;
+#endif
 
     PinholeCamera* m_camera;
 
@@ -265,8 +273,8 @@ signals:
     void frameReady();
     void frameRefined(int _refineFrame);
 
-    void bucketRowReady(uint _row);
-    void bucketReady(uint _i, uint _j);
+    void bucketRowReady(unsigned int _row);
+	void bucketReady(unsigned int _i, unsigned int _j);
 
 };
 

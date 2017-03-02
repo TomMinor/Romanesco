@@ -5,7 +5,7 @@ static const std::vector<Argument> args = {
 };
 
 Sphere_SDFOP::Sphere_SDFOP(float _radius) :
-    BaseSDFOP::BaseSDFOP(),  m_radius(_radius)
+    /*BaseSDFOP::BaseSDFOP(),*/  m_radius(_radius)
 {
     m_returnType = ReturnType::Float;
 } 

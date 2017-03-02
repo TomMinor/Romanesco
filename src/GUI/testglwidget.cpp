@@ -153,7 +153,7 @@ bool AreSame(QVector3D a, QVector3D b)
 void TestGLWidget::updateCamera()
 {
     m_optixScene->setCamera(  optix::make_float3( m_camPos.x(), m_camPos.y(), m_camPos.z() ),
-                              make_float3(0.0f, 0.3f, 0.0f),
+							  optix::make_float3(0.0f, 0.3f, 0.0f),
                               m_fov,
                               m_overrideRes ? m_overrideWidth : width(),
                               m_overrideRes ? m_overrideHeight : height()
@@ -176,9 +176,9 @@ void TestGLWidget::paintGL()
     m_camRot = m_desiredCamRot;
     m_camPos = m_desiredCamPos;
 
-    optix::Matrix4x4 rotX = rotX.rotate( m_camRot.x(), make_float3(1,0,0));
-    optix::Matrix4x4 rotY = rotY.rotate( m_camRot.y(), make_float3(0,1,0));
-    optix::Matrix4x4 rotZ = rotZ.rotate( m_camRot.z(), make_float3(0,0,1));
+	optix::Matrix4x4 rotX = rotX.rotate(m_camRot.x(), optix::make_float3(1, 0, 0));
+	optix::Matrix4x4 rotY = rotY.rotate(m_camRot.y(), optix::make_float3(0, 1, 0));
+	optix::Matrix4x4 rotZ = rotZ.rotate(m_camRot.z(), optix::make_float3(0, 0, 1));
     optix::Matrix4x4 normalmatrix = rotX * rotY * rotZ;
 
 //    m_camPos.setX( FInterpTo( m_camPos.x(), m_desiredCamPos.x(), m_frame, 0.0001) );

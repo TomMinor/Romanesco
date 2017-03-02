@@ -1,4 +1,4 @@
-#include "include/GUI/qframebuffer.h"
+#include "qframebuffer.h"
 
 #include <QLayout>
 #include <QMenuBar>

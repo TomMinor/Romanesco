@@ -1,5 +1,7 @@
 #include "PinholeCamera.h"
 
+namespace Romanesco {
+
 PinholeCamera::PinholeCamera(optix::float3 eye, optix::float3 lookat, optix::float3 up, float hfov, float vfov, AspectRatioMode arm)
   : eye(eye)
   , lookat(lookat)
@@ -21,6 +23,7 @@ PinholeCamera::PinholeCamera(optix::float3 eye, optix::float3 lookat, optix::flo
 
 inline float DtoR(float d)
 {
+#define M_PI 3.14159265359
   return d*(static_cast<float>(M_PI)/180.f);
 }
 
@@ -357,4 +360,7 @@ void PinholeCamera::transform( const optix::Matrix4x4& trans )
   lookat = assignWithCheck( lookat, optix::make_float3( final_trans*lookat4 ) );
 
   setup();
+}
+
+
 }

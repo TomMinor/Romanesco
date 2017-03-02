@@ -64,7 +64,7 @@ public slots:
         m_updateCamera = true;
     }
 
-    void setResolutionOverride(int2 _res)
+	void setResolutionOverride(optix::int2 _res)
     {
         m_overrideWidth = _res.x;
         m_overrideHeight = _res.y;

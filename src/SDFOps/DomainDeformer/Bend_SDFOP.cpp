@@ -1,4 +1,4 @@
-
+#include "Base_SDFOP.h"
 #include "Bend_SDFOP.h"
 
 static const std::vector<Argument> args = {
@@ -6,8 +6,8 @@ static const std::vector<Argument> args = {
     {"b", ReturnType::Float, "0.0f"}
 };
  
-Bend_SDFOP::Bend_SDFOP()  :
-    BaseSDFOP::BaseSDFOP()
+Bend_SDFOP::Bend_SDFOP()// :
+    //BaseSDFOP::BaseSDFOP()
 {
     m_returnType = ReturnType::Float;
 } 
@@ -24,7 +24,9 @@ std::string Bend_SDFOP::getFunctionName()
 
 std::string Bend_SDFOP::getSource()
 {
-
+	return R"(
+            return 0.0f;
+)";
 }
 
 Argument Bend_SDFOP::getArgument(unsigned int index)

@@ -21,7 +21,7 @@ std::string DistOpInterface_SDFOP::getFunctionName()
 
 std::string DistOpInterface_SDFOP::getSource()
 {
-
+	return "Unimplemented";
 }
 
 Argument DistOpInterface_SDFOP::getArgument(unsigned int index)

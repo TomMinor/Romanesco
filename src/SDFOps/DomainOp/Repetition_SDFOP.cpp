@@ -6,8 +6,8 @@ static const std::vector<Argument> args = {
     {"b", ReturnType::Float, "0.0f"}
 };
 
-Repetition_SDFOP::Repetition_SDFOP() :
-    BaseSDFOP::BaseSDFOP()
+Repetition_SDFOP::Repetition_SDFOP()// :
+   // BaseSDFOP::BaseSDFOP()
 {
     m_returnType = ReturnType::Float;
 } 
@@ -23,7 +23,9 @@ std::string Repetition_SDFOP::getFunctionName()
 
 std::string Repetition_SDFOP::getSource()
 {
-
+	return R"(
+            return 0.0f;
+)";
 }
 
 Argument Repetition_SDFOP::getArgument(unsigned int index)

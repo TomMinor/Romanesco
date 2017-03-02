@@ -1,4 +1,4 @@
-#include "Core/stringutilities.h"
+#include "stringutilities.h"
 
 #include <fstream>
 #include <sstream>

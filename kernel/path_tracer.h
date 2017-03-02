@@ -19,6 +19,9 @@
  * SUCH DAMAGES
  */
 
+#ifdef _WIN32
+#define NOMINMAX
+#endif
 #include <optixu/optixu_math_namespace.h>
 
 struct ParallelogramLight

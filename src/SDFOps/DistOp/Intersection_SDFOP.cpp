@@ -6,8 +6,8 @@ static const std::vector<Argument> args = {
     {"b", ReturnType::Float, "0.0f"}
 };
  
-Intersection_SDFOP::Intersection_SDFOP() :
-    BaseSDFOP::BaseSDFOP()
+Intersection_SDFOP::Intersection_SDFOP()// :
+    //BaseSDFOP::BaseSDFOP()
 { 
     m_returnType = ReturnType::Float;
 } 
@@ -23,7 +23,9 @@ std::string Intersection_SDFOP::getFunctionName()
 
 std::string Intersection_SDFOP::getSource()
 {
-
+	return R"(
+            return 0.0f;
+)";
 }
 
 Argument Intersection_SDFOP::getArgument(unsigned int index)

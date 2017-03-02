@@ -3,8 +3,8 @@
 static const std::vector<Argument> args = {
 };
 
-MengerSDFOp::MengerSDFOp() :
-    BaseSDFOP::BaseSDFOP()
+MengerSDFOp::MengerSDFOp()// :
+   // BaseSDFOP::BaseSDFOP()
 {
 m_returnType = ReturnType::Float;
 }
@@ -21,7 +21,9 @@ std::string MengerSDFOp::getFunctionName()
 
 std::string MengerSDFOp::getSource()
 {
-
+	return R"(
+            return 0.0f;
+)";
 }
 
 Argument MengerSDFOp::getArgument(unsigned int index)

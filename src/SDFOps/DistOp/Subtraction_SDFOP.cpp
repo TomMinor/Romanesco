@@ -6,8 +6,8 @@ static const std::vector<Argument> args = {
     {"b", ReturnType::Float, "0.0f"}
 };
  
-Subtraction_SDFOP::Subtraction_SDFOP()  :
-    BaseSDFOP::BaseSDFOP()
+Subtraction_SDFOP::Subtraction_SDFOP() // :
+   // BaseSDFOP::BaseSDFOP()
 {
     m_returnType = ReturnType::Float;
 } 
@@ -23,7 +23,9 @@ std::string Subtraction_SDFOP::getFunctionName()
 
 std::string Subtraction_SDFOP::getSource()
 {
-
+	return R"(
+            return 0.0f;
+)";
 }
 
 Argument Subtraction_SDFOP::getArgument(unsigned int index)

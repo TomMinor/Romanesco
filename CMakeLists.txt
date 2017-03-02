@@ -9,31 +9,59 @@ set(CMAKE_AUTOMOC ON)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
+
 # Find at least a 4.0 version of CUDA.
-find_package(CUDA 4.0 REQUIRED)
+find_package(CUDA REQUIRED)
 include_directories( ${CUDA_INCLUDE_DIR} )
+# INCLUDEPATH += $$CUDA_DIR/include
+# INCLUDEPATH += $$CUDA_DIR/common/inc/
+# INCLUDEPATH += $$CUDA_DIR/../shared/inc/
 link_directories( ${CUDA_LIB} )
 
+if(${CUDA_VERSION_MAJOR} VERSION_EQUAL 7} OR ${CUDA_VERSION_MAJOR} VERSION_GREATER 7})
+    message( "Using libnvrtc for runtime compilation." )
+	add_definitions(-DNVRTC_AVAILABLE)
+else()
+    message( "CUDA version is ${CUDA_VERSION_MAJOR}, at least 7.0 is required for libnvrtc. Using system nvcc for runtime compilation." )
+endif()
+
+
 find_package(OPTIX REQUIRED)
+if(OPTIX_FOUND)
+      Message(STATUS "--> using package OptiX")
+      add_definitions(-DUSEOPTIX)
+      include_directories(${OPTIX_INCLUDE_DIR})
+    LIST(APPEND LIBRARIES_OPTIMIZED ${OPTIX_LIB} )
+      LIST(APPEND LIBRARIES_DEBUG ${OPTIX_LIB} )
+      LIST(APPEND PACKAGE_SOURCE_FILES ${OPTIX_HEADERS} )
+      source_group(OPTIX FILES  ${OPTIX_HEADERS} )
+endif()
+
+set(OPTIX_SDK_DIR "${OPTIX_ROOT_DIR}/SDK")
 include_directories( ${OPTIX_INCLUDE_DIR} )
+include_directories( ${CMAKE_SOURCE_DIR}/include/sutil )
 link_directories( ${OPTIX_LIB} )
 
+
 find_package(Qt5Widgets REQUIRED)
+include_directories( ${Qt5Widgets_INCLUDE_DIRS} )
+include_directories( ${Qt5Widgets_LIBRARIES} )
 
 find_package(Boost REQUIRED)
-include_directories( ${BOOST_INCLUDE_DIR} )
-link_directories( ${BOOST_LIB} )
+include_directories( ${Boost_INCLUDE_DIRS} )
+link_directories( ${Boost_LIBRARY_DIRS} )
 
 find_package(OpenEXR REQUIRED)
 include_directories( ${OPENEXR_INCLUDE_DIRS} )
 link_directories( ${OPENEXR_LIBRARIES} )
 
 find_package(OpenImageIO REQUIRED)
-include_directories( ${OpenImageIO_INCLUDE_DIR} )
-link_directories( ${OpenImageIO_LIBRARY} )
+include_directories( ${OIIO_INCLUDE_DIRS} )
+link_directories( ${OIIO_LIBRARIES} )
 
-include_directories( ${Qt5Widgets_INCLUDE_DIRS} )
-include_directories( ${Qt5Widgets_LIBRARIES} )
+# find_package(glm REQUIRED)
+include_directories( "${CMAKE_CURRENT_LIST_DIR}/thirdparty/glm" )
+
 
 # We need add -DQT_WIDGETS_LIB when using QtWidgets in Qt 5.
 add_definitions(${Qt5Widgets_DEFINITIONS})
@@ -55,9 +83,16 @@ file(GLOB_RECURSE CPP_SOURCES_CORE
 	)
 
 file(GLOB_RECURSE CPP_SOURCES_GUI
-		${CMAKE_SOURCE_DIR}/src/GUI/*.cpp
+		${CMAKE_SOURCE_DIR}/src/GUI/gridscene.cpp
+		${CMAKE_SOURCE_DIR}/src/GUI/mainwindow.cpp
+		${CMAKE_SOURCE_DIR}/src/GUI/qframebuffer.cpp
+		${CMAKE_SOURCE_DIR}/src/GUI/qtimelinewidget.cpp
+		${CMAKE_SOURCE_DIR}/src/GUI/highlighter.cpp
+		${CMAKE_SOURCE_DIR}/src/GUI/QColorRampEditor.cpp
+		${CMAKE_SOURCE_DIR}/src/GUI/qrenderwindow.cpp
+		${CMAKE_SOURCE_DIR}/src/GUI/testglwidget.cpp
 		${CMAKE_SOURCE_DIR}/src/GUI/nodes/*.cpp
-		${CMAKE_SOURCE_DIR}/src/GUI/nodegraph/*.cpp
+		# ${CMAKE_SOURCE_DIR}/src/GUI/nodegraph/*.cpp
 	
 	)
 
@@ -80,9 +115,9 @@ file(GLOB_RECURSE HEADERS_CORE
 	)
 
 file(GLOB_RECURSE HEADERS_GUI 
-        ${CMAKE_SOURCE_DIR}/include/GUI/*.h
+        # ${CMAKE_SOURCE_DIR}/include/GUI/*.h
         ${CMAKE_SOURCE_DIR}/include/GUI/nodes/*.h
-        ${CMAKE_SOURCE_DIR}/include/GUI/nodegraph/*.h
+        # ${CMAKE_SOURCE_DIR}/include/GUI/nodegraph/*.h
 	)
 
 file(GLOB_RECURSE HEADERS_SDFOPS 
@@ -96,10 +131,12 @@ file(GLOB_RECURSE HEADERS_SDFOPS
 
 file(GLOB_RECURSE HEADERS 
 		${CMAKE_SOURCE_DIR}/include/*.h
+		${CMAKE_SOURCE_DIR}/kernel/*.h
  		${HEADERS_CORE}
  		${HEADERS_GUI}
  		${HEADERS_SDFOPS}
  	)
+
 
 file(GLOB_RECURSE VERTEX_SOURCES ${CMAKE_SOURCE_DIR}/shaders/*.frag)
 file(GLOB_RECURSE FRAGMENT_SOURCES ${CMAKE_SOURCE_DIR}/shaders/*.vert)
@@ -108,10 +145,11 @@ file(GLOB_RECURSE KERNEL_HEADERS ${CMAKE_SOURCE_DIR}/kernel/*.h)
 file(GLOB_RECURSE KERNEL_SOURCES ${CMAKE_SOURCE_DIR}/kernel/*.cu)
 
 include_directories(
+			${CMAKE_SOURCE_DIR}/kernel
 			${CMAKE_SOURCE_DIR}/include/Core
         	${CMAKE_SOURCE_DIR}/include/GUI
         	${CMAKE_SOURCE_DIR}/include/GUI/nodes
-        	${CMAKE_SOURCE_DIR}/include/GUI/nodegraph
+        	# ${CMAKE_SOURCE_DIR}/include/GUI/nodegraph
         	${CMAKE_SOURCE_DIR}/include/SDFOps
         	${CMAKE_SOURCE_DIR}/include/SDFOps/DistDeformer
         	${CMAKE_SOURCE_DIR}/include/SDFOps/DistOp
@@ -134,5 +172,10 @@ source_group("Core\\include"		FILES ${HEADERS_CORE} )
 source_group("GUI\\include"		FILES ${HEADERS_GUI} )
 source_group("SDFOps\\include"	FILES ${HEADERS_SDFOPS} )
 
+
 # target_link_libraries(romanesco SDL2 opengl32 OpenCL::OpenCL)
 target_link_libraries(romanesco ${Qt5Widgets_LIBRARIES})
+target_link_libraries(romanesco ${Boost_LIBRARIES})
+target_link_libraries(romanesco ${OIIO_LIBRARIES} )
+target_link_libraries(romanesco ${OPTIX_LIB} )
+target_link_libraries(romanesco ${CUDA_LIB} )  

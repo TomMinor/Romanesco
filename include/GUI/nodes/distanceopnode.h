@@ -1,7 +1,7 @@
 #ifndef DISTANCEOPNODE_H
 #define DISTANCEOPNODE_H
 
-#include "nodegraph/qneblock.h"
+//#include "nodegraph/qneblock.h"
 
 #include "Base_SDFOP.h"
 
@@ -27,18 +27,18 @@
 #include "Menger_SDFOP.h"
 #include "Sphere_SDFOP.h"
 #include "Torus_SDFOP.h"
-
-class DistanceOpNode : public QNEBlock
-{
-public:
-    DistanceOpNode(const QString &_name, QGraphicsScene* _scene, QGraphicsItem *parent = 0);
-    DistanceOpNode(BaseSDFOP* _op, QGraphicsScene* _scene, QGraphicsItem *parent = 0);
-    ~DistanceOpNode();
-
-    BaseSDFOP* getSDFOP() { return m_op; }
-
-private:
-    BaseSDFOP* m_op;
-};
+//
+//class DistanceOpNode : public QNEBlock
+//{
+//public:
+//    DistanceOpNode(const QString &_name, QGraphicsScene* _scene, QGraphicsItem *parent = 0);
+//    DistanceOpNode(BaseSDFOP* _op, QGraphicsScene* _scene, QGraphicsItem *parent = 0);
+//    ~DistanceOpNode();
+//
+//    BaseSDFOP* getSDFOP() { return m_op; }
+//
+//private:
+//    BaseSDFOP* m_op;
+//};
 
 #endif // DISTANCEOPNODE_H

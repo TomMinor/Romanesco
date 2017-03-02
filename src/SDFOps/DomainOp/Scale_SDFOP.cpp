@@ -6,8 +6,8 @@ static const std::vector<Argument> args = {
     {"b", ReturnType::Float, "0.0f"}
 };
 
-Scale_SDFOP::Scale_SDFOP()  :
-    BaseSDFOP::BaseSDFOP()
+Scale_SDFOP::Scale_SDFOP() // :
+   // BaseSDFOP::BaseSDFOP()
 {
     m_returnType = ReturnType::Float;
 } 
@@ -24,7 +24,9 @@ std::string Scale_SDFOP::getFunctionName()
 
 std::string Scale_SDFOP::getSource()
 {
-
+	return R"(
+            return 0.0f;
+)";
 }
 
 Argument Scale_SDFOP::getArgument(unsigned int index)

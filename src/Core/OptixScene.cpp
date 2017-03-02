@@ -5,34 +5,6 @@
 #include <GL/gl.h>
 #include <GL/glu.h>
 
-
-#include <QWindow>
-#include <QOpenGLFunctions>
-#include <QOpenGLPaintDevice>
-#include <QOpenGLFramebufferObject>
-#include <QScreen>
-#include <QDebug>
-#include <QKeyEvent>
-#include <QtMath>
-#include <QDir>
-#include <QCoreApplication>
-
-#ifndef _WIN32
-#include <unistd.h>
-#endif
-
-#include <math.h>
-#include <fstream>
-#include <string>
-#include <cerrno>
-#include <assert.h>
-#include <iostream>
-
-#include <boost/algorithm/string/join.hpp>
-
-#include <ImageLoader.h>
-
-#include "stringutilities.h"
 #include "ImageWriter.h"
 #include "OptixScene.h"
 #include "RuntimeCompiler.h"
@@ -46,11 +18,40 @@
 #include "DomainOp/Transform_SDFOP.h"
 #include <glm/gtc/matrix_transform.hpp>
 
+
+#include <QWindow>
+#include <QOpenGLFunctions>
+#include <QOpenGLPaintDevice>
+#include <QOpenGLFramebufferObject>
+#include <QScreen>
+#include <QDebug>
+#include <QKeyEvent>
+//#include <QtMath>
+#include <QDir>
+#include <QCoreApplication>
+
+#ifndef _WIN32
+#include <unistd.h>
+#endif
+
+//#include <math.h>
+#include <fstream>
+#include <string>
+#include <cerrno>
+#include <assert.h>
+#include <iostream>
+
+#include <boost/algorithm/string/join.hpp>
+
+//#include <ImageLoader.h>
+
+#include "stringutilities.h"
+
 ///@todo
 /// * Split this into a simple base class and derive from that, OptixScene -> OptixSceneAdaptive -> OptixScenePathTracer
 /// * All camera stuff should be moved into it's own, simpler class
 
-
+#ifdef ROMANESCO_RENDER_WITH_THREADS
 RenderThread::RenderThread(OptixScene* parent)
     : QThread( static_cast<QObject*>(parent) ), m_scene(parent)
 {
@@ -98,6 +99,7 @@ void RenderThread::run()
         mutex.unlock();
     }
 }
+#endif
 
 static int timeoutFunc()
 {
@@ -107,8 +109,9 @@ static int timeoutFunc()
     return 0;
 }
 
-OptixScene::OptixScene(unsigned int _width, unsigned int _height, QObject *_parent)
-    : QObject(_parent), m_time(0.0f), m_renderThread(this), m_camera(nullptr)
+
+OptixScene::OptixScene(unsigned int _width, unsigned int _height/*, QObject *_parent*/)
+    : /*QObject(_parent),*/ m_time(0.0f), /* m_renderThread(this),*/ m_camera(nullptr)
 {
     /// ================ Initialise Output Texture Buffer ======================
     glGenTextures( 1, &m_texId );
@@ -221,12 +224,12 @@ optix::Buffer OptixScene::createOutputBuffer(RTformat _format, unsigned int _wid
     return buffer;
 }
 
-int2 OptixScene::getResolution()
+optix::int2 OptixScene::getResolution()
 {
     optix::Buffer buffer = m_context[m_outputBuffer]->getBuffer();
     RTsize width, height;
     buffer->getSize(width, height);
-    return make_int2(width, height);
+    return optix::make_int2(width, height);
 }
 
 void OptixScene::setTime(float _t)
@@ -244,7 +247,7 @@ void OptixScene::setCamera(optix::float3 _eye, optix::float3 _lookat, float _fov
 {
     m_camera->setParameters( _eye,
                              _eye + optix::make_float3(0,0,1),
-                             make_float3(0.0f, 1.0f, 0.0f),
+							 optix::make_float3(0.0f, 1.0f, 0.0f),
                              _fov, // hfov is ignored when using keep vertical
                              _fov,
                              PinholeCamera::KeepVertical );
@@ -271,10 +274,10 @@ void OptixScene::setCamera(optix::float3 _eye, optix::float3 _lookat, float _fov
     m_context["V"]->setFloat( V );
     m_context["W"]->setFloat( W );
 
-    float3 ulen = optix::make_float3(0, 0, 1) * tanf(radians(_fov*0.5f));
-    float3 camera_u = optix::make_float3(1, 0, 0) * ulen;
-    float3 vlen = optix::make_float3(0, 0, 1) * tanf(radians(_fov*0.5f));
-    float3 camera_v = optix::make_float3(0, 1, 0) * vlen;
+	optix::float3 ulen = optix::make_float3(0, 0, 1) * tanf(radians(_fov*0.5f));
+	optix::float3 camera_u = optix::make_float3(1, 0, 0) * ulen;
+	optix::float3 vlen = optix::make_float3(0, 0, 1) * tanf(radians(_fov*0.5f));
+	optix::float3 camera_v = optix::make_float3(0, 1, 0) * vlen;
 
 //    m_context["U"]->setFloat( camera_u );
 //    m_context["V"]->setFloat( camera_v );
@@ -363,39 +366,39 @@ void OptixScene::updateBufferSize(unsigned int _width, unsigned int _height)
 /// \param offset2
 /// \return
 ///
-GeometryInstance createAreaLight( optix::Context* m_context,
+optix::GeometryInstance createAreaLight(optix::Context* m_context,
                                       optix::Program* m_pgram_bounding_box,
                                       optix::Program* m_pgram_intersection,
-                                      const float3& anchor,
-                                      const float3& offset1,
-                                      const float3& offset2)
+									  const optix::float3& anchor,
+									  const optix::float3& offset1,
+									  const optix::float3& offset2)
 {
-  Geometry parallelogram = (*m_context)->createGeometry();
+	optix::Geometry parallelogram = (*m_context)->createGeometry();
   parallelogram->setPrimitiveCount( 1u );
   parallelogram->setIntersectionProgram( *m_pgram_intersection );
   parallelogram->setBoundingBoxProgram( *m_pgram_bounding_box );
 
-  float3 normal = normalize( cross( offset1, offset2 ) );
+  optix::float3 normal = optix::normalize(cross(offset1, offset2));
   float d = dot( normal, anchor );
-  float4 plane = make_float4( normal, d );
+  optix::float4 plane = optix::make_float4(normal, d);
 
-  float3 v1 = offset1 / dot( offset1, offset1 );
-  float3 v2 = offset2 / dot( offset2, offset2 );
+  optix::float3 v1 = offset1 / dot(offset1, offset1);
+  optix::float3 v2 = offset2 / dot(offset2, offset2);
 
   parallelogram["plane"]->setFloat( plane );
   parallelogram["anchor"]->setFloat( anchor );
   parallelogram["v1"]->setFloat( v1 );
   parallelogram["v2"]->setFloat( v2 );
 
-  GeometryInstance gi = (*m_context)->createGeometryInstance();
+  optix::GeometryInstance gi = (*m_context)->createGeometryInstance();
   gi->setGeometry(parallelogram);
   return gi;
 }
 
-void setMaterial( GeometryInstance& gi,
-                                   Material material,
+void setMaterial(optix::GeometryInstance& gi,
+	optix::Material material,
                                    const std::string& color_name,
-                                   const float3& color)
+								   const optix::float3& color)
 {
   gi->addMaterial(material);
   gi[color_name]->setFloat(color);
@@ -426,7 +429,7 @@ void OptixScene::createLights()
     // Setup lights
     m_context["ambient_light_color"]->setFloat(0.1f,0.1f,0.3f);
 
-    float3 test_data[] = {
+	optix::float3 test_data[] = {
         { 1.0f, 0.0f, 0.0f },
         { 0.0f, 1.0f, 0.0f },
         { 0.0f, 0.0f, 1.0f }
@@ -450,13 +453,13 @@ void OptixScene::createLights()
 
         ParallelogramLight light;
 //        light.corner   = make_float3( 343.0f, 548.6f, 227.0f);
-            light.corner   = make_float3( 0.0f, 300.0f, 0.0f);
+		light.corner = optix::make_float3(0.0f, 300.0f, 0.0f);
         //    light.v1       = make_float3( -130.0f, 0.0f, 0.0f);
         //    light.v2       = make_float3( 0.0f, 0.0f, 105.0f);
-        light.v1       = make_float3( v1.x, v1.y, v1.z );
-        light.v2       = make_float3( v2.x, v2.y, v2.z );
-        light.normal   = normalize( cross(light.v1, light.v2) );
-        light.emission = make_float3( 3.0f );
+		light.v1 = optix::make_float3(v1.x, v1.y, v1.z);
+		light.v2 = optix::make_float3(v2.x, v2.y, v2.z);
+		light.normal = optix::normalize(cross(light.v1, light.v2));
+		light.emission = optix::make_float3(3.0f);
 
         m_lights.push_back(light);
     }
@@ -472,13 +475,13 @@ void OptixScene::createLights()
 
         ParallelogramLight light;
 //        light.corner   = make_float3( 343.0f, -148.6f, 227.0f);
-            light.corner   = make_float3( 0.0f, -300.0f, 0.0f);
+		light.corner = optix::make_float3(0.0f, -300.0f, 0.0f);
         //    light.v1       = make_float3( -130.0f, 0.0f, 0.0f);
         //    light.v2       = make_float3( 0.0f, 0.0f, 105.0f);
-        light.v1       = make_float3( v1.x, v1.y, v1.z );
-        light.v2       = make_float3( v2.x, v2.y, v2.z );
-        light.normal   = normalize( cross(light.v1, light.v2) );
-        light.emission = make_float3( 20.0f, 10.0f, 2.5f );
+		light.v1 = optix::make_float3(v1.x, v1.y, v1.z);
+		light.v2 = optix::make_float3(v2.x, v2.y, v2.z);
+		light.normal = optix::normalize(cross(light.v1, light.v2));
+		light.emission = optix::make_float3(20.0f, 10.0f, 2.5f);
 
         m_lights.push_back(light);
     }
@@ -493,14 +496,14 @@ void OptixScene::createLights()
 //      v2 = glm::vec3(glm::vec4(v2, 1.0) * rot);
 
         ParallelogramLight light;
-//      light.corner   = make_float3( 343.0f, 548.6f, 227.0f );
-        light.corner   = make_float3( 100.0f, -50.0f, 0.0f );
-//      light.v1       = make_float3( -130.0f, 0.0f, 0.0f );
-//      light.v2       = make_float3( 0.0f, 0.0f, 105.0f );
-        light.v1       = make_float3( v1.x, v1.y, v1.z );
-        light.v2       = make_float3( v2.x, v2.y, v2.z );
-        light.normal   = normalize( cross(light.v1, light.v2) );
-        light.emission = make_float3( .5f ) * 13.0f;
+//      light.corner   = optix::make_float3( 343.0f, 548.6f, 227.0f );
+		light.corner = optix::make_float3(100.0f, -50.0f, 0.0f);
+//      light.v1       = optix::make_float3( -130.0f, 0.0f, 0.0f );
+//      light.v2       = optix::make_float3( 0.0f, 0.0f, 105.0f );
+		light.v1 = optix::make_float3(v1.x, v1.y, v1.z);
+		light.v2 = optix::make_float3(v2.x, v2.y, v2.z);
+		light.normal = optix::normalize(cross(light.v1, light.v2));
+		light.emission = optix::make_float3(.5f) * 13.0f;
 
         m_lights.push_back(light);
     }
@@ -515,19 +518,19 @@ void OptixScene::createLights()
 //      v2 = glm::vec3(glm::vec4(v2, 1.0) * rot);
 
         ParallelogramLight light;
-//      light.corner   = make_float3( 343.0f, 548.6f, 227.0f );
-        light.corner   = make_float3( 100.0f, -50.0f, 130.0f );
-//      light.v1       = make_float3( -130.0f, 0.0f, 0.0f );
-//      light.v2       = make_float3( 0.0f, 0.0f, 105.0f );
-        light.v1       = make_float3( v1.x, v1.y, v1.z );
-        light.v2       = make_float3( v2.x, v2.y, v2.z );
-        light.normal   = normalize( cross(light.v1, light.v2) );
-        light.emission = make_float3( .5f ) * 13.0f;
+//      light.corner   = optix::make_float3( 343.0f, 548.6f, 227.0f );
+		light.corner = optix::make_float3(100.0f, -50.0f, 130.0f);
+//      light.v1       = optix::make_float3( -130.0f, 0.0f, 0.0f );
+//      light.v2       = optix::make_float3( 0.0f, 0.0f, 105.0f );
+		light.v1 = optix::make_float3(v1.x, v1.y, v1.z);
+		light.v2 = optix::make_float3(v2.x, v2.y, v2.z);
+		light.normal = optix::normalize(cross(light.v1, light.v2));
+		light.emission = optix::make_float3(.5f) * 13.0f;
 
         m_lights.push_back(light);
     }
 
-    Buffer light_buffer = m_context->createBuffer( RT_BUFFER_INPUT );
+	optix::Buffer light_buffer = m_context->createBuffer(RT_BUFFER_INPUT);
     light_buffer->setFormat( RT_FORMAT_USER );
     light_buffer->setElementSize( sizeof( ParallelogramLight ) );
     light_buffer->setSize( m_lights.size() );
@@ -553,9 +556,9 @@ void OptixScene::createCameras()
 //                                 60.0f );                          // vfov
 
     m_camera = new PinholeCamera(
-                   make_float3(0.0f, 0.0f, 0.0f),
-                   make_float3(0.0f, 0.0f, 1.0f),
-                   make_float3(0.0f, 1.0f, 0.0f),
+		optix::make_float3(0.0f, 0.0f, 0.0f),
+				   optix::make_float3(0.0f, 0.0f, 1.0f),
+				   optix::make_float3(0.0f, 1.0f, 0.0f),
                    -1.0f, // hfov is ignored when using keep vertical
                    60.0f,
                    PinholeCamera::KeepVertical );
@@ -563,7 +566,7 @@ void OptixScene::createCameras()
     optix::Buffer buffer = m_context[m_outputBuffer]->getBuffer();
     RTsize width, height;
     buffer->getSize(width, height);
-    setCamera( make_float3(0.0f), make_float3(0.0f, 0.3f, 0.0f), 60.0f, width, height);
+	setCamera(optix::make_float3(0.0f), optix::make_float3(0.0f, 0.3f, 0.0f), 60.0f, width, height);
 
     // Declare camera variables.  The values do not matter, they will be overwritten in trace.
     m_context["eye"]->setFloat( optix::make_float3( 0.0f, 0.0f, 0.0f ) );
@@ -592,7 +595,7 @@ void OptixScene::createCameras()
     m_context->setMissProgram( static_cast<unsigned int>(PathTraceRay::CAMERA), m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "envmap_miss" ) );
 
     const optix::float3 default_color = m_context["bg_color"]->getFloat3();
-    m_context["envmap"]->setTextureSampler( loadTexture( m_context, qgetenv("HOME").toStdString() +  + "/src/optix/SDK/tutorial/data/CedarCity.hdr", default_color) );
+//    m_context["envmap"]->setTextureSampler( loadTexture( m_context, qgetenv("HOME").toStdString() +  + "/src/optix/SDK/tutorial/data/CedarCity.hdr", default_color) );
 //    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/tom/src/Fragmentarium/Fragmentarium-Source/Examples/Include/Ditch-River_2k.hdr", default_color) );
 //    m_context["envmap"]->setTextureSampler( loadTexture( m_context,  qgetenv("HOME").toStdString() + "/Downloads/Milkyway/Milkyway_small.hdr", default_color) );
 //    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/i7245143/Pictures/hdri/hdrmaps_com_free_050_half.hdr", default_color) );
@@ -600,28 +603,28 @@ void OptixScene::createCameras()
 
 void OptixScene::createLightGeo()
 {
-    GeometryGroup geo = m_context["top_shadower"]->getGeometryGroup();
+	optix::GeometryGroup geo = m_context["top_shadower"]->getGeometryGroup();
 
-    GeometryGroup lights = m_context->createGeometryGroup();
+	optix::GeometryGroup lights = m_context->createGeometryGroup();
 
-    Program m_pgram_bounding_box = m_context->createProgramFromPTXFile( "ptx/parallelogram.cu.ptx", "bounds" );
-    Program m_pgram_intersection = m_context->createProgramFromPTXFile( "ptx/parallelogram.cu.ptx", "intersect" );
+	optix::Program m_pgram_bounding_box = m_context->createProgramFromPTXFile("ptx/parallelogram.cu.ptx", "bounds");
+	optix::Program m_pgram_intersection = m_context->createProgramFromPTXFile("ptx/parallelogram.cu.ptx", "intersect");
 
-    Material emissiveMat = m_context->createMaterial();
-    Program diffuse_emitter = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "diffuseEmitter" );
+	optix::Material emissiveMat = m_context->createMaterial();
+	optix::Program diffuse_emitter = m_context->createProgramFromPTXFile("ptx/menger.cu.ptx", "diffuseEmitter");
     emissiveMat->setClosestHitProgram( static_cast<unsigned int>(PathTraceRay::CAMERA), diffuse_emitter );
 
-    const float3 light_em = make_float3( 15.0f, 15.0f, 5.0f );
+	const optix::float3 light_em = optix::make_float3(15.0f, 15.0f, 5.0f);
 
-    std::vector<GeometryInstance> areaLights;
+	std::vector<optix::GeometryInstance> areaLights;
 
     // Light
     areaLights.push_back( createAreaLight( &m_context,
                                         &m_pgram_bounding_box,
                                         &m_pgram_intersection,
-                                        make_float3( -2500, 2000.0, -2500),
-                                        make_float3( 5000.0f, 0.0f, 0.0f),
-                                        make_float3( 0.0f, 0.0f, 5000.0f) ) );
+										optix::make_float3(-2500, 2000.0, -2500),
+										optix::make_float3(5000.0f, 0.0f, 0.0f),
+										optix::make_float3(0.0f, 0.0f, 5000.0f)));
     setMaterial(areaLights.back(), emissiveMat, "emission_color", light_em);
 
 //    lights->setChildCount( areaLights.size() );
@@ -634,13 +637,13 @@ void OptixScene::createLightGeo()
 
 void OptixScene::setCurrentMaterial(std::string _name)
 {
-    const float3 white = make_float3( 0.8f, 0.8f, 0.8f );
+	const optix::float3 white = optix::make_float3(0.8f, 0.8f, 0.8f);
 
-    Material diffuseMat = m_context->createMaterial();
-    Program diffuse_closestHit = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", _name );
+	optix::Material diffuseMat = m_context->createMaterial();
+	optix::Program diffuse_closestHit = m_context->createProgramFromPTXFile("ptx/menger.cu.ptx", _name);
     diffuseMat->setClosestHitProgram( static_cast<unsigned int>(PathTraceRay::CAMERA), diffuse_closestHit );
 
-    Program diffuse_anyHit = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "shadow" );
+	optix::Program diffuse_anyHit = m_context->createProgramFromPTXFile("ptx/menger.cu.ptx", "shadow");
     diffuseMat->setAnyHitProgram( static_cast<unsigned int>(PathTraceRay::SHADOW), diffuse_anyHit );
 
     setMaterial(m_geoInstance, diffuseMat, "diffuse_color", white);
@@ -673,23 +676,23 @@ void OptixScene::createWorld()
 
 //    setMaterial(m_geoInstance, diffuseMat, "diffuse_color", white);
 
-    GeometryGroup m_geometrygroup = m_context->createGeometryGroup();
+	optix::GeometryGroup m_geometrygroup = m_context->createGeometryGroup();
     m_geometrygroup->addChild(m_geoInstance);
 
 
 
-    GeometryGroup lights = m_context->createGeometryGroup();
+	optix::GeometryGroup lights = m_context->createGeometryGroup();
 
-    Program m_pgram_bounding_box = m_context->createProgramFromPTXFile( "ptx/parallelogram.cu.ptx", "bounds" );
-    Program m_pgram_intersection = m_context->createProgramFromPTXFile( "ptx/parallelogram.cu.ptx", "intersect" );
+	optix::Program m_pgram_bounding_box = m_context->createProgramFromPTXFile("ptx/parallelogram.cu.ptx", "bounds");
+	optix::Program m_pgram_intersection = m_context->createProgramFromPTXFile("ptx/parallelogram.cu.ptx", "intersect");
 
-    Material emissiveMat = m_context->createMaterial();
-    Program diffuse_emitter = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "diffuseEmitter" );
+	optix::Material emissiveMat = m_context->createMaterial();
+	optix::Program diffuse_emitter = m_context->createProgramFromPTXFile("ptx/menger.cu.ptx", "diffuseEmitter");
     emissiveMat->setClosestHitProgram( static_cast<unsigned int>(PathTraceRay::CAMERA), diffuse_emitter );
 
-    const float3 light_em = make_float3( 15.0f, 15.0f, 5.0f );
+	const optix::float3 light_em = optix::make_float3(15.0f, 15.0f, 5.0f);
 
-    std::vector<GeometryInstance> areaLights;
+	std::vector<optix::GeometryInstance> areaLights;
 
     // Light
 //    areaLights.push_back( createAreaLight( &m_context,
@@ -720,7 +723,7 @@ void OptixScene::createWorld()
     m_context["top_object"]->set( m_geometrygroup );
 
     // Create shadow group (no light)
-    GeometryGroup shadow_group = m_context->createGeometryGroup();
+	optix::GeometryGroup shadow_group = m_context->createGeometryGroup();
     shadow_group->addChild(m_geoInstance);
     shadow_group->setAcceleration( m_context->createAcceleration("NoAccel","NoAccel") );
     m_context["top_shadower"]->set( shadow_group );
@@ -860,7 +863,8 @@ __device__ __noinline__ float3 shade_hook()
     {
         optix::Program testcallable = m_context->createProgramFromPTXString(ptx, "distancehit_hook");
         m_context["do_work"]->set(testcallable);
-    } catch(Exception &e)
+	}
+	catch (optix::Exception &e)
     {
         qWarning("Failed to create program from ptx");
         return;
@@ -883,10 +887,11 @@ float* OptixScene::getBufferContents(std::string _name, RTsize* _elementSize, RT
     (*_width) = buffer_width;
     (*_height) = buffer_height;
 
-    RTsize bufferSize = buffer_width * buffer_height;
-    float* hostPtr = new float[buffer->getElementSize() * bufferSize];
-    CUdeviceptr devicePtr = buffer->getDevicePointer( 0 );
-    cudaMemcpy( (void*)hostPtr,   (void*)devicePtr,    buffer->getElementSize() * bufferSize, cudaMemcpyDeviceToHost );
+    //RTsize bufferSize = buffer_width * buffer_height;
+    //float* hostPtr = new float[buffer->getElementSize() * bufferSize];
+	float* hostPtr = nullptr;
+    //CUdeviceptr devicePtr = buffer->getDevicePointer( 0 );
+	//cudaMemcpy((void*)hostPtr, (void*)devicePtr, buffer->getElementSize() * bufferSize, cudaMemcpyDeviceToHost);
 //    qDebug() << buffer->getElementSize() * bufferSize;
 
     return hostPtr;
@@ -1038,8 +1043,8 @@ void OptixScene::drawToBuffer()
     // https://devtalk.nvidia.com/default/topic/806609/optix/splitting-work-on-multiple-launches/
     // http://graphics.cs.aueb.gr/graphics/docs/Constantinos%20Kalampokis%20Thesis.pdf
 //    int2 NoOfTiles = make_int2(12, 12);
-    int2 NoOfTiles = make_int2(m_tileX, m_tileY);
-    float2 launch_index_tileSize = make_float2( float(buffer_width) / NoOfTiles.x,
+	optix::int2 NoOfTiles = optix::make_int2(m_tileX, m_tileY);
+	optix::float2 launch_index_tileSize = optix::make_float2(float(buffer_width) / NoOfTiles.x,
                                                 float(buffer_height) / NoOfTiles.y );
 
     bool isFrameReady = false;

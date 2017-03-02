@@ -7,9 +7,9 @@
 
 #include "mainwindow.h"
 
-#include "nodegraph/qneblock.h"
-#include "nodegraph/qnodeseditor.h"
-#include "nodegraph/qneport.h"
+//#include "nodegraph/qneblock.h"
+//#include "nodegraph/qnodeseditor.h"
+//#include "nodegraph/qneport.h"
 
 #include "nodes/distanceopnode.h"
 #include "gridscene.h"
@@ -108,11 +108,11 @@ MainWindow::MainWindow(QWidget *parent) :
     view->setRenderHint(QPainter::Antialiasing, true);
     view->setRenderHint(QPainter::HighQualityAntialiasing, true);
 
-    nodeEditor = new QNodeGraph(this);
+    /*nodeEditor = new QNodeGraph(this);
     nodeEditor->install(scene);
 
     connect(nodeEditor, SIGNAL(graphChanged()), this, SLOT(graphUpdated()) );
-
+*/
     m_glViewport = 0;
     m_glViewport = new TestGLWidget(splitter);
     m_glViewport->setMinimumWidth(640);
@@ -349,8 +349,8 @@ void MainWindow::setupTabUI()
     OptixScene* optixscene = m_glViewport->m_optixScene;
     connect(optixscene, SIGNAL(frameReady()), this, SLOT(dumpFrame()));
     connect(optixscene, SIGNAL(frameRefined(int)), this, SLOT(updateFrameRefinement(int)));
-    connect(optixscene, SIGNAL(bucketRowReady(uint)), this, SLOT(rowRendered(uint)));
-    connect(optixscene, SIGNAL(bucketReady(uint,uint)), this, SLOT(bucketRendered(uint,uint)));
+	connect(optixscene, SIGNAL(bucketRowReady(unsigned int)), this, SLOT(rowRendered(unsigned int)));
+	connect(optixscene, SIGNAL(bucketReady(unsigned int, unsigned int)), this, SLOT(bucketRendered(unsigned int, unsigned int)));
 
     setupSceneSettingsUI();
     setupMaterialSettingsUI();
@@ -564,7 +564,7 @@ void MainWindow::initializeGL()
 
         qDebug("Rendering at %dx%d", m_renderX, m_renderY );
         m_glViewport->setShouldOverrideResolution(true);
-        m_glViewport->setResolutionOverride( make_int2(m_renderX, m_renderY) );
+        m_glViewport->setResolutionOverride( optix::make_int2(m_renderX, m_renderY) );
         m_glViewport->refreshScene();
     }
 
@@ -670,7 +670,7 @@ void MainWindow::dumpFlipbookFrame()
     m_timeline->setTime( currentFrame + 1 );
 
     OptixScene* optixscene = m_glViewport->m_optixScene;
-    unsigned long elementSize, width, height;
+	RTsize elementSize, width, height;
     float* buffer = optixscene->getBufferContents("output_buffer" /*optixscene->outputBuffer()*/, &elementSize, &width, &height );
 
     unsigned int totalbytes = width * height * elementSize;
@@ -806,9 +806,9 @@ void MainWindow::timerEvent(QTimerEvent *_event)
 
 void MainWindow::graphUpdated()
 {
-    std::string src = nodeEditor->parseGraph().c_str();
-    qDebug() << src.c_str();
-    m_glViewport->m_optixScene->setGeometryHitProgram(src);
+    //std::string src = nodeEditor->parseGraph().c_str();
+    //qDebug() << src.c_str();
+    //m_glViewport->m_optixScene->setGeometryHitProgram(src);
 }
 
 void MainWindow::timeUpdated(float _t)
@@ -823,7 +823,7 @@ MainWindow::~MainWindow()
 }
 
 void MainWindow::saveFile()
-{
+{/*
 	QString fname = QFileDialog::getSaveFileName();
 	if (fname.isEmpty())
 		return;
@@ -831,19 +831,19 @@ void MainWindow::saveFile()
 	QFile f(fname);
 	f.open(QFile::WriteOnly);
 	QDataStream ds(&f);
-    nodeEditor->save(ds);
+    nodeEditor->save(ds);*/
 }
 
 void MainWindow::loadFile()
 {
-	QString fname = QFileDialog::getOpenFileName();
-	if (fname.isEmpty())
-		return;
+	//QString fname = QFileDialog::getOpenFileName();
+	//if (fname.isEmpty())
+	//	return;
 
-	QFile f(fname);
-	f.open(QFile::ReadOnly);
-	QDataStream ds(&f);
-    nodeEditor->load(ds);
+	//QFile f(fname);
+	//f.open(QFile::ReadOnly);
+	//QDataStream ds(&f);
+ //   nodeEditor->load(ds);
 }
 
 void MainWindow::loadHitFile()
@@ -910,7 +910,7 @@ void MainWindow::buildHitFunction()
 
 void MainWindow::addBlock()
 {
-   DistanceOpNode *c = new DistanceOpNode("Union", scene, 0);
+   //DistanceOpNode *c = new DistanceOpNode("Union", scene, 0);
 //	static const char* names[] = {"Vin", "Voutsadfasdf", "Imin", "Imax", "mul", "add", "sub", "div", "Conv", "FFT"};
 //	for (int i = 0; i < 4 + rand() % 3; i++)
 //	{

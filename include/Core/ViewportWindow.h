@@ -1,6 +1,19 @@
 #ifndef SHADERWINDOW_H
 #define SHADERWINDOW_H
 
+#define NOMINMAX
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <optix.h>
+#include <sutil.h>
+#include <optixu/optixpp_namespace.h>
+//#ifdef _WIN32
+
+//#endif
+//#include <optixu/optixu_math_namespace.h>
+
+
 //#include <SDL.h>
 //#include <SDL_haptic.h>
 #include <QOpenGLShaderProgram>
@@ -8,12 +21,7 @@
 
 #include "OptixScene.h"
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <optix.h>
-#include <sutil.h>
-#include <optixu/optixpp_namespace.h>
+
 
 class ShaderWindow : public OpenGLWindow
 {

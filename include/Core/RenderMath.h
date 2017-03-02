@@ -5,6 +5,10 @@
 
 #define SMALL_NUMBER 0.0000000001
 
+#ifndef M_PI
+#define M_PI 3.14159265359f
+#endif
+
 template <typename T>
 T clamp(const T& n, const T& lower, const T& upper) {
   return std::max(lower, std::min(n, upper));

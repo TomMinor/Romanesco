@@ -6,8 +6,8 @@ static const std::vector<Argument> args = {
     {"b", ReturnType::Float, "0.0f"},
 };
  
-Displace_SDFOP::Displace_SDFOP()  :
-    BaseSDFOP::BaseSDFOP()
+Displace_SDFOP::Displace_SDFOP()//  :
+   // BaseSDFOP::BaseSDFOP()
 { 
 } 
  

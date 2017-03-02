@@ -166,7 +166,7 @@ private slots:
         int y = m_resY->value();
 
 //        m_glViewport->overrideCameraRes(x,y);
-        m_glViewport->setResolutionOverride( make_int2(x, y) );
+        m_glViewport->setResolutionOverride( optix::make_int2(x, y) );
     }
 
 

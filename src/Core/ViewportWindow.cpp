@@ -1,15 +1,14 @@
+
 #include <QScreen>
 #include <QDebug>
 #include <QKeyEvent>
-#ifndef __WIN32
+#ifndef _WIN32
 #include <unistd.h>
 #endif
 
 #include <math.h>
 #include <QtMath>
 #include <QDir>
-
-#include <optixu/optixu_math_namespace.h>
 
 #include "ViewportWindow.h"
 ShaderWindow::ShaderWindow()
@@ -164,7 +163,7 @@ void ShaderWindow::update()
     m_optixScene->setVar("normalmatrix", normalmatrix);
 
     m_optixScene->setCamera(  optix::make_float3( m_camPos.x(), m_camPos.y(), m_camPos.z() ),
-                              make_float3(0.0f, 0.3f, 0.0f),
+							  optix::make_float3(0.0f, 0.3f, 0.0f),
                               90.0f,
                               width(), height()
                               );

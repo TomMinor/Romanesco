@@ -6,8 +6,8 @@ static const std::vector<Argument> args = {
     {"b", ReturnType::Float, "0.0f"}
 };
 
-Twist_SDFOP::Twist_SDFOP()  :
-    BaseSDFOP::BaseSDFOP()
+Twist_SDFOP::Twist_SDFOP() // :
+   // BaseSDFOP::BaseSDFOP()
 {
     m_returnType = ReturnType::Float;
 } 
@@ -24,7 +24,7 @@ std::string Twist_SDFOP::getFunctionName()
 
 std::string Twist_SDFOP::getSource()
 {
-
+	return "return 0.0;";
 }
 
 Argument Twist_SDFOP::getArgument(unsigned int index)

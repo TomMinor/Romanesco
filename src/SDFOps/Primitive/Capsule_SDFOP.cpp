@@ -6,8 +6,8 @@ static const std::vector<Argument> args = {
     {"b", ReturnType::Float, "0.0f"}
 };
 
-Capsule_SDFOP::Capsule_SDFOP()  :
-    BaseSDFOP::BaseSDFOP()
+Capsule_SDFOP::Capsule_SDFOP()//  :
+   // BaseSDFOP::BaseSDFOP()
 {
     m_returnType = ReturnType::Float;
 } 
@@ -23,7 +23,9 @@ std::string Capsule_SDFOP::getFunctionName()
 
 std::string Capsule_SDFOP::getSource()
 {
-
+	return R"(
+            return 0.0f;
+)";
 }
 
 Argument Capsule_SDFOP::getArgument(unsigned int index)
