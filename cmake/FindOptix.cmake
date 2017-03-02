@@ -8,7 +8,7 @@ unset(OPTIX_FOUND CACHE)
 unset(OPTIX_INCLUDE_DIR CACHE)
 
 # search path, can be overridden by user
-set ( OPTIX_LOCATION "${PROJECT_SOURCE_DIR}/../shared_optix" CACHE PATH "Path to OptiX install" )
+set ( OPTIX_LOCATION "${PROJECT_SOURCE_DIR}/thirdparty/optix" CACHE PATH "Path to OptiX install" )
 
 MESSAGE(${OPTIX_LOCATION})
 
@@ -75,8 +75,8 @@ endmacro()
 set ( SEARCH_PATHS
   ${OPTIX_LOCATION}
   ${PROJECT_SOURCE_DIR}/shared_optix
-  ${PROJECT_SOURCE_DIR}/../shared_optix
-  ${PROJECT_SOURCE_DIR}/../../shared_optix
+  ${PROJECT_SOURCE_DIR}/thirdparty/optix
+  ${PROJECT_SOURCE_DIR}/../thirdparty/optix
   $ENV{OPTIX_LOCATION}  
 )
 if (WIN32) 
