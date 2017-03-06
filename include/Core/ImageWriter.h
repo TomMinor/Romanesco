@@ -7,7 +7,12 @@
 #undef max
 #undef min
 //#endif
-#include <OpenImageIO/imageio.h>
+//#include <OpenImageIO/imageio.h>
+#include <OpenEXR/ImfRgba.h>
+#include <OpenEXR/ImfRgbaFile.h>
+#include <OpenEXR/ImfChannelList.h>
+#include <OpenEXR/ImfFrameBuffer.h>
+#include <OpenEXR/ImfOutputFile.h>
 #include <OpenEXR/half.h>
 
 
@@ -19,37 +24,44 @@ public:
         ///
         /// \brief Default channels, we'll always need these
         ///
-        half r, g, b, a;
+		float r, g, b, a;
+		//half r, g, b, a;
 
         ///
         /// \brief z depth
         ///
-        half z;
+        float z;
+		//half z;
 
         ///
         /// \brief trapR 3 orbit trap channels
         ///
-        half trapR, trapB, trapG;
+        float trapR, trapB, trapG;
+		//half trapR, trapB, trapG;
 
         ///
         /// \brief iteration count
         ///
-        half iteration;
+        float iteration;
+		//half iteration;
 
         ///
         /// \brief x_nrm
         ///
-        half x_nrm, y_nrm, z_nrm;
+        float x_nrm, y_nrm, z_nrm;
+		//half x_nrm, y_nrm, z_nrm;
 
         ///
         /// \brief x_pos
         ///y
-        half x_pos, y_pos, z_pos;
+        float x_pos, y_pos, z_pos;
+		//half x_pos, y_pos, z_pos;
 
         ///
         /// \brief diffuseR
         ///
-        half diffuseR, diffuseG, diffuseB;
+        float diffuseR, diffuseG, diffuseB;
+		//half diffuseR, diffuseG, diffuseB;
 
     };
 
@@ -68,27 +80,27 @@ private:
     /// \param _name
     /// \param _type
     ///
-    void addChannel(OpenImageIO::TypeDesc _type, std::string _name);
+    void addChannel(/*OpenImageIO::TypeDesc _type,*/ std::string _name);
 
     ///
     /// \brief addChannelRGB Adds a channel to the image spec, using the special syntax that designates related channels (P.x, P.y, P.z) if a channel name is passed
     /// \param _name
     /// \param _type
     ///
-    void addChannelRGB(OpenImageIO::TypeDesc _type, std::string _name = "");
+    void addChannelRGB(/*OpenImageIO::TypeDesc _type,*/ std::string _name = "");
 
     ///
     /// \brief addChannelRGBA Adds a channel to the image spec, using the special syntax that designates related channels (P.x, P.y, P.z, P.a) if a channel name is passed
     /// \param _name
     /// \param _type
     ///
-    void addChannelRGBA(OpenImageIO::TypeDesc _type, std::string _name = "");
+    void addChannelRGBA(/*OpenImageIO::TypeDesc _type,*/ std::string _name = "");
 
 private:
     std::string m_fileName;
 
-    OpenImageIO::ImageOutput *m_outFile;
-    OpenImageIO::ImageSpec *m_spec;
+    //OpenImageIO::ImageOutput *m_outFile;
+    //OpenImageIO::ImageSpec *m_spec;
 };
 
 #endif

@@ -241,8 +241,8 @@ void TestGLWidget::paintGL()
     glVertexAttribPointer(m_vtxPosAttr, 3, GL_FLOAT, GL_FALSE, 0, vertices);
     glVertexAttribPointer(m_vtxUVAttr, 2, GL_FLOAT, GL_FALSE, 0, uv);
 
-    glEnableVertexAttribArray(0);
-    glEnableVertexAttribArray(1);
+	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
 
     if(m_optixScene)
     {

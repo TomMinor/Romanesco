@@ -24,6 +24,7 @@
 #include "path_tracer.h"
 
 #include <QObject>
+#include <QOpenGLFunctions_4_3_core.h>
 #ifdef ROMANESCO_RENDER_WITH_THREADS
 #include <future>
 #include <iostream>
@@ -61,7 +62,7 @@ private:
 };
 #endif
 
-class OptixScene : public QObject
+class OptixScene : public QObject, protected QOpenGLFunctions_4_3_Core
 {
 	Q_OBJECT
 
@@ -81,7 +82,7 @@ public:
         TOTALCAMERATYPES
     };
 
-    OptixScene(unsigned int _width, unsigned int _height/*, QObject *_parent = 0*/);
+    OptixScene(unsigned int _width, unsigned int _height, QObject *_parent = 0);
     virtual ~OptixScene();
 
     virtual void updateBufferSize(unsigned int _width, unsigned int _height);
@@ -220,7 +221,7 @@ private:
     RenderThread m_renderThread;
 #endif
 
-    PinholeCamera* m_camera;
+    Romanesco::PinholeCamera* m_camera;
 
 public slots:
     void setProgressiveTimeout(int _timeout)

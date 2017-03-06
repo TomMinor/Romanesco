@@ -2,7 +2,8 @@
 #define TESTGLWIDGET_H
 
 #include <QOpenGLShaderProgram>
-#include <QOpenGLFunctions>
+//#include <QOpenGLFunctions>
+#include <QOpenGLFunctions_4_3_core.h>
 #include <QOpenGLWidget>
 #include <QMatrix4x4>
 #include <QDebug>
@@ -11,7 +12,7 @@
 
 #include "OptixScene.h"
 
-class TestGLWidget : public QOpenGLWidget, protected QOpenGLFunctions
+class TestGLWidget : public QOpenGLWidget, protected QOpenGLFunctions_4_3_Core
 {
     Q_OBJECT
 public:

@@ -81,6 +81,8 @@ if(CUDA_ROOT_DIR)
     _find_files( CUDA_LIB CUDA_ROOT_DIR "win32/cublas.lib" "x64/cublas.lib" "lib/" RESULT)
     _find_files( CUDA_LIB CUDA_ROOT_DIR "win32/cuda.lib" "x64/cuda.lib" "lib/" RESULT)
     _find_files( CUDA_LIB CUDA_ROOT_DIR "win32/OpenCL.lib" "x64/OpenCL.lib" "lib/" RESULT)
+    
+    _find_files( CUDA_LIB CUDA_ROOT_DIR "win32/nvrtc.lib" "x64/nvrtc.lib" "lib/" RESULT)
 
 	#-------- Locate HEADERS
 	_find_files( CUDA_HEADERS CUDA_ROOT_DIR "cuda.h" "cuda.h" "include/" RESULT)

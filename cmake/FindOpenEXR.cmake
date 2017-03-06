@@ -93,6 +93,13 @@ foreach(OPENEXR_LIB
     Imath
     IlmImf
     IlmThread
+
+    # Quick fix for windows that might not work for older versions of OpenEXR,
+    # not sure how to make this automatically work for all versions
+    Iex-2_2
+    Imath-2_2
+    IlmImf-2_2
+    IlmThread-2_2
     )
 
     find_library(OPENEXR_${OPENEXR_LIB}_LIBRARY
@@ -120,6 +127,7 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(OpenEXR
     REQUIRED_VARS
         OPENEXR_INCLUDE_DIRS
+        OPENEXR_LIBRARIES
         OPENEXR_LIBRARY_DIR
     VERSION_VAR
         OPENEXR_VERSION

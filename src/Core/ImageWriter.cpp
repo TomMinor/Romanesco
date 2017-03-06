@@ -23,7 +23,7 @@ bool ImageWriter::progressCallback(void* _data, float _progress)
 
 
 ImageWriter::ImageWriter(std::string _filename, unsigned int _width, unsigned int _height)
-    : m_outFile(nullptr), m_spec(nullptr), m_fileName(_filename)
+    : /*m_outFile(nullptr), m_spec(nullptr), */m_fileName(_filename)
 {
 //    m_spec = new OpenImageIO::ImageSpec(OpenImageIO::TypeDesc::UNKNOWN);
 //
@@ -119,7 +119,7 @@ bool ImageWriter::write(std::vector<ImageWriter::Pixel> _pixels)
 	return false;
 }
 
-void ImageWriter::addChannel(OpenImageIO::TypeDesc _type, std::string _name)
+void ImageWriter::addChannel(/*OpenImageIO::TypeDesc _type,*/ std::string _name)
 {
     //// Add the channel name to the spec
     //m_spec->channelnames.push_back(_name);
@@ -127,7 +127,7 @@ void ImageWriter::addChannel(OpenImageIO::TypeDesc _type, std::string _name)
     //m_spec->channelformats.push_back(_type);
 }
 
-void ImageWriter::addChannelRGB(OpenImageIO::TypeDesc _type, std::string _name)
+void ImageWriter::addChannelRGB(/*OpenImageIO::TypeDesc _type, */std::string _name)
 {
     //// Generate names like P.x if one is supplied
     //if(_name.length() > 0)  {
@@ -139,7 +139,7 @@ void ImageWriter::addChannelRGB(OpenImageIO::TypeDesc _type, std::string _name)
     //addChannel(_type, _name + "B");
 }
 
-void ImageWriter::addChannelRGBA(OpenImageIO::TypeDesc _type, std::string _name)
+void ImageWriter::addChannelRGBA(/*OpenImageIO::TypeDesc _type, */std::string _name)
 {
    /* if(_name.length() > 0)
     {

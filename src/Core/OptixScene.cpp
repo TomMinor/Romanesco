@@ -20,7 +20,7 @@
 
 
 #include <QWindow>
-#include <QOpenGLFunctions>
+//#include <QOpenGLFunctions>
 #include <QOpenGLPaintDevice>
 #include <QOpenGLFramebufferObject>
 #include <QScreen>
@@ -110,8 +110,8 @@ static int timeoutFunc()
 }
 
 
-OptixScene::OptixScene(unsigned int _width, unsigned int _height/*, QObject *_parent*/)
-    : /*QObject(_parent),*/ m_time(0.0f), /* m_renderThread(this),*/ m_camera(nullptr)
+OptixScene::OptixScene(unsigned int _width, unsigned int _height, QObject *_parent)
+    : QObject(_parent), m_time(0.0f), /* m_renderThread(this),*/ m_camera(nullptr)
 {
     /// ================ Initialise Output Texture Buffer ======================
     glGenTextures( 1, &m_texId );
@@ -125,7 +125,7 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height/*, QObject *_pa
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-    glBindTexture( GL_TEXTURE_2D, 0);
+	glBindTexture(GL_TEXTURE_2D, 0);
     /// --------------------------------------------------------------
 
     /// ================ Initialise Context ======================
@@ -250,7 +250,7 @@ void OptixScene::setCamera(optix::float3 _eye, optix::float3 _lookat, float _fov
 							 optix::make_float3(0.0f, 1.0f, 0.0f),
                              _fov, // hfov is ignored when using keep vertical
                              _fov,
-                             PinholeCamera::KeepVertical );
+                             Romanesco::PinholeCamera::KeepVertical );
     m_camera->setAspectRatio( static_cast<float>(_width)/static_cast<float>(_height) );
 
     optix::float3 eye, U, V, W;
@@ -555,13 +555,13 @@ void OptixScene::createCameras()
 //                                 optix::make_float3( 0.0f, 1.0f,  0.0f ), // up
 //                                 60.0f );                          // vfov
 
-    m_camera = new PinholeCamera(
+	m_camera = new Romanesco::PinholeCamera(
 		optix::make_float3(0.0f, 0.0f, 0.0f),
 				   optix::make_float3(0.0f, 0.0f, 1.0f),
 				   optix::make_float3(0.0f, 1.0f, 0.0f),
                    -1.0f, // hfov is ignored when using keep vertical
                    60.0f,
-                   PinholeCamera::KeepVertical );
+				   Romanesco::PinholeCamera::KeepVertical);
 
     optix::Buffer buffer = m_context[m_outputBuffer]->getBuffer();
     RTsize width, height;
