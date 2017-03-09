@@ -49,14 +49,16 @@ public slots:
         m_time = _t;
         m_updateCamera = true;
 
-        m_optixScene->setTime(_t);
+		if (m_optixScene)
+	        m_optixScene->setTime(_t);
     }
 
     void updateRelativeTime(float _t)
     {
         m_updateCamera = true;
 
-        m_optixScene->setRelativeTime(_t);
+		if (m_optixScene)
+			m_optixScene->setRelativeTime(_t);
     }
 
     void setShouldOverrideResolution(bool _v)
@@ -70,7 +72,8 @@ public slots:
         m_overrideWidth = _res.x;
         m_overrideHeight = _res.y;
 
-        m_optixScene->updateBufferSize( m_overrideWidth, m_overrideHeight );
+		if (m_optixScene)
+			m_optixScene->updateBufferSize( m_overrideWidth, m_overrideHeight );
         updateCamera();
         m_updateCamera = true;
     }

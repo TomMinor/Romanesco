@@ -38,10 +38,10 @@ void TestGLWidget::initializeGL()
 
     glClearColor(0, 0, 0, 1);
 
-    m_optixScene = 0;
-    m_optixScene = new OptixScene(width(), height());
+    m_optixScene = nullptr;
+    //m_optixScene = new OptixScene(width(), height());
+    //m_optixScene->setCameraType( OptixScene::CameraTypes::PINHOLE );
 
-    m_optixScene->setCameraType( OptixScene::CameraTypes::PINHOLE );
 //    m_optixScene->setCurrentMaterial( "pathtrace_diffuse" );
 
     QString vertexPath = QDir::currentPath() + "/shaders/raymarch.vert";
@@ -152,6 +152,9 @@ bool AreSame(QVector3D a, QVector3D b)
 
 void TestGLWidget::updateCamera()
 {
+	if (!m_optixScene)
+		return;
+
     m_optixScene->setCamera(  optix::make_float3( m_camPos.x(), m_camPos.y(), m_camPos.z() ),
 							  optix::make_float3(0.0f, 0.3f, 0.0f),
                               m_fov,
@@ -289,6 +292,9 @@ void TestGLWidget::keyPressEvent(QKeyEvent *_event)
 {
     const float offset = 0.025f;
     const float rotateOffset = 0.10f;
+
+	if (!m_optixScene)
+		return;
 
     switch ( _event->key() )
     {

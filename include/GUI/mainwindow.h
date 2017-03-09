@@ -96,17 +96,21 @@ public slots:
     {
         m_progressiveTimeout = _t;
         m_progressiveSpinbox->setValue(m_progressiveTimeout);
-        m_glViewport->m_optixScene->setProgressiveTimeout(_t);
+
+		if (m_glViewport->m_optixScene)
+			m_glViewport->m_optixScene->setProgressiveTimeout(_t);
     }
 
     void setHorizontalTiles(int _t)
     {
-        m_glViewport->m_optixScene->setHorizontalTiles(_t);
+		if (m_glViewport->m_optixScene)
+			m_glViewport->m_optixScene->setHorizontalTiles(_t);
     }
 
     void setVerticalTiles(int _t)
     {
-        m_glViewport->m_optixScene->setVerticalTiles(_t);
+		if (m_glViewport->m_optixScene)
+	        m_glViewport->m_optixScene->setVerticalTiles(_t);
     }
 
     void setFOV(float _fov)

@@ -7,5 +7,6 @@ layout(location = 0) out vec4 colour;
 
 void main(void)
 {
-    colour = texture2D(viewportBuffer, texcoord);
+    //colour = texture2D(viewportBuffer, texcoord);
+	colour = vec4(texcoord,0.0,1.0);
 }

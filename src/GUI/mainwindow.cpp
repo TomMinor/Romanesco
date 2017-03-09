@@ -347,11 +347,14 @@ CommandLineParseResult parseCommandLine(QCommandLineParser &parser, MainWindow *
 void MainWindow::setupTabUI()
 {
     OptixScene* optixscene = m_glViewport->m_optixScene;
-    connect(optixscene, SIGNAL(frameReady()), this, SLOT(dumpFrame()));
-    connect(optixscene, SIGNAL(frameRefined(int)), this, SLOT(updateFrameRefinement(int)));
-	connect(optixscene, SIGNAL(bucketRowReady(unsigned int)), this, SLOT(rowRendered(unsigned int)));
-	connect(optixscene, SIGNAL(bucketReady(unsigned int, unsigned int)), this, SLOT(bucketRendered(unsigned int, unsigned int)));
-
+	if (optixscene)
+	{
+		connect(optixscene, SIGNAL(frameReady()), this, SLOT(dumpFrame()));
+		connect(optixscene, SIGNAL(frameRefined(int)), this, SLOT(updateFrameRefinement(int)));
+		connect(optixscene, SIGNAL(bucketRowReady(unsigned int)), this, SLOT(rowRendered(unsigned int)));
+		connect(optixscene, SIGNAL(bucketReady(unsigned int, unsigned int)), this, SLOT(bucketRendered(unsigned int, unsigned int)));
+	}
+    
     setupSceneSettingsUI();
     setupMaterialSettingsUI();
     setupRenderSettingsUI();
@@ -378,35 +381,45 @@ void MainWindow::setupSceneSettingsUI()
         m_progressiveSpinbox->setMinimum(1);
         m_progressiveSpinbox->setMaximum(1000);
         m_progressiveSpinbox->setValue( m_progressiveTimeout );
-        optixscene->setProgressiveTimeout(m_progressiveTimeout);
+		
+		if (optixscene)
+			optixscene->setProgressiveTimeout(m_progressiveTimeout);
 
         QSpinBox* maxIterations = new QSpinBox;
         maxIterations->setMinimum(1);
         maxIterations->setMaximum(1000);
-        maxIterations->setValue( optixscene->getMaximumIterations() );
+		if (optixscene)
+			maxIterations->setValue( optixscene->getMaximumIterations() );
 
         m_sqrtNumSamples = new QSpinBox;
         m_sqrtNumSamples->setMinimum(1);
         m_sqrtNumSamples->setMaximum(64);
-        m_sqrtNumSamples->setValue( optixscene->getNumPixelSamplesSqrt() );
+		
+		if (optixscene)
+			m_sqrtNumSamples->setValue( optixscene->getNumPixelSamplesSqrt() );
 
         QDoubleSpinBox* normalDelta = new QDoubleSpinBox;
         normalDelta->setMinimum(0.000001f);
         normalDelta->setSingleStep( 0.001f );
         normalDelta->setDecimals(5);
-        normalDelta->setValue( optixscene->getNormalDelta() );
+		if (optixscene)
+			normalDelta->setValue( optixscene->getNormalDelta() );
 
         QDoubleSpinBox* surfaceDelta = new QDoubleSpinBox;
         surfaceDelta->setMinimum(0.000001f);
         surfaceDelta->setSingleStep( 0.001f );
         surfaceDelta->setDecimals(5);
-        surfaceDelta->setValue( optixscene->getSurfaceEpsilon() );
+		if (optixscene)
+			surfaceDelta->setValue( optixscene->getSurfaceEpsilon() );
 
         connect( m_progressiveSpinbox, SIGNAL(valueChanged(int)), this, SLOT(setProgressiveTimeout(int)) );
-        connect( maxIterations , SIGNAL(valueChanged(int)), optixscene, SLOT(setMaximumIterations(int)) );
-        connect( m_sqrtNumSamples , SIGNAL(valueChanged(int)), optixscene, SLOT(setSamplesPerPixelSquared(int)) );
-        connect( normalDelta, SIGNAL(valueChanged(double)), optixscene, SLOT(setNormalDelta(double)) );
-        connect( surfaceDelta, SIGNAL(valueChanged(double)), optixscene, SLOT(setSurfaceEpsilon(double)) );
+		if (optixscene)
+		{
+			connect(maxIterations, SIGNAL(valueChanged(int)), optixscene, SLOT(setMaximumIterations(int)));
+			connect(m_sqrtNumSamples, SIGNAL(valueChanged(int)), optixscene, SLOT(setSamplesPerPixelSquared(int)));
+			connect(normalDelta, SIGNAL(valueChanged(double)), optixscene, SLOT(setNormalDelta(double)));
+			connect(surfaceDelta, SIGNAL(valueChanged(double)), optixscene, SLOT(setSurfaceEpsilon(double)));
+		}
 
         QFormLayout* samplingLayout = new QFormLayout;
         QFormLayout* cameraLayout = new QFormLayout;
@@ -445,7 +458,7 @@ void MainWindow::setupSceneSettingsUI()
 
 void MainWindow::setupMaterialSettingsUI()
 {
-    OptixScene* optixscene = m_glViewport->m_optixScene;
+    //OptixScene* optixscene = m_glViewport->m_optixScene;
 
     m_materialSettingsWidget = new QWidget;
     {
@@ -490,14 +503,16 @@ void MainWindow::setupRenderSettingsUI()
         m_resX = new QSpinBox;
         m_resX->setMinimum(1);
         m_resX->setMaximum(9000);
-        m_resX->setValue( optixscene->getResolution().x );
+		if (optixscene)
+			m_resX->setValue( optixscene->getResolution().x );
         m_resX->setEnabled( toggleResOverride->isChecked() );
         viewportLayout->addWidget(m_resX, 1, 0);
 
         m_resY = new QSpinBox;
         m_resY->setMinimum(1);
         m_resY->setMaximum(9000);
-        m_resY->setValue( optixscene->getResolution().y );
+		if (optixscene)
+			m_resY->setValue( optixscene->getResolution().y );
         m_resY->setEnabled( toggleResOverride->isChecked() );
         viewportLayout->addWidget(m_resY, 1, 1);
 
@@ -646,7 +661,8 @@ void MainWindow::dumpRenderedFrame()
     std::string imagePath = boost::str(boost::format(filepath) % fileFrame);
 
     OptixScene* optixscene = m_glViewport->m_optixScene;
-    optixscene->saveBuffersToDisk(imagePath);
+	if (optixscene)
+		optixscene->saveBuffersToDisk(imagePath);
 
     if(m_batchMode)
     {
@@ -670,6 +686,12 @@ void MainWindow::dumpFlipbookFrame()
     m_timeline->setTime( currentFrame + 1 );
 
     OptixScene* optixscene = m_glViewport->m_optixScene;
+	if (!optixscene)
+	{
+		qWarning() << "OptixScene is null, can't flipbook";
+		return;
+	}
+
 	RTsize elementSize, width, height;
     float* buffer = optixscene->getBufferContents("output_buffer" /*optixscene->outputBuffer()*/, &elementSize, &width, &height );
 
@@ -904,7 +926,8 @@ void MainWindow::loadHitFile(QString _path)
 void MainWindow::buildHitFunction()
 {
     std::string src = m_editor->toPlainText().toStdString();
-    m_glViewport->m_optixScene->setGeometryHitProgram(src);
+	if (m_glViewport->m_optixScene)
+		m_glViewport->m_optixScene->setGeometryHitProgram(src);
     m_glViewport->refreshScene();
 }
 

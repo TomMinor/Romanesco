@@ -187,6 +187,13 @@ file(GLOB HEADERS_SDFOPS
   )
 
 
+file(GLOB VERTEX_SOURCES ${CMAKE_SOURCE_DIR}/shaders/*.frag)
+file(GLOB FRAGMENT_SOURCES ${CMAKE_SOURCE_DIR}/shaders/*.vert)
+
+file(GLOB KERNEL_HEADERS ${CMAKE_SOURCE_DIR}/kernel/*.h)
+file(GLOB KERNEL_SOURCES ${CMAKE_SOURCE_DIR}/kernel/*.cu)
+
+
 file(GLOB HEADERS 
     ${HEADERS_CORE}
     ${HEADERS_GUI}
@@ -194,12 +201,6 @@ file(GLOB HEADERS
     ${CMAKE_SOURCE_DIR}/kernel/*.h
   )
 
-
-file(GLOB VERTEX_SOURCES ${CMAKE_SOURCE_DIR}/shaders/*.frag)
-file(GLOB FRAGMENT_SOURCES ${CMAKE_SOURCE_DIR}/shaders/*.vert)
-
-file(GLOB KERNEL_HEADERS ${CMAKE_SOURCE_DIR}/kernel/*.h)
-file(GLOB KERNEL_SOURCES ${CMAKE_SOURCE_DIR}/kernel/*.cu)
 
 include_directories(
     ${CMAKE_SOURCE_DIR}/include/Core
@@ -219,7 +220,7 @@ include_directories(
 
 
 
-add_executable(romanesco ${CPP_SOURCES} ${HEADERS})
+add_executable(romanesco ${CPP_SOURCES} ${HEADERS} ${VERTEX_SOURCES} ${FRAGMENT_SOURCES})
 
 source_group("Shaders\\Vertex"  FILES ${VERTEX_SOURCES})
 source_group("Shaders\\Fragment"  FILES ${FRAGMENT_SOURCES})
