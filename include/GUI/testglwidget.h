@@ -4,6 +4,9 @@
 #include <QOpenGLShaderProgram>
 //#include <QOpenGLFunctions>
 #include <QOpenGLFunctions_4_3_core.h>
+//#include <qopenglfunctions_4_3_compatibility.h>
+#include <QOpenGLDebugMessage>
+#include <QOpenGLDebugLogger>
 #include <QOpenGLWidget>
 #include <QMatrix4x4>
 #include <QDebug>
@@ -11,6 +14,10 @@
 #include <QTimer>
 
 #include "OptixScene.h"
+
+
+class QOpenGLDebugMessage;
+class QOpenGLDebugLogger;
 
 class TestGLWidget : public QOpenGLWidget, protected QOpenGLFunctions_4_3_Core
 {
@@ -42,6 +49,9 @@ public:
     {
         return m_overrideRes;
     }
+
+protected slots:
+	void messageLogged(const QOpenGLDebugMessage &msg);
 
 public slots:
     void updateTime(float _t)
@@ -113,6 +123,9 @@ signals:
     void initializedGL();
 
 private:
+	void printGLErrors();
+
+private:
     //QMatrix4x4 m_projection;
 
     void updateCamera();
@@ -120,12 +133,15 @@ private:
     bool m_updateCamera;
 
     QOpenGLShaderProgram *m_program;
+	QOpenGLDebugLogger *m_debugLogger;
 
     QVector3D m_camPos, m_desiredCamPos;
     QVector3D m_camRot, m_desiredCamRot;
 
-    GLuint m_vtxPosAttr;
-    GLuint m_vtxUVAttr;
+    GLint m_vtxPosAttr;
+    GLint m_vtxUVAttr;
+	GLuint m_vao;
+	GLuint m_vbo;
 
     float m_time;
     long m_frame;

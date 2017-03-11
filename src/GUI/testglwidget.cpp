@@ -5,8 +5,9 @@
 #include "testglwidget.h"
 #include "RenderMath.h"
 
+
 TestGLWidget::TestGLWidget(QWidget *parent)
-  : QOpenGLWidget(parent), m_optixScene(0), m_program(0), m_frame(0), m_time(0), m_previousWidth(0), m_previousHeight(0)
+	: QOpenGLWidget(parent), m_optixScene(0), m_program(0), m_frame(0), m_time(0), m_previousWidth(0), m_previousHeight(0), m_debugLogger(nullptr)
 {
 //    m_desiredCamPos = m_camPos = QVector3D(1.09475, 0.0750364, -1.00239);
 //    m_desiredCamRot = m_camRot = QVector3D(-0.301546, 0.399876, 0);
@@ -20,6 +21,7 @@ TestGLWidget::TestGLWidget(QWidget *parent)
 
     m_timer = new QTimer(this);
     connect( m_timer, SIGNAL(timeout()), this, SLOT(updateScene()) );
+
 }
 
 TestGLWidget::~TestGLWidget()
@@ -32,18 +34,34 @@ void TestGLWidget::updateScene()
 //    m_optixScene->drawToBuffer();
 }
 
+void TestGLWidget::messageLogged(const QOpenGLDebugMessage &msg)
+{
+	qDebug() << msg;
+}
+
 void TestGLWidget::initializeGL()
 {
     initializeOpenGLFunctions();
 
-    glClearColor(0, 0, 0, 1);
+
+//#ifdef    GL_DEBUG
+	m_debugLogger = new QOpenGLDebugLogger(this);
+	if (m_debugLogger->initialize())
+	{
+		qDebug() << "GL_DEBUG Debug Logger" << m_debugLogger << "\n";
+		connect(m_debugLogger, SIGNAL(messageLogged(QOpenGLDebugMessage)), this, SLOT(messageLogged(QOpenGLDebugMessage)));
+		m_debugLogger->startLogging();
+	}
+//#endif // GL_DEBUG
+
+    glClearColor(1, 0, 0, 1);
 
     m_optixScene = nullptr;
     //m_optixScene = new OptixScene(width(), height());
     //m_optixScene->setCameraType( OptixScene::CameraTypes::PINHOLE );
 
 //    m_optixScene->setCurrentMaterial( "pathtrace_diffuse" );
-
+/*
     QString vertexPath = QDir::currentPath() + "/shaders/raymarch.vert";
     QString fragmentPath = QDir::currentPath() + "/shaders/raymarch.frag";
 
@@ -73,29 +91,66 @@ void TestGLWidget::initializeGL()
         {
             qDebug() << "Can't open file " << fragmentPath;
         }
-    }
+    }*/
 
     m_program = new QOpenGLShaderProgram(this);
 //    m_program->addShaderFromSourceCode(QOpenGLShader::Vertex, vertexSrc);
 //    m_program->addShaderFromSourceCode(QOpenGLShader::Fragment, fragmentSrc);
-    m_program->addShaderFromSourceFile(QOpenGLShader::Vertex, "shaders/viewport.vert");
-    m_program->addShaderFromSourceFile(QOpenGLShader::Fragment, "shaders/viewport.frag");
+    m_program->addShaderFromSourceFile(QOpenGLShader::Vertex, "D:/dev/RomanescoRenderer/shaders/viewport.vert");
+    m_program->addShaderFromSourceFile(QOpenGLShader::Fragment, "D:/dev/RomanescoRenderer/shaders/viewport.frag");
 
     if(!m_program->link())
     {
         qDebug() << "Link error in shader program\n";
         qDebug() << m_program->log();
-        exit(1);
+		std::runtime_error("Link error in shader program");
     }
 
-    m_vtxPosAttr = m_program->attributeLocation("vtxPos");
-    m_vtxUVAttr = m_program->attributeLocation("vtxUV");
+    m_vtxPosAttr = m_program->attributeLocation("position");
+	if (m_vtxPosAttr == -1)
+	{
+		qWarning() << "Couldn't find 'vtxPos' attribute";
+		//throw std::runtime_error("Couldn't find 'vtxPos' attribute");
+	}
+    m_vtxUVAttr = m_program->attributeLocation("texcoord");
+	if (m_vtxUVAttr == -1)
+	{
+		qWarning() << "Couldn't find 'vtxUV' attribute";
+		//throw std::runtime_error("Couldn't find 'vtxUV' attribute");
+	}
+
+	qDebug() << m_vtxPosAttr << m_vtxUVAttr;
+
 //    m_resXUniform = m_program->uniformLocation("resx");
 //    m_resYUniform = m_program->uniformLocation("resy");
 //    m_aspectUniform = m_program->uniformLocation("aspect");
 //    m_timeUniform = m_program->uniformLocation("time");
 //    m_posUniform = m_program->uniformLocation("pos");
 //    m_normalMatrix = m_program->uniformLocation("normalMatrix");
+
+	static GLfloat vertices[] = {
+		-1.0f, -1.0f, 0.0f, 1.0f,
+		1.0f, -1.0f, 0.0f, 1.0f,
+		1.0f, 1.0f, 0.0f, 1.0f,
+		-1.0f, -1.0f, 0.0f, 1.0f,
+		-1.0f, 1.0f, 0.0f, 1.0f,
+		1.0f, 1.0f, 0.0f, 1.0f
+	};
+	static GLfloat uv[] = {
+		0, 0,
+		1, 0,
+		1, 1,
+		0, 0,
+		0, 1,
+		1, 1,
+	};
+
+	glGenBuffers(1, &m_vbo);
+	//glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+	//glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+	//glEnableVertexAttribArray(m_vtxPosAttr);
+	//glVertexAttribPointer(m_vtxPosAttr, 4, GL_FLOAT, GL_FALSE, 0, vertices);
 
     emit initializedGL();
 }
@@ -217,46 +272,30 @@ void TestGLWidget::paintGL()
 
     const qreal retinaScale = devicePixelRatio();
     glViewport(0, 0, width() * retinaScale, height() * retinaScale);
-
     glClear(GL_COLOR_BUFFER_BIT);
+	m_program->bind();
 
-    m_program->bind();
+    //glEnable(GL_TEXTURE_2D);
 
-    static GLfloat vertices[] = {
-      -1,	-1, 0,
-      1,	-1,	0,
-      1,	1,	0,
-      -1,	-1, 0,
-      -1,	1,	0,
-      1,	1,	0,
-    };
-    static GLfloat uv[] = {
-        0,	0,
-        1,	0,
-        1,	1,
-        0,	0,
-        0,	1,
-        1,	1,
-    };
+	/*glBindVertexArray(m_vao);*/
+	//glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
 
-    glEnable(GL_TEXTURE_2D);
+	//glEnableVertexAttribArray(m_vtxPosAttr);
+	//glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+	//glVertexAttribPointer(m_vtxPosAttr, 3, GL_FLOAT, GL_FALSE, 0, vertices);
 
-    glVertexAttribPointer(m_vtxPosAttr, 3, GL_FLOAT, GL_FALSE, 0, vertices);
-    glVertexAttribPointer(m_vtxUVAttr, 2, GL_FLOAT, GL_FALSE, 0, uv);
+	//glEnableVertexAttribArray(m_vtxUVAttr);
+	//glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+	//glVertexAttribPointer(m_vtxUVAttr, 2, GL_FLOAT, GL_FALSE, 0, uv);
 
-	glEnableVertexAttribArray(0);
-	glEnableVertexAttribArray(1);
+	glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
 
     if(m_optixScene)
     {
         m_optixScene->drawToBuffer();
     }
-    glDrawArrays(GL_TRIANGLES, 0, 6);
 
-    glDisableVertexAttribArray(1);
-    glDisableVertexAttribArray(0);
-
-    glDisable(GL_TEXTURE_2D);
+    //glDisable(GL_TEXTURE_2D);
 
     m_program->release();
 
