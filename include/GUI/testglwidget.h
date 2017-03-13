@@ -41,6 +41,7 @@ public:
 
 //    void overrideCameraRes(int _width, int _height);
 
+	///@todo This should be private
     OptixScene* m_optixScene;
     unsigned int m_previousWidth, m_previousHeight;
 

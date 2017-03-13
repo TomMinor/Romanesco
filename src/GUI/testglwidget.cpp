@@ -126,22 +126,30 @@ void TestGLWidget::initializeGL()
 
     m_optixScene = nullptr;
     
-	m_optixScene = new OptixScene(width(), height(), (QOpenGLFunctions_4_3_Core*)this );
-    m_optixScene->setCameraType( OptixScene::CameraTypes::PINHOLE );
+	//m_optixScene = new OptixScene(width(), height(), (QOpenGLFunctions_4_3_Core*)this );
+ //   m_optixScene->setCameraType( OptixScene::CameraTypes::PINHOLE );
 
 //    m_optixScene->setCurrentMaterial( "pathtrace_diffuse" );
 
     m_program = new QOpenGLShaderProgram(this);
-//    m_program->addShaderFromSourceCode(QOpenGLShader::Vertex, vertexSrc);
-//    m_program->addShaderFromSourceCode(QOpenGLShader::Fragment, fragmentSrc);
-    m_program->addShaderFromSourceFile(QOpenGLShader::Vertex, "D:/dev/RomanescoRenderer/shaders/viewport.vert");
-    m_program->addShaderFromSourceFile(QOpenGLShader::Fragment, "D:/dev/RomanescoRenderer/shaders/viewport.frag");
+
+	QString vtxShaderPath = "D:/dev/RomanescoRenderer/shaders/viewport.vert";
+	if (!m_program->addShaderFromSourceFile(QOpenGLShader::Vertex, vtxShaderPath))
+	{
+		throw std::runtime_error(qPrintable("Couldn't open vertex shader: " + vtxShaderPath));
+	}
+    
+	QString fragShaderPath = "D:/dev/RomanescoRenderer/shaders/viewport.vert";
+	if (!m_program->addShaderFromSourceFile(QOpenGLShader::Fragment, fragShaderPath))
+	{
+		throw std::runtime_error(qPrintable("Couldn't open fragment shader: " + fragShaderPath));
+	}
 
     if(!m_program->link())
     {
         qDebug() << "Link error in shader program\n";
         qDebug() << m_program->log();
-		std::runtime_error("Link error in shader program");
+		throw std::runtime_error("Link error in shader program");
     }
 
     
