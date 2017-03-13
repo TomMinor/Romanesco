@@ -25,6 +25,8 @@
 
 #include <QObject>
 #include <QOpenGLFunctions_4_3_core.h>
+#include <QOpenGLDebugMessage>
+#include <QOpenGLDebugLogger>
 #ifdef ROMANESCO_RENDER_WITH_THREADS
 #include <future>
 #include <iostream>
@@ -62,7 +64,7 @@ private:
 };
 #endif
 
-class OptixScene : public QObject, protected QOpenGLFunctions_4_3_Core
+class OptixScene : public QObject
 {
 	Q_OBJECT
 
@@ -82,7 +84,7 @@ public:
         TOTALCAMERATYPES
     };
 
-    OptixScene(unsigned int _width, unsigned int _height, QObject *_parent = 0);
+	OptixScene(unsigned int _width, unsigned int _height, QOpenGLFunctions_4_3_Core* _gl, QObject *_parent = 0);
     virtual ~OptixScene();
 
     virtual void updateBufferSize(unsigned int _width, unsigned int _height);
@@ -214,6 +216,7 @@ protected:
 #endif
 
 private:
+	QOpenGLFunctions_4_3_Core* m_gl;
 
     void updateGLBuffer();
 
@@ -222,6 +225,10 @@ private:
 #endif
 
     Romanesco::PinholeCamera* m_camera;
+	QOpenGLDebugLogger *m_debugLogger;
+
+protected slots:
+	void messageLogged(const QOpenGLDebugMessage &msg);
 
 public slots:
     void setProgressiveTimeout(int _timeout)

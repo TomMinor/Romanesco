@@ -40,6 +40,8 @@ RuntimeCompiler::RuntimeCompiler(const std::string &_name, const std::string _so
     m_opts.push_back("-I./scenes");
     // CUDA_INCLUDE_PATH include folder is set in the .pro file at compile time for now
     m_opts.push_back("-I" MACROTOSTRING(CUDA_INCLUDE_PATH)); // compiler automatically concatenates the string and macro
+	/// @todo Get cmake to generate set the CUDA include path
+	m_opts.push_back("-IC:/Program\ Files/NVIDIA\ GPU\ Computing\ Toolkit/CUDA/v7.5/include" ); // compiler automatically concatenates the string and macro
 
     m_result = nullptr;
 

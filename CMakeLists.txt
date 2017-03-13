@@ -16,8 +16,13 @@ find_package(CUDA REQUIRED)
 include_directories( ${CUDA_INCLUDE_DIR} )
 link_directories( ${CUDA_LIB} )
 
+
 if(${CUDA_VERSION_MAJOR} VERSION_EQUAL 7} OR ${CUDA_VERSION_MAJOR} VERSION_GREATER 7})
     message( "Using libnvrtc for runtime compilation." )
+    # set(NVRTC_LIB ${CUDA_TOOLKIT_ROOT_DIR}/lib/x64/nvrtc.lib)
+    # set(NVRTC_DLL ${CUDA_TOOLKIT_ROOT_DIR}/bin)
+    # link_directories( ${NVRTC_DLL} )
+    # message(WARNING ${NVRTC_LIB})
 	add_definitions(-DNVRTC_AVAILABLE)
 else()
     message( "CUDA version is ${CUDA_VERSION_MAJOR}, at least 7.0 is required for libnvrtc. Using system nvcc for runtime compilation." )
@@ -52,6 +57,8 @@ include_directories( "${CMAKE_CURRENT_LIST_DIR}/thirdparty/glm" )
 
 # We need add -DQT_WIDGETS_LIB when using QtWidgets in Qt 5.
 add_definitions(${Qt5Widgets_DEFINITIONS})
+
+add_definitions(-DDEBUG_GL)
 
 file(GLOB CPP_SOURCES 
 		${CMAKE_SOURCE_DIR}/src/main.cpp

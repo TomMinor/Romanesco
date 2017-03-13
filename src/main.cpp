@@ -149,6 +149,7 @@
 //	
 //}
 
+#define GL_DEBUG
 
 int main(int argc, char *argv[])
 {
@@ -159,7 +160,9 @@ int main(int argc, char *argv[])
 	QSurfaceFormat format;
 	format.setVersion(4, 3);
 	format.setProfile(QSurfaceFormat::CoreProfile);
+#ifdef GL_DEBUG
 	format.setOption(QSurfaceFormat::DebugContext);
+#endif
 	format.setDepthBufferSize(24);
 	format.setStencilBufferSize(8);
 	QSurfaceFormat::setDefaultFormat(format);

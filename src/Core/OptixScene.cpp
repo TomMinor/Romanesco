@@ -110,22 +110,33 @@ static int timeoutFunc()
 }
 
 
-OptixScene::OptixScene(unsigned int _width, unsigned int _height, QObject *_parent)
-    : QObject(_parent), m_time(0.0f), /* m_renderThread(this),*/ m_camera(nullptr)
+OptixScene::OptixScene(unsigned int _width, unsigned int _height, QOpenGLFunctions_4_3_Core* _gl, QObject *_parent)
+	: QObject(_parent), m_time(0.0f), /* m_renderThread(this),*/ m_camera(nullptr), m_gl(_gl)
 {
+#define GL_DEBUG
+#ifdef GL_DEBUG
+	m_debugLogger = new QOpenGLDebugLogger(this);
+	if (m_debugLogger->initialize())
+	{
+		qDebug() << "GL_DEBUG Debug Logger" << m_debugLogger << "\n";
+		connect(m_debugLogger, SIGNAL(messageLogged(QOpenGLDebugMessage)), this, SLOT(messageLogged(QOpenGLDebugMessage)));
+		m_debugLogger->startLogging();
+	}
+#endif // GL_DEBUG
+
     /// ================ Initialise Output Texture Buffer ======================
-    glGenTextures( 1, &m_texId );
-    glBindTexture( GL_TEXTURE_2D, m_texId);
+    m_gl->glGenTextures( 1, &m_texId );
+	m_gl->glBindTexture(GL_TEXTURE_2D, m_texId);
 
     // Change these to GL_LINEAR for super- or sub-sampling
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	m_gl->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	m_gl->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
     // GL_CLAMP_TO_EDGE for linear filtering, not relevant for nearest.
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	m_gl->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	m_gl->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-	glBindTexture(GL_TEXTURE_2D, 0);
+	m_gl->glBindTexture(GL_TEXTURE_2D, 0);
     /// --------------------------------------------------------------
 
     /// ================ Initialise Context ======================
@@ -156,6 +167,7 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height, QObject *_pare
     createLights();
     createWorld();
 //    createLightGeo();
+
     /// --------------------------------------------------------------
 
     m_context->validate();
@@ -174,6 +186,66 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height, QObject *_pare
     m_cameraMode = CameraTypes::PINHOLE;
 
     m_context->setTimeoutCallback( timeoutFunc, 1  );
+}
+
+
+void OptixScene::messageLogged(const QOpenGLDebugMessage &msg)
+{
+	QString error = "(OptixScene) ";
+
+	// Format based on severity
+	switch (msg.severity())
+	{
+	case QOpenGLDebugMessage::NotificationSeverity:
+		error += "--";
+		break;
+	case QOpenGLDebugMessage::HighSeverity:
+		error += "!!";
+		break;
+	case QOpenGLDebugMessage::MediumSeverity:
+		error += "!~";
+		break;
+	case QOpenGLDebugMessage::LowSeverity:
+		error += "~~";
+		break;
+	}
+
+	error += " (";
+
+	// Format based on source
+#define CASE(c) case QOpenGLDebugMessage::c: error += #c; break
+	switch (msg.source())
+	{
+		CASE(APISource);
+		CASE(WindowSystemSource);
+		CASE(ShaderCompilerSource);
+		CASE(ThirdPartySource);
+		CASE(ApplicationSource);
+		CASE(OtherSource);
+		CASE(InvalidSource);
+	}
+#undef CASE
+
+	error += " : ";
+
+	// Format based on type
+#define CASE(c) case QOpenGLDebugMessage::c: error += #c; break
+	switch (msg.type())
+	{
+		CASE(ErrorType);
+		CASE(DeprecatedBehaviorType);
+		CASE(UndefinedBehaviorType);
+		CASE(PortabilityType);
+		CASE(PerformanceType);
+		CASE(OtherType);
+		CASE(MarkerType);
+		CASE(GroupPushType);
+		CASE(GroupPopType);
+	}
+#undef CASE
+
+	error += ")";
+	qDebug() << qPrintable(error) << "\n" << qPrintable(msg.message()) << "\n";
 }
 
 void OptixScene::createBuffers()
@@ -199,13 +271,13 @@ optix::Buffer OptixScene::createGLOutputBuffer(RTformat _format, unsigned int _w
     optix::Buffer buffer;
 
     GLuint vbo = 0;
-    glGenBuffers(1, &vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	m_gl->glGenBuffers(1, &vbo);
+	m_gl->glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
     size_t element_size;
     m_context->checkError( rtuGetSizeForRTformat(_format, &element_size) );
-    glBufferData(GL_ARRAY_BUFFER, element_size * _width * _height, 0, GL_STREAM_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+	m_gl->glBufferData(GL_ARRAY_BUFFER, element_size * _width * _height, 0, GL_STREAM_DRAW);
+	m_gl->glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     buffer = m_context->createBufferFromGLBO(RT_BUFFER_OUTPUT, vbo);
     buffer->setFormat(_format);
@@ -330,9 +402,9 @@ void OptixScene::updateBufferSize(unsigned int _width, unsigned int _height)
             m_context[bufferName]->getBuffer()->setSize(_width, _height);
 
             m_context[bufferName]->getBuffer()->unregisterGLBuffer();
-            glBindBuffer(GL_PIXEL_UNPACK_BUFFER, m_context[bufferName]->getBuffer()->getGLBOId());
-            glBufferData(GL_PIXEL_UNPACK_BUFFER, m_context[bufferName]->getBuffer()->getElementSize() * _width * _height, 0, GL_STREAM_DRAW);
-            glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+			m_gl->glBindBuffer(GL_PIXEL_UNPACK_BUFFER, m_context[bufferName]->getBuffer()->getGLBOId());
+			m_gl->glBufferData(GL_PIXEL_UNPACK_BUFFER, m_context[bufferName]->getBuffer()->getElementSize() * _width * _height, 0, GL_STREAM_DRAW);
+			m_gl->glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
             m_context[bufferName]->getBuffer()->registerGLBuffer();
         }
     }
@@ -582,6 +654,7 @@ void OptixScene::createCameras()
     m_sampling_strategy = 0;
     m_context["sampling_stategy"]->setInt(m_sampling_strategy);
 
+	/// @todo Fix relative paths
     optix::Program ray_gen_program = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "pathtrace_camera" );
     optix::Program exception_program = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "exception" );
     m_context->setRayGenerationProgram(  static_cast<unsigned int>( CameraTypes::PINHOLE ) , ray_gen_program );
@@ -760,12 +833,12 @@ void OptixScene::createWorld()
 
             return make_float4( sdf.evalDistance(x), sdf.getTrap0(), sdf.getTrap1(), sdf.getTrap2() );
         }
+
             )";
 
             setGeometryHitProgram(defaultSrc);
 
-        setCurrentMaterial("pathtrace_diffuse");
-//    setCurrentMaterial("simple_diffuse");
+        //setCurrentMaterial("pathtrace_diffuse");
 }
 
 
@@ -994,31 +1067,31 @@ void OptixScene::updateGLBuffer()
 
     if (vboId)
     {
-        glBindTexture( GL_TEXTURE_2D, m_texId );
+		m_gl->glBindTexture(GL_TEXTURE_2D, m_texId);
 
         // send pbo to texture
-        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, vboId);
+		m_gl->glBindBuffer(GL_PIXEL_UNPACK_BUFFER, vboId);
 
         RTsize elementSize = buffer->getElementSize();
-        if      ((elementSize % 8) == 0) glPixelStorei(GL_UNPACK_ALIGNMENT, 8);
-        else if ((elementSize % 4) == 0) glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-        else if ((elementSize % 2) == 0) glPixelStorei(GL_UNPACK_ALIGNMENT, 2);
-        else                             glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+        if      ((elementSize % 8) == 0) m_gl->glPixelStorei(GL_UNPACK_ALIGNMENT, 8);
+		else if ((elementSize % 4) == 0) m_gl->glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+		else if ((elementSize % 2) == 0) m_gl->glPixelStorei(GL_UNPACK_ALIGNMENT, 2);
+		else                             m_gl->glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         {
             if(buffer_format == RT_FORMAT_UNSIGNED_BYTE4) {
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, buffer_width, buffer_height, 0, GL_BGRA, GL_UNSIGNED_BYTE, 0);
+				m_gl->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, buffer_width, buffer_height, 0, GL_BGRA, GL_UNSIGNED_BYTE, 0);
             } else if(buffer_format == RT_FORMAT_FLOAT4) {
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F_ARB, buffer_width, buffer_height, 0, GL_RGBA, GL_FLOAT, 0);
+				m_gl->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F_ARB, buffer_width, buffer_height, 0, GL_RGBA, GL_FLOAT, 0);
             } else if(buffer_format == RT_FORMAT_FLOAT3) {
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F_ARB, buffer_width, buffer_height, 0, GL_RGB, GL_FLOAT, 0);
+				m_gl->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F_ARB, buffer_width, buffer_height, 0, GL_RGB, GL_FLOAT, 0);
             } else if(buffer_format == RT_FORMAT_FLOAT) {
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE32F_ARB, buffer_width, buffer_height, 0, GL_LUMINANCE, GL_FLOAT, 0);
+				m_gl->glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE32F_ARB, buffer_width, buffer_height, 0, GL_LUMINANCE, GL_FLOAT, 0);
             } else {
                 assert(0 && "Unknown buffer format");
             }
         }
 
-        glBindBuffer( GL_PIXEL_UNPACK_BUFFER, 0 );
+		m_gl->glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
     }
     else
     {

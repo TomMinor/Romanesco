@@ -1,7 +1,7 @@
 #include "OptixSceneAdaptive.h"
 
-OptixSceneAdaptive::OptixSceneAdaptive(unsigned int _width, unsigned int _height)
-    : OptixScene(_width, _height)
+OptixSceneAdaptive::OptixSceneAdaptive(unsigned int _width, unsigned int _height, QOpenGLFunctions_4_3_Core* _gl)
+    : OptixScene(_width, _height, _gl)
 {
     m_cameraType = CameraType::AdaptivePinhole;
 

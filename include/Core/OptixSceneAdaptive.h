@@ -1,6 +1,8 @@
 #ifndef OPTIXSCENEADAPTIVE_H
 #define OPTIXSCENEADAPTIVE_H
 
+#include <QOpenGLFunctions_4_3_core>
+
 #include "OptixScene.h"
 
 class OptixSceneAdaptive : public OptixScene
@@ -12,7 +14,7 @@ class OptixSceneAdaptive : public OptixScene
     };
 
 public:
-    OptixSceneAdaptive(unsigned int _width, unsigned int _height);
+    OptixSceneAdaptive(unsigned int _width, unsigned int _height, QOpenGLFunctions_4_3_Core* _gl);
     ~OptixSceneAdaptive();
 
 private:

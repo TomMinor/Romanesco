@@ -1,11 +1,12 @@
 #version 150
 
-in vec3 position;
-//in vec2 texcoord;
+in vec3 vtxPos;
+in vec2 vtxUV;
 
-//out vec2 texcoord;
+out vec2 texcoord;
 
 void main(void)
 {
-  gl_Position = vec4(position, 1.0);
+	texcoord = vtxUV;
+	gl_Position = vec4(vtxPos, 1.0);
 }
