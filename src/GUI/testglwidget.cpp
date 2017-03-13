@@ -133,13 +133,13 @@ void TestGLWidget::initializeGL()
 
     m_program = new QOpenGLShaderProgram(this);
 
-	QString vtxShaderPath = "D:/dev/RomanescoRenderer/shaders/viewport.vert";
+	QString vtxShaderPath = "shaders/viewport.vert";
 	if (!m_program->addShaderFromSourceFile(QOpenGLShader::Vertex, vtxShaderPath))
 	{
 		throw std::runtime_error(qPrintable("Couldn't open vertex shader: " + vtxShaderPath));
 	}
     
-	QString fragShaderPath = "D:/dev/RomanescoRenderer/shaders/viewport.vert";
+	QString fragShaderPath = "shaders/viewport.frag";
 	if (!m_program->addShaderFromSourceFile(QOpenGLShader::Fragment, fragShaderPath))
 	{
 		throw std::runtime_error(qPrintable("Couldn't open fragment shader: " + fragShaderPath));
