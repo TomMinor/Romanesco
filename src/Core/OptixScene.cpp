@@ -46,6 +46,8 @@
 //#include <ImageLoader.h>
 
 #include "stringutilities.h"
+#include "sutil.h"
+#include <ImageLoader.h>
 
 ///@todo
 /// * Split this into a simple base class and derive from that, OptixScene -> OptixSceneAdaptive -> OptixScenePathTracer
@@ -113,7 +115,7 @@ static int timeoutFunc()
 OptixScene::OptixScene(unsigned int _width, unsigned int _height, QOpenGLFunctions_4_3_Core* _gl, QObject *_parent)
 	: QObject(_parent), m_time(0.0f), /* m_renderThread(this),*/ m_camera(nullptr), m_gl(_gl)
 {
-#define GL_DEBUG
+//#define GL_DEBUG
 #ifdef GL_DEBUG
 	m_debugLogger = new QOpenGLDebugLogger(this);
 	if (m_debugLogger->initialize())
@@ -141,6 +143,7 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height, QOpenGLFunctio
 
     /// ================ Initialise Context ======================
     m_context = optix::Context::create();
+
     m_context->setRayTypeCount( 3 );
     m_context->setEntryPointCount( 1 );
     m_context->setStackSize( 1800 );
@@ -170,8 +173,17 @@ OptixScene::OptixScene(unsigned int _width, unsigned int _height, QOpenGLFunctio
 
     /// --------------------------------------------------------------
 
-    m_context->validate();
-    m_context->compile();
+	try
+	{
+		m_context->validate();
+		m_context->compile();
+	}
+	catch (optix::Exception &e)
+	{
+		qWarning() << e.what();
+		throw e;
+	}
+    
 
     m_progressiveTimeout = 10;
 
@@ -668,7 +680,9 @@ void OptixScene::createCameras()
     m_context->setMissProgram( static_cast<unsigned int>(PathTraceRay::CAMERA), m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "envmap_miss" ) );
 
     const optix::float3 default_color = m_context["bg_color"]->getFloat3();
-//    m_context["envmap"]->setTextureSampler( loadTexture( m_context, qgetenv("HOME").toStdString() +  + "/src/optix/SDK/tutorial/data/CedarCity.hdr", default_color) );
+	/// @todo Fix absolute path
+	m_context["envmap"]->setTextureSampler(loadTexture(m_context, "D:/Optix/OptiX SDK 3.8.0/SDK/tutorial/data/CedarCity.hdr", default_color));
+    //m_context["envmap"]->setTextureSampler( loadTexture( m_context, qgetenv("HOME").toStdString() +  + "/src/optix/SDK/tutorial/data/CedarCity.hdr", default_color) );
 //    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/tom/src/Fragmentarium/Fragmentarium-Source/Examples/Include/Ditch-River_2k.hdr", default_color) );
 //    m_context["envmap"]->setTextureSampler( loadTexture( m_context,  qgetenv("HOME").toStdString() + "/Downloads/Milkyway/Milkyway_small.hdr", default_color) );
 //    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/i7245143/Pictures/hdri/hdrmaps_com_free_050_half.hdr", default_color) );
@@ -737,17 +751,15 @@ void OptixScene::createWorld()
     m_geoInstance->setGeometry(SDF_scene);
 
 
+	/// @todo Sort out this material stuff, why was some of it disabled
+    optix::Material diffuseMat = m_context->createMaterial();
+	optix::Program diffuse_closestHit = m_context->createProgramFromPTXFile("ptx/menger.cu.ptx", "pathtrace_diffuse");
+    diffuseMat->setClosestHitProgram( static_cast<unsigned int>(PathTraceRay::CAMERA), diffuse_closestHit );
 
+	optix::Program diffuse_anyHit = m_context->createProgramFromPTXFile("ptx/menger.cu.ptx", "shadow");
+    diffuseMat->setAnyHitProgram( static_cast<unsigned int>(PathTraceRay::SHADOW), diffuse_anyHit );
 
-
-//    Material diffuseMat = m_context->createMaterial();
-//    Program diffuse_closestHit = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "pathtrace_diffuse" );
-//    diffuseMat->setClosestHitProgram( static_cast<unsigned int>(PathTraceRay::CAMERA), diffuse_closestHit );
-
-//    Program diffuse_anyHit = m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "shadow" );
-//    diffuseMat->setAnyHitProgram( static_cast<unsigned int>(PathTraceRay::SHADOW), diffuse_anyHit );
-
-//    setMaterial(m_geoInstance, diffuseMat, "diffuse_color", white);
+    setMaterial(m_geoInstance, diffuseMat, "diffuse_color", optix::make_float3(1.0,1.0,1.0) );
 
 	optix::GeometryGroup m_geometrygroup = m_context->createGeometryGroup();
     m_geometrygroup->addChild(m_geoInstance);

@@ -21,6 +21,9 @@
 
 #pragma once
 
+#ifdef _WIN32
+#define NOMINMAX
+#endif
 #include <optixu/optixpp_namespace.h>
 #include <sutil.h>
 #include <string>
@@ -35,6 +38,6 @@
 // Creates a TextureSampler object for the given image file.  If filename is 
 // empty or the image loader fails, a 1x1 texture is created with the provided 
 // default texture color.
-SUTILAPI optix::TextureSampler loadTexture( optix::Context context,
+optix::TextureSampler loadTexture( optix::Context context,
                                             const std::string& filename,
                                             const optix::float3& default_color );

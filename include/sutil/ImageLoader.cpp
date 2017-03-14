@@ -20,7 +20,6 @@
  */
 
 #include <ImageLoader.h>
-#include <PPMLoader.h>
 #include <HDRLoader.h>
 #include <fstream>
 
@@ -31,7 +30,7 @@
 //
 //-----------------------------------------------------------------------------
 
-SUTILAPI optix::TextureSampler loadTexture( optix::Context context,
+optix::TextureSampler loadTexture( optix::Context context,
                                             const std::string& filename,
                                             const optix::float3& default_color )
 {
@@ -45,6 +44,6 @@ SUTILAPI optix::TextureSampler loadTexture( optix::Context context,
   if(IsHDR)
     return loadHDRTexture(context, filename, default_color);
   else
-    return loadPPMTexture(context, filename, default_color);
+    return 0;
 }
 

@@ -16,7 +16,7 @@
 //#include <cuda.h>
 //#include <cuda_runtime.h>
 
-#include <Mouse.h>
+//#include <Mouse.h>
 
 #include "commonStructs.h"
 #include "PinholeCamera.h"

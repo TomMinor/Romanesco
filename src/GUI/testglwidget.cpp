@@ -97,7 +97,7 @@ void TestGLWidget::initializeGL()
 {
     initializeOpenGLFunctions();
 
-#define GL_DEBUG
+//#define GL_DEBUG
 #ifdef GL_DEBUG
 	m_debugLogger = new QOpenGLDebugLogger(this);
 	if (m_debugLogger->initialize())
@@ -126,8 +126,8 @@ void TestGLWidget::initializeGL()
 
     m_optixScene = nullptr;
     
-	//m_optixScene = new OptixScene(width(), height(), (QOpenGLFunctions_4_3_Core*)this );
- //   m_optixScene->setCameraType( OptixScene::CameraTypes::PINHOLE );
+	m_optixScene = new OptixScene(width(), height(), (QOpenGLFunctions_4_3_Core*)this );
+    m_optixScene->setCameraType( OptixScene::CameraTypes::PINHOLE );
 
 //    m_optixScene->setCurrentMaterial( "pathtrace_diffuse" );
 

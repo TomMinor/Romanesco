@@ -4,6 +4,8 @@
 #include "RuntimeCompiler.h"
 #include "macrohelpers.h"
 
+
+/// @todo Split runtime nvrtc and nvcc into separate classes that are dynamically chosen on program startup
 #ifndef NVRTC_AVAILABLE
 #include <string>
 #include <iostream>
@@ -41,7 +43,7 @@ RuntimeCompiler::RuntimeCompiler(const std::string &_name, const std::string _so
     // CUDA_INCLUDE_PATH include folder is set in the .pro file at compile time for now
     m_opts.push_back("-I" MACROTOSTRING(CUDA_INCLUDE_PATH)); // compiler automatically concatenates the string and macro
 	/// @todo Get cmake to generate set the CUDA include path
-	m_opts.push_back("-IC:/Program\ Files/NVIDIA\ GPU\ Computing\ Toolkit/CUDA/v7.5/include" ); // compiler automatically concatenates the string and macro
+	m_opts.push_back("-IC:/Program\ Files/NVIDIA\ GPU\ Computing\ Toolkit/CUDA/v7.0/include" ); // compiler automatically concatenates the string and macro
 
     m_result = nullptr;
 
@@ -87,6 +89,7 @@ void RuntimeCompiler::compile()
         nvcc_opts += opt + " ";
     }
 
+	/// @todo Cross platform tmp
     static const std::string tmpFile = "/tmp/out.cu";
     std::ofstream cudaFile(tmpFile, std::ofstream::out );
     cudaFile << m_source;
