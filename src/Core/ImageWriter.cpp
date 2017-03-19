@@ -76,8 +76,50 @@ ImageWriter::~ImageWriter()
 //    }
 }
 
-bool ImageWriter::write(std::vector<ImageWriter::Pixel> _pixels)
+std::string layerChannelString(std::string _layerName, std::string _channel)
 {
+	return (_layerName.size() == 0) ? _channel : _layerName + "." + _channel;
+}
+
+
+bool ImageWriter::write(std::vector<Romanesco::Channel> _channels)
+{
+	Imf::Header header(_channels[0].m_width, _channels[0].m_height);
+
+	Imf::ChannelList& channels = header.channels();
+	Imf::FrameBuffer framebuffer;
+
+	for (unsigned int i = 0; i < _channels.size(); i++)
+	{
+		Romanesco::Channel& _image = _channels[i];
+
+		std::string name_r = layerChannelString(_image.m_name, "R");
+		std::string name_g = layerChannelString(_image.m_name, "G");
+		std::string name_b = layerChannelString(_image.m_name, "B");
+		std::string name_a = layerChannelString(_image.m_name, "A");
+
+		channels.insert(name_r, Imf::Channel(Imf::HALF));
+		channels.insert(name_g, Imf::Channel(Imf::HALF));
+		channels.insert(name_b, Imf::Channel(Imf::HALF));
+		channels.insert(name_a, Imf::Channel(Imf::HALF));
+
+		char* channel_rPtr = (char*)&(_image.m_pixels[0].r);
+		char* channel_gPtr = (char*)&(_image.m_pixels[0].g);
+		char* channel_bPtr = (char*)&(_image.m_pixels[0].b);
+		char* channel_aPtr = (char*)&(_image.m_pixels[0].a);
+
+		unsigned int xstride = sizeof(half) * 4;
+		unsigned int ystride = sizeof(half) * 4 * _image.m_width;
+
+		framebuffer.insert(name_r, Imf::Slice(Imf::HALF, channel_rPtr, xstride, ystride));
+		framebuffer.insert(name_g, Imf::Slice(Imf::HALF, channel_gPtr, xstride, ystride));
+		framebuffer.insert(name_b, Imf::Slice(Imf::HALF, channel_bPtr, xstride, ystride));
+		framebuffer.insert(name_a, Imf::Slice(Imf::HALF, channel_aPtr, xstride, ystride));
+	}
+
+	Imf::OutputFile file(m_fileName.c_str(), header);
+	file.setFrameBuffer(framebuffer);
+	file.writePixels(_channels[0].m_height);
 //    m_outFile = nullptr;
 //    m_outFile = OpenImageIO::ImageOutput::create(m_fileName);
 //

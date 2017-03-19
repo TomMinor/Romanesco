@@ -140,6 +140,7 @@ file(GLOB HEADERS_CORE
     ${CMAKE_SOURCE_DIR}/include/Core/ImageWriter.h
     ${CMAKE_SOURCE_DIR}/include/Core/NodeParser.h
     ${CMAKE_SOURCE_DIR}/include/Core/OpenGlWindow.h
+    ${CMAKE_SOURCE_DIR}/include/Core/OptixHeaders.h 
     ${CMAKE_SOURCE_DIR}/include/Core/OptixScene.h
     ${CMAKE_SOURCE_DIR}/include/Core/OptixSceneAdaptive.h
     ${CMAKE_SOURCE_DIR}/include/Core/PinholeCamera.h

@@ -18,21 +18,6 @@
 
 //#include <OpenImageIO\imageio.h>
 
-#include <cuda_runtime.h>
-#include <cuda.h>
-
-
-#ifdef _WIN32
-#define NOMINMAX
-#endif
-#include <optix.h>
-#include <optixu/optixu.h>
-#include <optixu/optixu_math_namespace.h>
-#include <optixu/optixu_matrix_namespace.h>
-#include <optixu/optixpp_namespace.h>
-
-
-
 #include <iostream>
 #include <vector>
 #include <QDebug>
@@ -45,7 +30,9 @@
 
 
 /* TODO
-
+ * Fix nvrtc on linux
+ * FIx optix crash
+ * 
  * Move image code back to OpenEXR
  * Make all resource paths relative (to what)
  * Add nvcc building to cmake

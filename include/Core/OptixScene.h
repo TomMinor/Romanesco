@@ -1,20 +1,7 @@
 #ifndef OPTIXSCENE_H
 #define OPTIXSCENE_H
 
-#ifdef _WIN32
-#define NOMINMAX
-#endif
-#include <optix.h>
-#include <sutil.h>
-#include <optixu/optixu.h>
-#include <optixu/optixu_math_namespace.h>
-#include <optixu/optixu_matrix_namespace.h>
-#include <optixu/optixpp_namespace.h>
-
-//using namespace optix;
-
-//#include <cuda.h>
-//#include <cuda_runtime.h>
+#include "OptixHeaders.h"
 
 //#include <Mouse.h>
 

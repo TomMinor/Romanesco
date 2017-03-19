@@ -5,6 +5,7 @@
 #include <GL/gl.h>
 #include <GL/glu.h>
 
+
 #include "ImageWriter.h"
 #include "OptixScene.h"
 #include "RuntimeCompiler.h"
@@ -972,11 +973,10 @@ float* OptixScene::getBufferContents(std::string _name, RTsize* _elementSize, RT
     (*_width) = buffer_width;
     (*_height) = buffer_height;
 
-    //RTsize bufferSize = buffer_width * buffer_height;
-    //float* hostPtr = new float[buffer->getElementSize() * bufferSize];
-	float* hostPtr = nullptr;
-    //CUdeviceptr devicePtr = buffer->getDevicePointer( 0 );
-	//cudaMemcpy((void*)hostPtr, (void*)devicePtr, buffer->getElementSize() * bufferSize, cudaMemcpyDeviceToHost);
+    RTsize bufferSize = buffer_width * buffer_height;
+    float* hostPtr = new float[buffer->getElementSize() * bufferSize];
+  //  CUdeviceptr devicePtr = buffer->getDevicePointer( 0 );
+//	cudaMemcpy((void*)hostPtr, (void*)devicePtr, buffer->getElementSize() * bufferSize, cudaMemcpyDeviceToHost);
 //    qDebug() << buffer->getElementSize() * bufferSize;
 
     return hostPtr;
@@ -1003,15 +1003,25 @@ bool OptixScene::saveBuffersToDisk(std::string _filename)
     float* iteration = getBufferContents("output_buffer_iteration");
     float* trap = getBufferContents("output_buffer_trap");
 
+	assert(rgba && "rgba buffer is null");
+	assert(normal && "normal buffer is null");
+	assert(world && "world buffer is null");
+	assert(diffuse && "diffuse buffer is null");
+	assert(depth && "depth buffer is null");
+	assert(iteration && "iteration buffer is null");
+	assert(trap && "trap buffer is null");
+
     RTsize buffer_width, buffer_height;
     m_context["output_buffer"]->getBuffer()->getSize(buffer_width, buffer_height);
     const unsigned int totalPixels = static_cast<unsigned int>(buffer_width) * static_cast<unsigned int>(buffer_height);
 
-    std::vector<ImageWriter::Pixel> pixels;
-    pixels.reserve(totalPixels);
+	std::vector<Romanesco::Channel> channels;
+	//channels.reserve(totalPixels);
+
+	channels.push_back(Romanesco::Channel(rgba, static_cast<unsigned int>(buffer_width), static_cast<unsigned int>(buffer_height)));
 
     ///@Todo move this into one loop, messing up my pointer arithmetic when i do so right now
-    for(unsigned int i = 0; i < totalPixels * 4; i+=4)
+    /*for(unsigned int i = 0; i < totalPixels * 4; i+=4)
     {
         ImageWriter::Pixel tmp;
         tmp.r = rgba[i + 0];
@@ -1020,33 +1030,34 @@ bool OptixScene::saveBuffersToDisk(std::string _filename)
         tmp.a = rgba[i + 3];
 
         pixels.push_back(tmp);
-    }
+    }*/
 
-    for(unsigned int j = 0; j < totalPixels; j++)
-    {
-        pixels[j].x_nrm = normal[3*j + 0];
-        pixels[j].y_nrm = normal[3*j + 1];
-        pixels[j].z_nrm = normal[3*j + 2];
+	/// @todo EXR channels
+    //for(unsigned int j = 0; j < totalPixels; j++)
+    //{
+    //    pixels[j].x_nrm = normal[3*j + 0];
+    //    pixels[j].y_nrm = normal[3*j + 1];
+    //    pixels[j].z_nrm = normal[3*j + 2];
 
-        pixels[j].x_pos = world[3*j + 0];
-        pixels[j].y_pos = world[3*j + 1];
-        pixels[j].z_pos = world[3*j + 2];
+    //    pixels[j].x_pos = world[3*j + 0];
+    //    pixels[j].y_pos = world[3*j + 1];
+    //    pixels[j].z_pos = world[3*j + 2];
 
-        pixels[j].trapR = trap[3*j + 0];
-        pixels[j].trapG = trap[3*j + 1];
-        pixels[j].trapB = trap[3*j + 2];
+    //    pixels[j].trapR = trap[3*j + 0];
+    //    pixels[j].trapG = trap[3*j + 1];
+    //    pixels[j].trapB = trap[3*j + 2];
 
-        pixels[j].diffuseR = diffuse[3*j +0];
-        pixels[j].diffuseG = diffuse[3*j +1];
-        pixels[j].diffuseB = diffuse[3*j +2];
-    }
+    //    pixels[j].diffuseR = diffuse[3*j +0];
+    //    pixels[j].diffuseG = diffuse[3*j +1];
+    //    pixels[j].diffuseB = diffuse[3*j +2];
+    //}
 
-    for(unsigned int k = 0; k < totalPixels; k++)
-    {
-        pixels[k].z = depth[k];
+    //for(unsigned int k = 0; k < totalPixels; k++)
+    //{
+    //    pixels[k].z = depth[k];
 
-        pixels[k].iteration = iteration[k];
-    }
+    //    pixels[k].iteration = iteration[k];
+    //}
 
 
     delete [] diffuse;
@@ -1062,7 +1073,7 @@ bool OptixScene::saveBuffersToDisk(std::string _filename)
     trap = nullptr;
 
     ImageWriter image(_filename, buffer_width, buffer_height);
-    return image.write(pixels);
+    return image.write(channels);
 }
 
 void OptixScene::updateGLBuffer()

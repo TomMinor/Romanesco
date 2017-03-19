@@ -3,72 +3,69 @@
 
 #include <vector>
 
-//#ifdef __WIN32
+#ifdef __WIN32
 #undef max
 #undef min
-//#endif
-//#include <OpenImageIO/imageio.h>
+#endif
+///@todo Why does this have to be defined?
+#define OPENEXR_DLL
 #include <OpenEXR/ImfRgba.h>
 #include <OpenEXR/ImfRgbaFile.h>
 #include <OpenEXR/ImfChannelList.h>
 #include <OpenEXR/ImfFrameBuffer.h>
 #include <OpenEXR/ImfOutputFile.h>
 #include <OpenEXR/half.h>
+#undef OPENEXR_DLL
 
+namespace Romanesco
+{
+	struct Channel
+	{
+	public:
+		Channel(float* _pixels, unsigned int _width, unsigned int _height, std::string _name = "")
+			: m_width(_width), m_height(_height), m_name(_name)
+		{
+			m_pixels = new Imf::Rgba[m_width * m_height];
+			std::fill(m_pixels, m_pixels + (m_width * m_height), Imf::Rgba(1.f, 1.f, 1.f, 1.f));
+
+			for (int i = 0; i < 4 * m_width * m_height; i += 4)
+			{
+				//unsigned int idx = i + (j * m_width);
+
+				float R = _pixels[i];
+				float G = _pixels[i + 1];
+				float B = _pixels[i + 2];
+				float A = _pixels[i + 3];
+
+				//setPixel(i, j, Imf::Rgba(R, G, B, A) );
+				m_pixels[i / 4] = Imf::Rgba(R, G, B, A);
+			}
+		}
+
+		void setPixel(int x, int y, Imf::Rgba _val)
+		{
+			m_pixels[x + (y * m_width)] = _val;
+		}
+
+		~Channel()
+		{
+			//delete m_pixels;
+		}
+
+		//private:
+		Imf::Rgba* m_pixels;
+		unsigned int m_width, m_height;
+		std::string m_name;
+	};
+}
 
 class ImageWriter
 {
 public:
-    struct Pixel
-    {
-        ///
-        /// \brief Default channels, we'll always need these
-        ///
-		float r, g, b, a;
-		//half r, g, b, a;
-
-        ///
-        /// \brief z depth
-        ///
-        float z;
-		//half z;
-
-        ///
-        /// \brief trapR 3 orbit trap channels
-        ///
-        float trapR, trapB, trapG;
-		//half trapR, trapB, trapG;
-
-        ///
-        /// \brief iteration count
-        ///
-        float iteration;
-		//half iteration;
-
-        ///
-        /// \brief x_nrm
-        ///
-        float x_nrm, y_nrm, z_nrm;
-		//half x_nrm, y_nrm, z_nrm;
-
-        ///
-        /// \brief x_pos
-        ///y
-        float x_pos, y_pos, z_pos;
-		//half x_pos, y_pos, z_pos;
-
-        ///
-        /// \brief diffuseR
-        ///
-        float diffuseR, diffuseG, diffuseB;
-		//half diffuseR, diffuseG, diffuseB;
-
-    };
-
     ImageWriter(std::string _filename, unsigned int _width, unsigned int _height);
     ~ImageWriter();
 
-    bool write(std::vector<Pixel> _pixels);
+	bool write(std::vector<Romanesco::Channel> _channels);
 
     std::string getFileName() { return m_fileName; }
 
