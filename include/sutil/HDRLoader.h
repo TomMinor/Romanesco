@@ -21,7 +21,7 @@
 
 #pragma once
 
-#include <optixu/optixpp_namespace.h>
+#include "OptixHeaders.h"
 #include <sutil.h>
 #include <string>
 #include <iosfwd>
@@ -35,7 +35,7 @@
 // Creates a TextureSampler object for the given HDR file.  If filename is 
 // empty or HDRLoader fails, a 1x1 texture is created with the provided default
 // texture color.
-SUTILAPI optix::TextureSampler loadHDRTexture( optix::Context context,
+optix::TextureSampler loadHDRTexture( optix::Context context,
                                                const std::string& hdr_filename,
                                                const optix::float3& default_color );
 
@@ -49,13 +49,13 @@ SUTILAPI optix::TextureSampler loadHDRTexture( optix::Context context,
 class HDRLoader
 {
 public:
-  SUTILAPI HDRLoader( const std::string& filename );
-  SUTILAPI ~HDRLoader();
+  HDRLoader( const std::string& filename );
+  ~HDRLoader();
 
-  SUTILAPI bool           failed()const;
-  SUTILAPI unsigned int   width()const;
-  SUTILAPI unsigned int   height()const;
-  SUTILAPI float*         raster()const;
+  bool           failed()const;
+  unsigned int   width()const;
+  unsigned int   height()const;
+  float*         raster()const;
 
 private:
   unsigned int   m_nx;

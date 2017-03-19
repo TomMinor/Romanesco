@@ -1,6 +1,9 @@
 #ifndef OPTIXHEADERS_H
 #define OPTIXHEADERS_H
 
+#include <cuda.h>
+#include <cuda_runtime.h>
+
 #ifdef _WIN32
 #define NOMINMAX
 #endif
@@ -12,8 +15,5 @@
 #include <optixu/optixpp_namespace.h>
 
 //using namespace optix;
-
-//#include <cuda.h>
-//#include <cuda_runtime.h>
 
 #endif

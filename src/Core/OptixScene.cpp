@@ -463,12 +463,12 @@ optix::GeometryInstance createAreaLight(optix::Context* m_context,
   parallelogram->setIntersectionProgram( *m_pgram_intersection );
   parallelogram->setBoundingBoxProgram( *m_pgram_bounding_box );
 
-  optix::float3 normal = optix::normalize(cross(offset1, offset2));
-  float d = dot( normal, anchor );
+  optix::float3 normal = optix::normalize(optix::cross(offset1, offset2));
+  float d = optix::dot(normal, anchor);
   optix::float4 plane = optix::make_float4(normal, d);
 
-  optix::float3 v1 = offset1 / dot(offset1, offset1);
-  optix::float3 v2 = offset2 / dot(offset2, offset2);
+  optix::float3 v1 = offset1 / optix::dot(offset1, offset1);
+  optix::float3 v2 = offset2 / optix::dot(offset2, offset2);
 
   parallelogram["plane"]->setFloat( plane );
   parallelogram["anchor"]->setFloat( anchor );
@@ -543,7 +543,7 @@ void OptixScene::createLights()
         //    light.v2       = make_float3( 0.0f, 0.0f, 105.0f);
 		light.v1 = optix::make_float3(v1.x, v1.y, v1.z);
 		light.v2 = optix::make_float3(v2.x, v2.y, v2.z);
-		light.normal = optix::normalize(cross(light.v1, light.v2));
+		light.normal = optix::normalize(optix::cross(light.v1, light.v2));
 		light.emission = optix::make_float3(3.0f);
 
         m_lights.push_back(light);
@@ -565,7 +565,7 @@ void OptixScene::createLights()
         //    light.v2       = make_float3( 0.0f, 0.0f, 105.0f);
 		light.v1 = optix::make_float3(v1.x, v1.y, v1.z);
 		light.v2 = optix::make_float3(v2.x, v2.y, v2.z);
-		light.normal = optix::normalize(cross(light.v1, light.v2));
+		light.normal = optix::normalize(optix::cross(light.v1, light.v2));
 		light.emission = optix::make_float3(20.0f, 10.0f, 2.5f);
 
         m_lights.push_back(light);
@@ -587,7 +587,7 @@ void OptixScene::createLights()
 //      light.v2       = optix::make_float3( 0.0f, 0.0f, 105.0f );
 		light.v1 = optix::make_float3(v1.x, v1.y, v1.z);
 		light.v2 = optix::make_float3(v2.x, v2.y, v2.z);
-		light.normal = optix::normalize(cross(light.v1, light.v2));
+		light.normal = optix::normalize(optix::cross(light.v1, light.v2));
 		light.emission = optix::make_float3(.5f) * 13.0f;
 
         m_lights.push_back(light);
@@ -609,7 +609,7 @@ void OptixScene::createLights()
 //      light.v2       = optix::make_float3( 0.0f, 0.0f, 105.0f );
 		light.v1 = optix::make_float3(v1.x, v1.y, v1.z);
 		light.v2 = optix::make_float3(v2.x, v2.y, v2.z);
-		light.normal = optix::normalize(cross(light.v1, light.v2));
+		light.normal = optix::normalize(optix::cross(light.v1, light.v2));
 		light.emission = optix::make_float3(.5f) * 13.0f;
 
         m_lights.push_back(light);
@@ -975,8 +975,8 @@ float* OptixScene::getBufferContents(std::string _name, RTsize* _elementSize, RT
 
     RTsize bufferSize = buffer_width * buffer_height;
     float* hostPtr = new float[buffer->getElementSize() * bufferSize];
-  //  CUdeviceptr devicePtr = buffer->getDevicePointer( 0 );
-//	cudaMemcpy((void*)hostPtr, (void*)devicePtr, buffer->getElementSize() * bufferSize, cudaMemcpyDeviceToHost);
+    CUdeviceptr devicePtr = buffer->getDevicePointer( 0 );
+	cudaMemcpy((void*)hostPtr, (void*)devicePtr, buffer->getElementSize() * bufferSize, cudaMemcpyDeviceToHost);
 //    qDebug() << buffer->getElementSize() * bufferSize;
 
     return hostPtr;
@@ -1018,7 +1018,15 @@ bool OptixScene::saveBuffersToDisk(std::string _filename)
 	std::vector<Romanesco::Channel> channels;
 	//channels.reserve(totalPixels);
 
-	channels.push_back(Romanesco::Channel(rgba, static_cast<unsigned int>(buffer_width), static_cast<unsigned int>(buffer_height)));
+	unsigned int width  = static_cast<unsigned int>(buffer_width);
+	unsigned int height = static_cast<unsigned int>(buffer_height);
+	channels.push_back(Romanesco::Channel(rgba, width, height));
+	//channels.push_back(Romanesco::Channel(normal, width, height, "nrm"));
+	//channels.push_back(Romanesco::Channel(world, width, height, "P"));
+	//channels.push_back(Romanesco::Channel(diffuse, width, height, "diffuse"));
+	//channels.push_back(Romanesco::Channel(depth, width, height, "z"));
+	//channels.push_back(Romanesco::Channel(iteration, width, height, "iter"));
+	//channels.push_back(Romanesco::Channel(trap, width, height, "trap"));
 
     ///@Todo move this into one loop, messing up my pointer arithmetic when i do so right now
     /*for(unsigned int i = 0; i < totalPixels * 4; i+=4)

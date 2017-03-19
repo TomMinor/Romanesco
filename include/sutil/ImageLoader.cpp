@@ -19,6 +19,7 @@
  * SUCH DAMAGES
  */
 
+#include "OptixHeaders.h"
 #include <ImageLoader.h>
 #include <HDRLoader.h>
 #include <fstream>

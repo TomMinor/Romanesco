@@ -21,10 +21,7 @@
 
 #pragma once
 
-#ifdef _WIN32
-#define NOMINMAX
-#endif
-#include <optixu/optixpp_namespace.h>
+#include "OptixHeaders.h"
 #include <sutil.h>
 #include <string>
 #include <iosfwd>

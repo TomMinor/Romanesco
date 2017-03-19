@@ -105,10 +105,10 @@ void PinholeCamera::setParameters(optix::float3 eye_in, optix::float3 lookat_in,
 void PinholeCamera::setup()
 {
   lookdir = assignWithCheck( lookdir, lookat-eye );  // do not normalize lookdir -- implies focal length
-  float lookdir_len = length( lookdir );
-  up = assignWithCheck( up, normalize(up));
-  camera_u = assignWithCheck( camera_u, normalize( cross(lookdir, up) ) );
-  camera_v = assignWithCheck( camera_v, normalize( cross(camera_u, lookdir) ) );
+  float lookdir_len = optix::length(lookdir);
+  up = assignWithCheck(up, optix::normalize(up));
+  camera_u = assignWithCheck(camera_u, optix::normalize(optix::cross(lookdir, up)));
+  camera_v = assignWithCheck(camera_v, optix::normalize(optix::cross(camera_u, lookdir)));
   float ulen = lookdir_len * tanf(DtoR(hfov*0.5f));
   camera_u = assignWithCheck( camera_u, camera_u * ulen );
   float vlen = lookdir_len * tanf(DtoR(vfov*0.5f));
@@ -190,11 +190,11 @@ optix::float3 projectToSphere( float x, float y, float radius )
 
 optix::Matrix4x4 rotationMatrix( const optix::float3& _to, const optix::float3& _from )
 {
-    optix::float3 from = normalize( _from );
-    optix::float3 to   = normalize( _to );
+	optix::float3 from = optix::normalize(_from);
+	optix::float3 to = optix::normalize(_to);
 
-    optix::float3 v = cross(from, to);
-    float  e = dot(from, to);
+	optix::float3 v = optix::cross(from, to);
+	float  e = optix::dot(from, to);
     if ( e > 1.0f-1.e-9f ) {
         return optix::Matrix4x4::identity();
     } else {
@@ -341,9 +341,9 @@ void PinholeCamera::transform( const optix::Matrix4x4& trans )
 {
   optix::float3 cen = lookat;         // TODO: Add logic for various rotation types (eg, flythrough)
 
-  optix::Matrix4x4 frame = initWithBasis( normalize(camera_u),
-                                         normalize(camera_v),
-                                         normalize(-lookdir),
+  optix::Matrix4x4 frame = initWithBasis(optix::normalize(camera_u),
+										 optix::normalize(camera_v),
+										 optix::normalize(-lookdir),
                                          cen );
   optix::Matrix4x4 frame_inv = inverse( frame );
 

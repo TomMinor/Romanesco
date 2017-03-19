@@ -76,6 +76,7 @@ ImageWriter::~ImageWriter()
 //    }
 }
 
+/// @todo Move this into Channel class
 std::string layerChannelString(std::string _layerName, std::string _channel)
 {
 	return (_layerName.size() == 0) ? _channel : _layerName + "." + _channel;
@@ -98,10 +99,12 @@ bool ImageWriter::write(std::vector<Romanesco::Channel> _channels)
 		std::string name_b = layerChannelString(_image.m_name, "B");
 		std::string name_a = layerChannelString(_image.m_name, "A");
 
-		channels.insert(name_r, Imf::Channel(Imf::HALF));
-		channels.insert(name_g, Imf::Channel(Imf::HALF));
-		channels.insert(name_b, Imf::Channel(Imf::HALF));
-		channels.insert(name_a, Imf::Channel(Imf::HALF));
+		qDebug() << qPrintable(name_r.c_str()) << qPrintable(name_g.c_str()) << qPrintable(name_b.c_str()) << qPrintable(name_a.c_str());
+
+		channels.insert(name_r, Imf::Channel(Imf::FLOAT));
+		channels.insert(name_g, Imf::Channel(Imf::FLOAT));
+		channels.insert(name_b, Imf::Channel(Imf::FLOAT));
+		channels.insert(name_a, Imf::Channel(Imf::FLOAT));
 
 		char* channel_rPtr = (char*)&(_image.m_pixels[0].r);
 		char* channel_gPtr = (char*)&(_image.m_pixels[0].g);
@@ -111,10 +114,10 @@ bool ImageWriter::write(std::vector<Romanesco::Channel> _channels)
 		unsigned int xstride = sizeof(half) * 4;
 		unsigned int ystride = sizeof(half) * 4 * _image.m_width;
 
-		framebuffer.insert(name_r, Imf::Slice(Imf::HALF, channel_rPtr, xstride, ystride));
-		framebuffer.insert(name_g, Imf::Slice(Imf::HALF, channel_gPtr, xstride, ystride));
-		framebuffer.insert(name_b, Imf::Slice(Imf::HALF, channel_bPtr, xstride, ystride));
-		framebuffer.insert(name_a, Imf::Slice(Imf::HALF, channel_aPtr, xstride, ystride));
+		framebuffer.insert(name_r, Imf::Slice(Imf::FLOAT, channel_rPtr, xstride, ystride));
+		framebuffer.insert(name_g, Imf::Slice(Imf::FLOAT, channel_gPtr, xstride, ystride));
+		framebuffer.insert(name_b, Imf::Slice(Imf::FLOAT, channel_bPtr, xstride, ystride));
+		framebuffer.insert(name_a, Imf::Slice(Imf::FLOAT, channel_aPtr, xstride, ystride));
 	}
 
 	Imf::OutputFile file(m_fileName.c_str(), header);

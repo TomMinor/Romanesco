@@ -32,7 +32,7 @@ namespace Romanesco
 			{
 				//unsigned int idx = i + (j * m_width);
 
-				float R = _pixels[i];
+				float R = _pixels[i + 0];
 				float G = _pixels[i + 1];
 				float B = _pixels[i + 2];
 				float A = _pixels[i + 3];
