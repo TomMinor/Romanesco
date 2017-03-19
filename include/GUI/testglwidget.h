@@ -142,7 +142,8 @@ private:
     GLint m_vtxPosAttr;
     GLint m_vtxUVAttr;
 	GLuint m_vao;
-	GLuint m_vbo;
+	GLuint m_vboPos;
+	GLuint m_vboUV;
 
     float m_time;
     long m_frame;

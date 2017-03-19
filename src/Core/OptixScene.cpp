@@ -1158,7 +1158,8 @@ void OptixScene::drawToBuffer()
 //                if(!m_camera_changed)
                 {
                     m_context["NoOfTiles"]->setUint(i, j);
-
+	
+					/// @todo Check for optix exception for timeouts etc
                     m_context->launch( static_cast<unsigned int>( m_cameraMode ),
                                       static_cast<unsigned int>(launch_index_tileSize.x),
                                       static_cast<unsigned int>(launch_index_tileSize.y)

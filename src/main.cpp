@@ -44,7 +44,7 @@
  * Clearly comment nvidia code (PinholeCamera)
  */
 
-//#define GL_DEBUG
+#define GL_DEBUG
 
 int main(int argc, char *argv[])
 {

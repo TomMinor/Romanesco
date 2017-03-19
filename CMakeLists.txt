@@ -74,7 +74,6 @@ file(GLOB CPP_SOURCES_CORE
     ${CMAKE_SOURCE_DIR}/src/Core/PinholeCamera.cpp
     ${CMAKE_SOURCE_DIR}/src/Core/RenderMath.cpp
     ${CMAKE_SOURCE_DIR}/src/Core/RuntimeCompiler.cpp
-    ${CMAKE_SOURCE_DIR}/src/Core/ViewportWindow.cpp
     ${CMAKE_SOURCE_DIR}/src/Core/command.cpp
     ${CMAKE_SOURCE_DIR}/src/Core/inputhandler.cpp
     ${CMAKE_SOURCE_DIR}/src/Core/keyframecomponent.cpp
@@ -146,7 +145,6 @@ file(GLOB HEADERS_CORE
     ${CMAKE_SOURCE_DIR}/include/Core/PinholeCamera.h
     ${CMAKE_SOURCE_DIR}/include/Core/RenderMath.h
     ${CMAKE_SOURCE_DIR}/include/Core/RuntimeCompiler.h
-    ${CMAKE_SOURCE_DIR}/include/Core/ViewportWindow.h
     ${CMAKE_SOURCE_DIR}/include/Core/command.h
     ${CMAKE_SOURCE_DIR}/include/Core/commonStructs.h
     ${CMAKE_SOURCE_DIR}/include/Core/inputhandler.h

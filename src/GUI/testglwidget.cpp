@@ -97,7 +97,7 @@ void TestGLWidget::initializeGL()
 {
     initializeOpenGLFunctions();
 
-//#define GL_DEBUG
+#define GL_DEBUG
 #ifdef GL_DEBUG
 	m_debugLogger = new QOpenGLDebugLogger(this);
 	if (m_debugLogger->initialize())
@@ -163,52 +163,64 @@ void TestGLWidget::initializeGL()
 	static GLfloat vertices[] = {
 		-1.0f, -1.0f,
 		1.0f, -1.0f,
-		1.0f, 1.0f,
+		1.0f, 1.0f,	
 		-1.0f, -1.0f,
 		-1.0f, 1.0f,
+		1.0f, 1.0f,
+	};
+
+	static GLfloat uv[] = {
+		0.0f, 0.0f,
+		1.0f, 0.0f,
+		1.0f, 1.0f,
+		0.0f, 0.0f,
+		0.0f, 1.0f,
 		1.0f, 1.0f
 	};
-	static GLfloat uv[] = {
-		0, 0,
-		1, 0,
-		1, 1,
-		0, 0,
-		0, 1,
-		1, 1
-	};
+
 
 	// Setup VBO ready for drawing
 	{
 		glGenVertexArrays(1, &m_vao);
 		glBindVertexArray(m_vao);
 
-		glGenBuffers(1, &m_vbo);
-		
-		// Upload vertex data to GPU
-		glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
 		m_program->bind();
 
-		m_vtxPosAttr = m_program->attributeLocation("vtxPos");
-		if (m_vtxPosAttr == -1)
+		// Upload vertex positions
 		{
-			qWarning() << "Couldn't find 'vtxPos' attribute";
-			//throw std::runtime_error("Couldn't find 'vtxPos' attribute");
-		}
+			glGenBuffers(1, &m_vboPos);
+			
+			glBindBuffer(GL_ARRAY_BUFFER, m_vboPos);
+			glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-		m_vtxUVAttr = m_program->attributeLocation("vtxUV");
-		if (m_vtxUVAttr == -1)
+			m_vtxPosAttr = m_program->attributeLocation("vtxPos");
+			if (m_vtxPosAttr == -1)
+			{
+				qWarning() << "Couldn't find 'vtxPos' attribute";
+				//throw std::runtime_error("Couldn't find 'vtxPos' attribute");
+			}
+
+			glVertexAttribPointer(m_vtxPosAttr, 2, GL_FLOAT, GL_FALSE, 0, 0);
+			glEnableVertexAttribArray(m_vtxPosAttr);
+		}
+		
+		// Upload UVs
 		{
-			qWarning() << "Couldn't find 'vtxUV' attribute";
-			//throw std::runtime_error("Couldn't find 'vtxPos' attribute");
+			glGenBuffers(1, &m_vboUV);
+			
+			glBindBuffer(GL_ARRAY_BUFFER, m_vboUV);
+			glBufferData(GL_ARRAY_BUFFER, sizeof(uv), uv, GL_STATIC_DRAW);
+
+			m_vtxUVAttr = m_program->attributeLocation("vtxUV");
+			if (m_vtxUVAttr == -1)
+			{
+				qWarning() << "Couldn't find 'vtxUV' attribute";
+				//throw std::runtime_error("Couldn't find 'vtxPos' attribute");
+			}
+
+			glVertexAttribPointer(m_vtxUVAttr, 2, GL_FLOAT, GL_FALSE, 0, 0);
+			glEnableVertexAttribArray(m_vtxUVAttr);
 		}
-
-		glVertexAttribPointer(m_vtxPosAttr, 2, GL_FLOAT, GL_FALSE, 0, 0);
-		glEnableVertexAttribArray(m_vtxPosAttr);
-
-		glVertexAttribPointer(m_vtxUVAttr, 2, GL_FLOAT, GL_FALSE, 0, 0);
-		glEnableVertexAttribArray(m_vtxUVAttr);
 
 		m_program->release();
 	}

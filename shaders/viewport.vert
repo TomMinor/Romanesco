@@ -1,12 +1,12 @@
-#version 150
+#version 430 core
 
-in vec3 vtxPos;
-in vec2 vtxUV;
+layout(location=0) in vec2 vtxPos;
+layout(location=1) in vec2 vtxUV;
 
-out vec2 texcoord;
+layout(location=0) out vec2 texcoord;
 
 void main(void)
 {
 	texcoord = vtxUV;
-	gl_Position = vec4(vtxPos, 1.0);
+	gl_Position = vec4(vtxPos, 0.0, 1.0);
 }

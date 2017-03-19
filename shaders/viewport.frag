@@ -1,12 +1,12 @@
-#version 150
+#version 430 core
 
-in vec2 texcoord;
+layout(location=0) in vec2 texcoord;
+
+layout(location=0) out vec4 colour;
+
 uniform sampler2D viewportBuffer;
-
-out vec4 colour;
 
 void main(void)
 {
-    //colour = texture2D(viewportBuffer, texcoord);
-	colour = vec4(texcoord, 0.0, 1.0);
+    colour = texture2D(viewportBuffer, texcoord);
 }
