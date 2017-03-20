@@ -19,11 +19,19 @@
 
 namespace Romanesco
 {
+	///@todo put this in a separate file
 	struct Channel
 	{
 	public:
-		Channel(float* _pixels, unsigned int _width, unsigned int _height, std::string _name = "")
-			: m_width(_width), m_height(_height), m_name(_name)
+		enum class TEst
+		{
+			RGBA,
+			RGB,
+			DATA
+		};
+
+		Channel(float* _pixels, unsigned int elementSize, unsigned int _width, unsigned int _height, std::string _name = "")
+			: m_elementSize(elementSize), m_width(_width), m_height(_height), m_name(_name)
 		{
 			m_pixels = new Imf::Rgba[m_width * m_height];
 			std::fill(m_pixels, m_pixels + (m_width * m_height), Imf::Rgba(1.f, 1.f, 1.f, 1.f));
@@ -54,6 +62,7 @@ namespace Romanesco
 
 		//private:
 		Imf::Rgba* m_pixels;
+		unsigned int m_elementSize;
 		unsigned int m_width, m_height;
 		std::string m_name;
 	};
@@ -67,37 +76,44 @@ public:
 
 	bool write(std::vector<Romanesco::Channel> _channels);
 
-    std::string getFileName() { return m_fileName; }
+	std::string getFileName() const { return m_fileName; }
 
 private:
     static bool progressCallback(void* _data, float _progress);
+
+	void addChannel(Romanesco::Channel& _img);
 
     ///
     /// \brief addChannel Add a single channel to the image spec
     /// \param _name
     /// \param _type
     ///
-    void addChannel(/*OpenImageIO::TypeDesc _type,*/ std::string _name);
+	void addChannel(std::string _name, char* _pixels);
 
-    ///
-    /// \brief addChannelRGB Adds a channel to the image spec, using the special syntax that designates related channels (P.x, P.y, P.z) if a channel name is passed
-    /// \param _name
-    /// \param _type
-    ///
-    void addChannelRGB(/*OpenImageIO::TypeDesc _type,*/ std::string _name = "");
+	///
+	/// \brief addChannelRGB Adds a channel to the image spec, using the special syntax that designates related channels (P.x, P.y, P.z) if a channel name is passed
+	/// \param _name
+	/// \param _type
+	///
+	void addChannelRGB(std::string _name, char* _pixelsR, char* _pixelsB, char* _pixelsG);
 
     ///
     /// \brief addChannelRGBA Adds a channel to the image spec, using the special syntax that designates related channels (P.x, P.y, P.z, P.a) if a channel name is passed
     /// \param _name
     /// \param _type
     ///
-    void addChannelRGBA(/*OpenImageIO::TypeDesc _type,*/ std::string _name = "");
+	void addChannelRGBA(std::string _name, char* _pixelsR, char* _pixelsB, char* _pixelsG, char* _pixelsA);
+
+	std::string layerChannelString(std::string _layerName, std::string _channel) const;
 
 private:
-    std::string m_fileName;
+	unsigned int m_width;
+	unsigned int m_height;
 
-    //OpenImageIO::ImageOutput *m_outFile;
-    //OpenImageIO::ImageSpec *m_spec;
+	Imf::Header m_header;
+	Imf::FrameBuffer m_framebuffer;
+
+	std::string m_fileName;
 };
 
 #endif

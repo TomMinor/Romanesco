@@ -115,7 +115,7 @@ public:
     ///
     float* getBufferContents(std::string _name, RTsize *_elementSize, RTsize *_width, RTsize *_height);
 
-    float* getBufferContents(std::string _name);
+	float* getBufferContents(std::string _name, unsigned int *_elementSize);
 
 	optix::int2 getResolution();
 

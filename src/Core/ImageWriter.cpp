@@ -1,7 +1,7 @@
 #include <QDebug>
 
 #include "ImageWriter.h"
-
+#include <cassert>
 
 bool ImageWriter::progressCallback(void* _data, float _progress)
 {
@@ -23,41 +23,9 @@ bool ImageWriter::progressCallback(void* _data, float _progress)
 
 
 ImageWriter::ImageWriter(std::string _filename, unsigned int _width, unsigned int _height)
-    : /*m_outFile(nullptr), m_spec(nullptr), */m_fileName(_filename)
+	: m_width(_width), m_height(_height), m_header(_width, _height), m_fileName(_filename)
 {
-//    m_spec = new OpenImageIO::ImageSpec(OpenImageIO::TypeDesc::UNKNOWN);
-//
-//    m_spec->channelnames.clear();
-//    m_spec->attribute("compression", "zip");
-//
-//
-//    // Channel setup
-//    addChannelRGBA(OpenImageIO::TypeDesc::HALF);        // RGBA Channels
-//    ///@todo Somehow get this to higher quality precision
-//    addChannel(OpenImageIO::TypeDesc::HALF, "Z");     // Depth Channel
-//
-//    addChannel(OpenImageIO::TypeDesc::HALF, "orbit.R");     // Depth Channel
-//    addChannel(OpenImageIO::TypeDesc::HALF, "orbit.G");     // Depth Channel
-//    addChannel(OpenImageIO::TypeDesc::HALF, "orbit.B");     // Depth Channel
-//    addChannel(OpenImageIO::TypeDesc::HALF, "iteration.R");     // Normalized Iteration Channel
-//    addChannelRGB(OpenImageIO::TypeDesc::HALF, "N");    // Normal Channels
-//    addChannelRGB(OpenImageIO::TypeDesc::HALF, "P");    // World Position Channels
-//
-//    addChannelRGB(OpenImageIO::TypeDesc::HALF, "diffuse");
-//
-//
-//    qDebug() << sizeof(ImageWriter::Pixel) << "," << m_spec->channelnames.size();
-//
-//    m_spec->nchannels = m_spec->channelnames.size();
-//    m_spec->width = _width;
-//    m_spec->height = _height;
-//
-//    // Tell OIIO that these specific channels will store alpha/depth (helps for some formats)
-//    m_spec->alpha_channel = 3;
-//    m_spec->z_channel = 4;
-//
-//    // Handy for debugging later?
-//    m_spec->attribute("Romanesco Version", 0.1f);
+	;
 }
 
 ImageWriter::~ImageWriter()
@@ -76,53 +44,27 @@ ImageWriter::~ImageWriter()
 //    }
 }
 
-/// @todo Move this into Channel class
-std::string layerChannelString(std::string _layerName, std::string _channel)
+
+std::string ImageWriter::layerChannelString(std::string _layerName, std::string _channel) const
 {
-	return (_layerName.size() == 0) ? _channel : _layerName + "." + _channel;
+	return (_layerName.length() == 0) ? _channel : _layerName + "." + _channel;
 }
 
 
 bool ImageWriter::write(std::vector<Romanesco::Channel> _channels)
 {
-	Imf::Header header(_channels[0].m_width, _channels[0].m_height);
+	Imf::ChannelList& channels = m_header.channels();
 
-	Imf::ChannelList& channels = header.channels();
-	Imf::FrameBuffer framebuffer;
+	Romanesco::Channel& img = _channels[0];
+	//// The interop input buffers are all float based (float3, float4), so we divide by 4 bytes
+	unsigned int elements = img.m_elementSize / sizeof(float);
 
-	for (unsigned int i = 0; i < _channels.size(); i++)
-	{
-		Romanesco::Channel& _image = _channels[i];
+	addChannel(img);
 
-		std::string name_r = layerChannelString(_image.m_name, "R");
-		std::string name_g = layerChannelString(_image.m_name, "G");
-		std::string name_b = layerChannelString(_image.m_name, "B");
-		std::string name_a = layerChannelString(_image.m_name, "A");
+	Imf::OutputFile file(m_fileName.c_str(), m_header);
+	file.setFrameBuffer(m_framebuffer);
+	file.writePixels(img.m_height);
 
-		qDebug() << qPrintable(name_r.c_str()) << qPrintable(name_g.c_str()) << qPrintable(name_b.c_str()) << qPrintable(name_a.c_str());
-
-		channels.insert(name_r, Imf::Channel(Imf::FLOAT));
-		channels.insert(name_g, Imf::Channel(Imf::FLOAT));
-		channels.insert(name_b, Imf::Channel(Imf::FLOAT));
-		channels.insert(name_a, Imf::Channel(Imf::FLOAT));
-
-		char* channel_rPtr = (char*)&(_image.m_pixels[0].r);
-		char* channel_gPtr = (char*)&(_image.m_pixels[0].g);
-		char* channel_bPtr = (char*)&(_image.m_pixels[0].b);
-		char* channel_aPtr = (char*)&(_image.m_pixels[0].a);
-
-		unsigned int xstride = sizeof(half) * 4;
-		unsigned int ystride = sizeof(half) * 4 * _image.m_width;
-
-		framebuffer.insert(name_r, Imf::Slice(Imf::FLOAT, channel_rPtr, xstride, ystride));
-		framebuffer.insert(name_g, Imf::Slice(Imf::FLOAT, channel_gPtr, xstride, ystride));
-		framebuffer.insert(name_b, Imf::Slice(Imf::FLOAT, channel_bPtr, xstride, ystride));
-		framebuffer.insert(name_a, Imf::Slice(Imf::FLOAT, channel_aPtr, xstride, ystride));
-	}
-
-	Imf::OutputFile file(m_fileName.c_str(), header);
-	file.setFrameBuffer(framebuffer);
-	file.writePixels(_channels[0].m_height);
 //    m_outFile = nullptr;
 //    m_outFile = OpenImageIO::ImageOutput::create(m_fileName);
 //
@@ -164,37 +106,82 @@ bool ImageWriter::write(std::vector<Romanesco::Channel> _channels)
 	return false;
 }
 
-void ImageWriter::addChannel(/*OpenImageIO::TypeDesc _type,*/ std::string _name)
+
+void ImageWriter::addChannel(Romanesco::Channel& _img)
 {
-    //// Add the channel name to the spec
-    //m_spec->channelnames.push_back(_name);
-    //// and it's associated type (this must match the type in the struct we're passing in per pixel)
-    //m_spec->channelformats.push_back(_type);
+	Imf::ChannelList& channels = m_header.channels();
+	// The interop input buffers are all float based (float3, float4), so we divide by 4 bytes
+	unsigned int elements = _img.m_elementSize / sizeof(float);
+	
+	std::string name = _img.m_name;
+	char* rPtr = (char*)&(_img.m_pixels[0].r);
+	char* gPtr = (char*)&(_img.m_pixels[0].g);
+	char* bPtr = (char*)&(_img.m_pixels[0].b);
+	char* aPtr = (char*)&(_img.m_pixels[0].a);
+
+	//qDebug() << name.c_str() << elements;
+
+	switch (elements)
+	{
+	case 1:	addChannel(name, rPtr); break;
+	case 3:	addChannelRGB(name, rPtr, gPtr, bPtr); break;
+	case 4:	addChannelRGBA(name, rPtr, gPtr, bPtr, aPtr); break;
+	default:
+	{
+		qDebug() << "Can't add channel of size " + elements;
+		assert(false && "Can't add channel of size " + elements);
+	}
+	}
 }
 
-void ImageWriter::addChannelRGB(/*OpenImageIO::TypeDesc _type, */std::string _name)
+void ImageWriter::addChannel(std::string _name, char* _pixels)
 {
-    //// Generate names like P.x if one is supplied
-    //if(_name.length() > 0)  {
-    //    _name = _name + ".";
-    //}
+	qDebug() << "Adding data channel " << _name.c_str();
 
-    //addChannel(_type, _name + "R");
-    //addChannel(_type, _name + "G");
-    //addChannel(_type, _name + "B");
+	assert(_name.length() > 0);
+
+	Imf::ChannelList& channels = m_header.channels();
+	// The interop input buffers are all float based (float3, float4), so we divide by 4 bytes
+	unsigned int elements = 1;
+
+	channels.insert(_name, Imf::Channel(Imf::HALF));
+	m_framebuffer.insert(_name, Imf::Slice(Imf::HALF, _pixels, sizeof(half) * elements, sizeof(half) * elements * m_width));
 }
 
-void ImageWriter::addChannelRGBA(/*OpenImageIO::TypeDesc _type, */std::string _name)
+void ImageWriter::addChannelRGB(std::string _name, char* _pixelsR, char* _pixelsB, char* _pixelsG)
 {
-   /* if(_name.length() > 0)
-    {
-        _name = _name + ".";
-    }
+	qDebug() << "Adding RGB channel " << _name.c_str();
 
-    addChannel(_type, _name + "R");
-    addChannel(_type, _name + "G");
-    addChannel(_type, _name + "B");
-    addChannel(_type, _name + "A");*/
+	Imf::ChannelList& channels = m_header.channels();
+
+	unsigned int elements = 3;// _img.m_elementSize / sizeof(float);
+
+	channels.insert(layerChannelString(_name, "R"), Imf::Channel(Imf::HALF));
+	channels.insert(layerChannelString(_name, "G"), Imf::Channel(Imf::HALF));
+	channels.insert(layerChannelString(_name, "B"), Imf::Channel(Imf::HALF));
+
+	m_framebuffer.insert(layerChannelString(_name, "R"), Imf::Slice(Imf::HALF, _pixelsR, sizeof(half) * elements, sizeof(half) * elements * m_width));
+	m_framebuffer.insert(layerChannelString(_name, "G"), Imf::Slice(Imf::HALF, _pixelsG, sizeof(half) * elements, sizeof(half) * elements * m_width));
+	m_framebuffer.insert(layerChannelString(_name, "B"), Imf::Slice(Imf::HALF, _pixelsB, sizeof(half) * elements, sizeof(half) * elements * m_width));
+}
+
+void ImageWriter::addChannelRGBA(std::string _name, char* _pixelsR, char* _pixelsB, char* _pixelsG, char* _pixelsA)
+{
+	qDebug() << "Adding RGBA channel " << _name.c_str();
+
+	Imf::ChannelList& channels = m_header.channels();
+
+	unsigned int elements = 4;// / sizeof(float);
+
+	channels.insert(layerChannelString(_name, "R"), Imf::Channel(Imf::HALF));
+	channels.insert(layerChannelString(_name, "G"), Imf::Channel(Imf::HALF));
+	channels.insert(layerChannelString(_name, "B"), Imf::Channel(Imf::HALF));
+	channels.insert(layerChannelString(_name, "A"), Imf::Channel(Imf::HALF));
+
+	m_framebuffer.insert(layerChannelString(_name, "R"), Imf::Slice(Imf::HALF, _pixelsR, sizeof(half) * elements, sizeof(half) * elements * m_width));
+	m_framebuffer.insert(layerChannelString(_name, "G"), Imf::Slice(Imf::HALF, _pixelsG, sizeof(half) * elements, sizeof(half) * elements * m_width));
+	m_framebuffer.insert(layerChannelString(_name, "B"), Imf::Slice(Imf::HALF, _pixelsB, sizeof(half) * elements, sizeof(half) * elements * m_width));
+	m_framebuffer.insert(layerChannelString(_name, "A"), Imf::Slice(Imf::HALF, _pixelsA, sizeof(half) * elements, sizeof(half) * elements * m_width));
 }
 
 

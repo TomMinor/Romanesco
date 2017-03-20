@@ -222,7 +222,7 @@ void TestGLWidget::initializeGL()
 			glEnableVertexAttribArray(m_vtxUVAttr);
 		}
 
-		m_program->release();
+		//m_program->release();
 	}
 
     emit initializedGL();

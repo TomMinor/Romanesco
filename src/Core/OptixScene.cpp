@@ -265,15 +265,15 @@ void OptixScene::createBuffers()
 {
     m_glOutputBuffers.clear();
 
-    m_glOutputBuffers.push_back( std::make_pair("output_buffer",         RT_FORMAT_FLOAT4) );
+    m_glOutputBuffers.push_back( std::make_pair("output_buffer",				RT_FORMAT_FLOAT4) );
 
-    m_glOutputBuffers.push_back( std::make_pair("output_buffer_nrm",     RT_FORMAT_FLOAT3) );
-    m_glOutputBuffers.push_back( std::make_pair("output_buffer_world",   RT_FORMAT_FLOAT3) );
-    m_glOutputBuffers.push_back( std::make_pair("output_buffer_diffuse",     RT_FORMAT_FLOAT3) );
-    m_glOutputBuffers.push_back( std::make_pair("output_buffer_trap",       RT_FORMAT_FLOAT3) );
+    m_glOutputBuffers.push_back( std::make_pair("output_buffer_nrm",			RT_FORMAT_FLOAT3) );
+    m_glOutputBuffers.push_back( std::make_pair("output_buffer_world",			RT_FORMAT_FLOAT3) );
+    m_glOutputBuffers.push_back( std::make_pair("output_buffer_diffuse",		RT_FORMAT_FLOAT3) );
+    m_glOutputBuffers.push_back( std::make_pair("output_buffer_trap",			RT_FORMAT_FLOAT3) );
 
-    m_glOutputBuffers.push_back( std::make_pair("output_buffer_iteration",   RT_FORMAT_FLOAT) );
-    m_glOutputBuffers.push_back( std::make_pair("output_buffer_depth",   RT_FORMAT_FLOAT) );
+    m_glOutputBuffers.push_back( std::make_pair("output_buffer_iteration",		RT_FORMAT_FLOAT) );
+    m_glOutputBuffers.push_back( std::make_pair("output_buffer_depth",			RT_FORMAT_FLOAT) );
 
     // Everything is gl for the sake of visualisation right now, but maybe we'd want to add export only buffers later
     m_outputBuffers.clear();
@@ -982,10 +982,14 @@ float* OptixScene::getBufferContents(std::string _name, RTsize* _elementSize, RT
     return hostPtr;
 }
 
-float* OptixScene::getBufferContents(std::string _name)
+float* OptixScene::getBufferContents(std::string _name, unsigned int *_elementSize)
 {
     RTsize ignore, width, height;
-    return getBufferContents(_name, &ignore, &width, &height);
+
+	float* tmp = getBufferContents(_name, &ignore, &width, &height);
+	*_elementSize = ignore;
+
+	return tmp;
 }
 
 std::string OptixScene::outputBuffer()
@@ -995,32 +999,51 @@ std::string OptixScene::outputBuffer()
 
 bool OptixScene::saveBuffersToDisk(std::string _filename)
 {
-    float* rgba = getBufferContents("output_buffer");
-    float* normal = getBufferContents("output_buffer_nrm");
-    float* world = getBufferContents("output_buffer_world");
-    float* diffuse = getBufferContents("output_buffer_diffuse");
-    float* depth = getBufferContents("output_buffer_depth");
-    float* iteration = getBufferContents("output_buffer_iteration");
-    float* trap = getBufferContents("output_buffer_trap");
+	std::map<std::string, std::string> buffers = {
+			{ "",	"output_buffer" },
+			{ "N",	"output_buffer_nrm" },
+			{ "P",	"output_buffer_world" },
+			{ "d",	"output_buffer_diffuse" },
+			//{ "Z",	"output_buffer_depth" },
+			//{ "i",	"output_buffer_iteration" },
+			{ "t",	"output_buffer_trap" }
+	};
 
-	assert(rgba && "rgba buffer is null");
-	assert(normal && "normal buffer is null");
-	assert(world && "world buffer is null");
-	assert(diffuse && "diffuse buffer is null");
-	assert(depth && "depth buffer is null");
-	assert(iteration && "iteration buffer is null");
-	assert(trap && "trap buffer is null");
-
-    RTsize buffer_width, buffer_height;
-    m_context["output_buffer"]->getBuffer()->getSize(buffer_width, buffer_height);
-    const unsigned int totalPixels = static_cast<unsigned int>(buffer_width) * static_cast<unsigned int>(buffer_height);
+	RTsize buffer_width, buffer_height;
+	m_context["output_buffer"]->getBuffer()->getSize(buffer_width, buffer_height);
+	const unsigned int totalPixels = static_cast<unsigned int>(buffer_width)* static_cast<unsigned int>(buffer_height);
 
 	std::vector<Romanesco::Channel> channels;
+	unsigned int width = static_cast<unsigned int>(buffer_width);
+	unsigned int height = static_cast<unsigned int>(buffer_height);
+
+	for (auto& buffer : buffers)
+	{
+		qDebug() << buffer.first.c_str();
+
+		unsigned int elementSize = 0;
+		float* pixels = getBufferContents(buffer.second, &elementSize);
+
+		channels.push_back(Romanesco::Channel(pixels, elementSize, width, height, buffer.first));
+
+		delete [] pixels;
+		pixels = nullptr;
+	}
+
+    //float* rgba = getBufferContents("output_buffer");
+    //float* normal = getBufferContents("output_buffer_nrm");
+    //float* world = getBufferContents("output_buffer_world");
+    //float* diffuse = getBufferContents("output_buffer_diffuse");
+    //float* depth = getBufferContents("output_buffer_depth");
+    //float* iteration = getBufferContents("output_buffer_iteration");
+    //float* trap = getBufferContents("output_buffer_trap");
+
+
+	
 	//channels.reserve(totalPixels);
 
-	unsigned int width  = static_cast<unsigned int>(buffer_width);
-	unsigned int height = static_cast<unsigned int>(buffer_height);
-	channels.push_back(Romanesco::Channel(rgba, width, height));
+	
+	
 	//channels.push_back(Romanesco::Channel(normal, width, height, "nrm"));
 	//channels.push_back(Romanesco::Channel(world, width, height, "P"));
 	//channels.push_back(Romanesco::Channel(diffuse, width, height, "diffuse"));
@@ -1068,17 +1091,17 @@ bool OptixScene::saveBuffersToDisk(std::string _filename)
     //}
 
 
-    delete [] diffuse;
-    delete [] normal;
-    delete [] world;
-    delete [] depth;
-    delete [] trap;
+    //delete [] diffuse;
+    //delete [] normal;
+    //delete [] world;
+    //delete [] depth;
+    //delete [] trap;
 
-    diffuse = nullptr;
-    normal = nullptr;
-    world = nullptr;
-    depth = nullptr;
-    trap = nullptr;
+    //diffuse = nullptr;
+    //normal = nullptr;
+    //world = nullptr;
+    //depth = nullptr;
+    //trap = nullptr;
 
     ImageWriter image(_filename, buffer_width, buffer_height);
     return image.write(channels);
