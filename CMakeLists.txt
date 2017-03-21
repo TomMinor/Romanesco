@@ -1,8 +1,11 @@
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 2.8)
 
 project(romanesco)
 
 #Todo: Detect 32bit build and react accordingly (no nvrtc)
+
+# Force C++11
+SET(CMAKE_CXX_FLAGS "-std=c++0x")
 
 # Find includes in corresponding build directories
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -30,7 +33,7 @@ else()
 endif()
 
 
-find_package(OPTIX REQUIRED)
+find_package(Optix REQUIRED)
 if(OPTIX_FOUND)
       Message(STATUS "--> using package OptiX")
       add_definitions(-DUSEOPTIX)
@@ -49,6 +52,7 @@ find_package(Boost REQUIRED)
 include_directories( ${Boost_INCLUDE_DIRS} )
 link_directories( ${Boost_LIBRARY_DIRS} )
 
+# ToDo modify this so it finds OpenEXR in standard Linux paths (/usr/lib64)
 find_package(OpenEXR REQUIRED)
 include_directories( ${OPENEXR_INCLUDE_DIRS} )
 link_directories( ${OPENEXR_LIBRARY_DIR} )

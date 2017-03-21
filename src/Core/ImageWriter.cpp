@@ -140,48 +140,52 @@ void ImageWriter::addChannel(std::string _name, char* _pixels)
 
 	assert(_name.length() > 0);
 
+	const char* name = _name.c_str();
+
 	Imf::ChannelList& channels = m_header.channels();
 	// The interop input buffers are all float based (float3, float4), so we divide by 4 bytes
 	unsigned int elements = 1;
 
-	channels.insert(_name, Imf::Channel(Imf::HALF));
-	m_framebuffer.insert(_name, Imf::Slice(Imf::HALF, _pixels, sizeof(half) * elements, sizeof(half) * elements * m_width));
+	channels.insert(name, Imf::Channel(Imf::HALF));
+	m_framebuffer.insert(name, Imf::Slice(Imf::HALF, _pixels, sizeof(half) * elements, sizeof(half) * elements * m_width));
 }
 
 void ImageWriter::addChannelRGB(std::string _name, char* _pixelsR, char* _pixelsB, char* _pixelsG)
 {
-	qDebug() << "Adding RGB channel " << _name.c_str();
+	const char* name = _name.c_str();
+	qDebug() << "Adding RGB channel " << name;
 
 	Imf::ChannelList& channels = m_header.channels();
 
 	unsigned int elements = 3;// _img.m_elementSize / sizeof(float);
 
-	channels.insert(layerChannelString(_name, "R"), Imf::Channel(Imf::HALF));
-	channels.insert(layerChannelString(_name, "G"), Imf::Channel(Imf::HALF));
-	channels.insert(layerChannelString(_name, "B"), Imf::Channel(Imf::HALF));
+	channels.insert(layerChannelString(name, "R").c_str(), Imf::Channel(Imf::HALF));
+	channels.insert(layerChannelString(name, "G").c_str(), Imf::Channel(Imf::HALF));
+	channels.insert(layerChannelString(name, "B").c_str(), Imf::Channel(Imf::HALF));
 
-	m_framebuffer.insert(layerChannelString(_name, "R"), Imf::Slice(Imf::HALF, _pixelsR, sizeof(half) * elements, sizeof(half) * elements * m_width));
-	m_framebuffer.insert(layerChannelString(_name, "G"), Imf::Slice(Imf::HALF, _pixelsG, sizeof(half) * elements, sizeof(half) * elements * m_width));
-	m_framebuffer.insert(layerChannelString(_name, "B"), Imf::Slice(Imf::HALF, _pixelsB, sizeof(half) * elements, sizeof(half) * elements * m_width));
+	m_framebuffer.insert(layerChannelString(name, "R").c_str(), Imf::Slice(Imf::HALF, _pixelsR, sizeof(half) * elements, sizeof(half) * elements * m_width));
+	m_framebuffer.insert(layerChannelString(name, "G").c_str(), Imf::Slice(Imf::HALF, _pixelsG, sizeof(half) * elements, sizeof(half) * elements * m_width));
+	m_framebuffer.insert(layerChannelString(name, "B").c_str(), Imf::Slice(Imf::HALF, _pixelsB, sizeof(half) * elements, sizeof(half) * elements * m_width));
 }
 
 void ImageWriter::addChannelRGBA(std::string _name, char* _pixelsR, char* _pixelsB, char* _pixelsG, char* _pixelsA)
 {
-	qDebug() << "Adding RGBA channel " << _name.c_str();
+	const char* name = _name.c_str();
+	qDebug() << "Adding RGBA channel " << name;
 
 	Imf::ChannelList& channels = m_header.channels();
 
 	unsigned int elements = 4;// / sizeof(float);
 
-	channels.insert(layerChannelString(_name, "R"), Imf::Channel(Imf::HALF));
-	channels.insert(layerChannelString(_name, "G"), Imf::Channel(Imf::HALF));
-	channels.insert(layerChannelString(_name, "B"), Imf::Channel(Imf::HALF));
-	channels.insert(layerChannelString(_name, "A"), Imf::Channel(Imf::HALF));
+	channels.insert(layerChannelString(name, "R").c_str(), Imf::Channel(Imf::HALF));
+	channels.insert(layerChannelString(name, "G").c_str(), Imf::Channel(Imf::HALF));
+	channels.insert(layerChannelString(name, "B").c_str(), Imf::Channel(Imf::HALF));
+	channels.insert(layerChannelString(name, "A").c_str(), Imf::Channel(Imf::HALF));
 
-	m_framebuffer.insert(layerChannelString(_name, "R"), Imf::Slice(Imf::HALF, _pixelsR, sizeof(half) * elements, sizeof(half) * elements * m_width));
-	m_framebuffer.insert(layerChannelString(_name, "G"), Imf::Slice(Imf::HALF, _pixelsG, sizeof(half) * elements, sizeof(half) * elements * m_width));
-	m_framebuffer.insert(layerChannelString(_name, "B"), Imf::Slice(Imf::HALF, _pixelsB, sizeof(half) * elements, sizeof(half) * elements * m_width));
-	m_framebuffer.insert(layerChannelString(_name, "A"), Imf::Slice(Imf::HALF, _pixelsA, sizeof(half) * elements, sizeof(half) * elements * m_width));
+	m_framebuffer.insert(layerChannelString(name, "R").c_str(), Imf::Slice(Imf::HALF, _pixelsR, sizeof(half) * elements, sizeof(half) * elements * m_width));
+	m_framebuffer.insert(layerChannelString(name, "G").c_str(), Imf::Slice(Imf::HALF, _pixelsG, sizeof(half) * elements, sizeof(half) * elements * m_width));
+	m_framebuffer.insert(layerChannelString(name, "B").c_str(), Imf::Slice(Imf::HALF, _pixelsB, sizeof(half) * elements, sizeof(half) * elements * m_width));
+	m_framebuffer.insert(layerChannelString(name, "A").c_str(), Imf::Slice(Imf::HALF, _pixelsA, sizeof(half) * elements, sizeof(half) * elements * m_width));
 }
 
 

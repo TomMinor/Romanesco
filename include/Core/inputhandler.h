@@ -14,7 +14,7 @@ public:
 
     void handleInput();
 private:
-    std::unordered_map<std::string, Command*> m_commands;
+    // std::unordered_map<std::string, Command*> m_commands;
 };
 
 #endif // INPUTHANDLER_H

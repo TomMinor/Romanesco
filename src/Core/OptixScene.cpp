@@ -41,6 +41,7 @@
 #include <cerrno>
 #include <assert.h>
 #include <iostream>
+#include <stdexcept>
 
 #include <boost/algorithm/string/join.hpp>
 

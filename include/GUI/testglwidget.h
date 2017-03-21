@@ -3,7 +3,7 @@
 
 #include <QOpenGLShaderProgram>
 //#include <QOpenGLFunctions>
-#include <QOpenGLFunctions_4_3_core.h>
+#include <QOpenGLFunctions_4_3_Core>
 //#include <qopenglfunctions_4_3_compatibility.h>
 #include <QOpenGLDebugMessage>
 #include <QOpenGLDebugLogger>

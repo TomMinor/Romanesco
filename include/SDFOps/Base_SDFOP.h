@@ -5,6 +5,7 @@
 #include <map>
 #include <vector>
 #include <set>
+#include <stdexcept>
 
 typedef std::map<std::string, std::string> OperatorParams;
 

@@ -11,7 +11,7 @@
 #include "path_tracer.h"
 
 #include <QObject>
-#include <QOpenGLFunctions_4_3_core.h>
+#include <QOpenGLFunctions_4_3_Core>
 #include <QOpenGLDebugMessage>
 #include <QOpenGLDebugLogger>
 #ifdef ROMANESCO_RENDER_WITH_THREADS

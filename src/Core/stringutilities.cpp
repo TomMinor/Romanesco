@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include <sstream>
+#include <stdexcept>
 #include <QDebug>
 
 std::vector<std::string> FileToVector(const std::string& _filename)

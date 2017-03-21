@@ -8,7 +8,10 @@
 #undef min
 #endif
 ///@todo Why does this have to be defined?
+#ifdef __WIN32
 #define OPENEXR_DLL
+#endif
+
 #include <OpenEXR/ImfRgba.h>
 #include <OpenEXR/ImfRgbaFile.h>
 #include <OpenEXR/ImfChannelList.h>
@@ -23,13 +26,6 @@ namespace Romanesco
 	struct Channel
 	{
 	public:
-		enum class TEst
-		{
-			RGBA,
-			RGB,
-			DATA
-		};
-
 		Channel(float* _pixels, unsigned int elementSize, unsigned int _width, unsigned int _height, std::string _name = "")
 			: m_elementSize(elementSize), m_width(_width), m_height(_height), m_name(_name)
 		{

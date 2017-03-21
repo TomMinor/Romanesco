@@ -1,7 +1,7 @@
 #ifndef OPTIXSCENEADAPTIVE_H
 #define OPTIXSCENEADAPTIVE_H
 
-#include <QOpenGLFunctions_4_3_core>
+#include <QOpenGLFunctions_4_3_Core>
 
 #include "OptixScene.h"
 

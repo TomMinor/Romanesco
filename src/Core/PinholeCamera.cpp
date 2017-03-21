@@ -1,5 +1,13 @@
 #include "PinholeCamera.h"
 
+# ifdef _WIN32
+   #include <cfloat>
+   #define ISFINITE _finite
+# else
+   #include <cmath>
+   #define ISFINITE std::isfinite
+# endif
+
 namespace Romanesco {
 
 PinholeCamera::PinholeCamera(optix::float3 eye, optix::float3 lookat, optix::float3 up, float hfov, float vfov, AspectRatioMode arm)
@@ -13,16 +21,9 @@ PinholeCamera::PinholeCamera(optix::float3 eye, optix::float3 lookat, optix::flo
   setup();
 }
 
-# ifdef _WIN32
-#   include <cfloat>
-#   define ISFINITE _finite
-# else
-#   include <cmath>
-#   define ISFINITE std::isfinite
-# endif
-
 inline float DtoR(float d)
 {
+  //@todo Move PI into a math header
 #define M_PI 3.14159265359
   return d*(static_cast<float>(M_PI)/180.f);
 }
@@ -41,7 +42,8 @@ inline float Clamp(float val, float min, float max)
 
 float assignWithCheck( float& dst, const float &src )
 {
-  if( ISFINITE( src ) ) {
+  if(ISFINITE(src))
+  {
     dst = src;
   }
 
