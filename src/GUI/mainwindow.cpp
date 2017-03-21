@@ -16,7 +16,9 @@
 
 #include "qtimelineanimated.h"
 
+#ifdef BOOST_AVAILABLE
 #include <boost/format.hpp>
+#endif
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent)
@@ -653,16 +655,21 @@ void MainWindow::dumpRenderedFrame()
     unsigned int currentRelativeFrame = currentFrame - m_timeline->getStartFrame();
     unsigned int frameRange = m_timeline->getEndFrame() - m_timeline->getStartFrame();
 
+#ifdef BOOST_AVAILABLE
     std::string statusMessage = boost::str( boost::format("Rendering frame %d of %d") % currentRelativeFrame % frameRange );
     m_statusBar->showMessage( statusMessage.c_str() );
+#endif
 
     int fileFrame = currentFrame;// (m_frameOffset == -1) ? currentFrame : m_frameOffset + currentRelativeFrame;
     std::string filepath = m_renderPath;
+
+#ifdef BOOST_AVAILABLE
     std::string imagePath = boost::str(boost::format(filepath) % fileFrame);
 
     OptixScene* optixscene = m_glViewport->m_optixScene;
 	if (optixscene)
 		optixscene->saveBuffersToDisk(imagePath);
+#endif
 
     if(m_batchMode)
     {

@@ -7,10 +7,12 @@
 #undef max
 #undef min
 #endif
+
+#ifdef OPENEXR_AVAILABLE
 ///@todo Why does this have to be defined?
-#ifdef __WIN32
-#define OPENEXR_DLL
-#endif
+# ifdef __WIN32
+# define OPENEXR_DLL
+# endif
 
 #include <OpenEXR/ImfRgba.h>
 #include <OpenEXR/ImfRgbaFile.h>
@@ -112,4 +114,5 @@ private:
 	std::string m_fileName;
 };
 
+#endif
 #endif

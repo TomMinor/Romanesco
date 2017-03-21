@@ -73,16 +73,17 @@ endmacro()
 
  # Locate OptiX by version
 set ( SEARCH_PATHS
+  $ENV{OPTIX_LOCATION}
   ${OPTIX_LOCATION}
   ${PROJECT_SOURCE_DIR}/shared_optix
   ${PROJECT_SOURCE_DIR}/thirdparty/optix
   ${PROJECT_SOURCE_DIR}/../thirdparty/optix
-  $ENV{OPTIX_LOCATION}  
+  
 )
 if (WIN32) 
   _find_version_path ( OPTIX_VERSION OPTIX_ROOT_DIR "Optix" "${SEARCH_PATHS}" "win64" )
 endif()
-if (UNIX)
+if (UNIX AND NOT APPLE)
   _find_version_path ( OPTIX_VERSION OPTIX_ROOT_DIR "Optix" "${SEARCH_PATHS}" "linux64" )
 endif()
 message ( STATUS "OptiX version: ${OPTIX_VERSION}")
@@ -95,9 +96,7 @@ if (NOT OPTIX_ROOT_DIR )
   endif()
 endif()
 
-
 if (OPTIX_ROOT_DIR)
-
   if (WIN32) 
 	  #-------- Locate DLLS
     _find_files( OPTIX_DLL OPTIX_ROOT_DIR "lib/optix.1.dll" "lib64/optix.1.dll" "" "")
@@ -113,18 +112,24 @@ if (OPTIX_ROOT_DIR)
     endif()
   endif(WIN32)
 
-  if (UNIX)
+  if (UNIX AND NOT APPLE)
     _find_files( OPTIX_DLL OPTIX_ROOT_DIR "lib/liboptix.so" "lib64/liboptix.so" "" )
     _find_files( OPTIX_DLL OPTIX_ROOT_DIR "lib/liboptixu.so" "lib64/liboptixu.so" "" )
     _find_files( OPTIX_DLL OPTIX_ROOT_DIR "lib/liboptix_prime.so" "lib64/liboptix_prime.so" "" )
 
     set(OPTIX_LIB ${OPTIX_DLL})
+  endif(UNIX AND NOT APPLE)
 
-  endif(UNIX)
+  if (UNIX AND APPLE)
+    find_library(OPTIX_DLL optix "${OPTIX_ROOT_DIR}lib64")
+    find_library(OPTIXU_DLL optixu "${OPTIX_ROOT_DIR}lib64")
+    find_library(OPTIXPRIME_DLL optix_prime "${OPTIX_ROOT_DIR}lib64")
+
+    set(OPTIX_LIB ${OPTIX_DLL} ${OPTIXU_DLL} ${OPTIXPRIME_DLL})
+  endif(UNIX AND APPLE)
 
 	#-------- Locate HEADERS
 	_find_files( OPTIX_HEADERS OPTIX_ROOT_DIR "optix.h" "optix.h" "include/" )
-
 
   if(OPTIX_DLL)
 	  set( OPTIX_FOUND "YES" )      

@@ -1,9 +1,16 @@
 #define GL_GLEXT_PROTOTYPES
+
 #ifdef _WIN32
 #include <windows.h>
 #endif
+
+///@Todo put in a nice header
+#ifdef __APPLE__
+#include <OpenGL/OpenGL.h>
+#else
 #include <GL/gl.h>
 #include <GL/glu.h>
+#endif
 
 
 #include "ImageWriter.h"
@@ -43,7 +50,9 @@
 #include <iostream>
 #include <stdexcept>
 
+#ifdef BOOST__AVAILABLE
 #include <boost/algorithm/string/join.hpp>
+#endif
 
 //#include <ImageLoader.h>
 
@@ -1000,6 +1009,7 @@ std::string OptixScene::outputBuffer()
 
 bool OptixScene::saveBuffersToDisk(std::string _filename)
 {
+    #ifdef OPENEXR_AVAILABLE
 	std::map<std::string, std::string> buffers = {
 			{ "",	"output_buffer" },
 			{ "N",	"output_buffer_nrm" },
@@ -1106,6 +1116,8 @@ bool OptixScene::saveBuffersToDisk(std::string _filename)
 
     ImageWriter image(_filename, buffer_width, buffer_height);
     return image.write(channels);
+    #endif
+    return false;
 }
 
 void OptixScene::updateGLBuffer()

@@ -9,13 +9,6 @@
 #include <QSurfaceFormat>
 ////#include <shaderwindow.h>
 
-#include <OpenEXR/ImfRgba.h>
-#include <OpenEXR/ImfRgbaFile.h>
-#include <OpenEXR/ImfChannelList.h>
-#include <OpenEXR/ImfFrameBuffer.h>
-#include <OpenEXR/ImfOutputFile.h>
-#include <OpenEXR/half.h>
-
 //#include <OpenImageIO\imageio.h>
 
 #include <iostream>

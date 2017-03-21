@@ -3,6 +3,8 @@
 #include "ImageWriter.h"
 #include <cassert>
 
+#ifdef OPENEXR_AVAILABLE
+
 bool ImageWriter::progressCallback(void* _data, float _progress)
 {
     std::string name = "unknown";
@@ -273,3 +275,4 @@ void ImageWriter::addChannelRGBA(std::string _name, char* _pixelsR, char* _pixel
 //	file.writePixels(_layers[0].m_height);
 //	
 //}
+#endif
