@@ -99,12 +99,12 @@ void TestGLWidget::initializeGL()
 {
     initializeOpenGLFunctions();
 
-#define GL_DEBUG
-#ifdef GL_DEBUG
+#ifndef NDEBUG
 	m_debugLogger = new QOpenGLDebugLogger(this);
 	if (m_debugLogger->initialize())
 	{
-		qDebug() << "GL_DEBUG Debug Logger" << m_debugLogger << "\n";
+		m_debugLogger->setObjectName("GLWidget");
+		qDebug() << "GLWidget OpenGL Debug Logger" << m_debugLogger << "\n";
 		connect(m_debugLogger, SIGNAL(messageLogged(QOpenGLDebugMessage)), this, SLOT(messageLogged(QOpenGLDebugMessage)));
 		m_debugLogger->startLogging();
 	}

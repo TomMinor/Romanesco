@@ -5,7 +5,9 @@ project(romanesco)
 #Todo: Detect 32bit build and react accordingly (no nvrtc)
 
 # Force C++11
-SET(CMAKE_CXX_FLAGS "-std=c++0x")
+if(UNIX)
+  SET(CMAKE_CXX_FLAGS "-std=c++0x")
+endif()
 
 # Find includes in corresponding build directories
 set(CMAKE_INCLUDE_CURRENT_DIR ON)

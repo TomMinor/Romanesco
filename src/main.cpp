@@ -31,13 +31,10 @@
  * Add nvcc building to cmake
  * Fix texture issue with viewport
  * Why is the viewport so slow (profile?)
- * Global GL_DEBUG macro
  * Cleanup sutil dependency
  * Cleanup OpenEXR dependency
  * Clearly comment nvidia code (PinholeCamera)
  */
-
-#define GL_DEBUG
 
 int main(int argc, char *argv[])
 {
@@ -48,7 +45,7 @@ int main(int argc, char *argv[])
 	QSurfaceFormat format;
 	format.setVersion(4, 3);
 	format.setProfile(QSurfaceFormat::CoreProfile);
-#ifdef GL_DEBUG
+#ifndef NDEBUG
 	format.setOption(QSurfaceFormat::DebugContext);
 #endif
 	format.setDepthBufferSize(24);

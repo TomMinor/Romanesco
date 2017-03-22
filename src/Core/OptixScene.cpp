@@ -126,16 +126,16 @@ static int timeoutFunc()
 OptixScene::OptixScene(unsigned int _width, unsigned int _height, QOpenGLFunctions_4_3_Core* _gl, QObject *_parent)
 	: QObject(_parent), m_time(0.0f), /* m_renderThread(this),*/ m_camera(nullptr), m_gl(_gl)
 {
-//#define GL_DEBUG
-#ifdef GL_DEBUG
+#ifndef NDEBUG
 	m_debugLogger = new QOpenGLDebugLogger(this);
 	if (m_debugLogger->initialize())
 	{
-		qDebug() << "GL_DEBUG Debug Logger" << m_debugLogger << "\n";
+		m_debugLogger->setObjectName("OptixScene");
+		qDebug() << "OptixScene OpenGL Debug Logger" << m_debugLogger << "\n";
 		connect(m_debugLogger, SIGNAL(messageLogged(QOpenGLDebugMessage)), this, SLOT(messageLogged(QOpenGLDebugMessage)));
 		m_debugLogger->startLogging();
 	}
-#endif // GL_DEBUG
+#endif // NDEBUG
 
     /// ================ Initialise Output Texture Buffer ======================
     m_gl->glGenTextures( 1, &m_texId );
