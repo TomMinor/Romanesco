@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.13)
+cmake_minimum_required(VERSION 2.8.11)
 
 project(romanesco)
 
@@ -36,11 +36,7 @@ find_package(Optix REQUIRED)
 if(OPTIX_FOUND)
       Message(STATUS "--> using package OptiX")
       add_definitions(-DUSEOPTIX)
-      include_directories(${OPTIX_INCLUDE_DIR})
-    LIST(APPEND LIBRARIES_OPTIMIZED ${OPTIX_LIB} )
-      LIST(APPEND LIBRARIES_DEBUG ${OPTIX_LIB} )
-      LIST(APPEND PACKAGE_SOURCE_FILES ${OPTIX_HEADERS} )
-      source_group(OPTIX FILES  ${OPTIX_HEADERS} )
+      include_directories(${OPTIX_INCLUDE_DIRS})
 endif()
 
 find_package(Qt5Widgets REQUIRED core opengl widgets gui )
@@ -259,7 +255,7 @@ target_link_libraries(${PROJECT_NAME}
                     ${Qt5Widgets_LIBRARIES}
                     ${OPENGL_gl_LIBRARY}
                     ${CUDA_LIBRARIES}
-                    ${OPTIX_LIB}
+                    ${OPTIX_LIBRARIES}
                     ${OPENEXR_LIBRARIES}
                     ${Boost_LIBRARIES}
 									  )
