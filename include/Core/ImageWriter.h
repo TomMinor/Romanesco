@@ -3,16 +3,17 @@
 
 #include <vector>
 
-#ifdef __WIN32
+#ifdef OPENEXR_AVAILABLE
+///@todo Why does this have to be defined?
+//http://stackoverflow.com/questions/16356171/visual-studio-2012-cant-resolve-static-fields-in-a-dll-lib
+# ifdef _WIN32
+# define OPENEXR_DLL
+# endif
+
+#ifdef _WIN32
 #undef max
 #undef min
 #endif
-
-#ifdef OPENEXR_AVAILABLE
-///@todo Why does this have to be defined?
-# ifdef __WIN32
-# define OPENEXR_DLL
-# endif
 
 #include <OpenEXR/ImfRgba.h>
 #include <OpenEXR/ImfRgbaFile.h>

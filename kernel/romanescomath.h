@@ -1,5 +1,5 @@
 #ifdef ROMANESCO_RUNTIME_COMPILE
-#include <cuda_runtime.h>
+//#include <cuda_runtime.h>
 #include <cutil_math.h>
 #include <cutil_matrix.h>
 
