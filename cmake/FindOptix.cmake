@@ -11,9 +11,9 @@ if ( OPTIX_INCLUDE_DIR )
 else()
   message(WARNING "
     OPTIX not found. 
-    The Optix folder should be added to CMAKE_PREFIX_PATH:
-    - lib[64] folder: containing the Optix[64_]*.dll or *.so
-    - include folder: containing the include files"
+    The Optix folder containg the following should be added to CMAKE_PREFIX_PATH:
+    /lib64: containing optix[64_]*.lib or *.so
+    /include: containing the header files"
   )
 endif()
 # Get absolute path of relative path
