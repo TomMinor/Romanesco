@@ -25,7 +25,7 @@
 /* TODO
  * Fix nvrtc on linux
  * FIx optix crash
- * 
+ * Rename TestGLWidget to something better
  * Move image code back to OpenEXR
  * Make all resource paths relative (to what)
  * Add nvcc building to cmake

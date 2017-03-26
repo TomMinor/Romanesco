@@ -2,6 +2,14 @@
 //#include <cuda_runtime.h>
 #include <cutil_math.h>
 #include <cutil_matrix.h>
+#else
+#include <cuda_runtime.h>
+#include <optix_math.h>
+#include <optixu/optixu_math_namespace.h>
+#include <optixu/optixu_matrix_namespace.h>
+
+using namespace optix;
+#endif
 
 # define M_E		2.7182818284590452354	/* e */
 # define M_LOG2E	1.4426950408889634074	/* log_2 e */
@@ -17,10 +25,4 @@
 # define M_SQRT2	1.41421356237309504880	/* sqrt(2) */
 # define M_SQRT1_2	0.70710678118654752440	/* 1/sqrt(2) */
 
-#else
-//#include <optix_math.h>
-//#include <optixu/optixu_math_namespace.h>
-//#include <optixu/optixu_matrix_namespace.h>
 
-//using namespace optix;
-#endif
