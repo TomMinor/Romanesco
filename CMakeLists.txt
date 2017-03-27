@@ -33,13 +33,14 @@ else()
     message( "CUDA version is ${CUDA_VERSION_MAJOR}, at least 7.0 is required for libnvrtc. Using system nvcc for runtime compilation." )
 endif()
 
-
 find_package(Optix REQUIRED)
 if(OPTIX_FOUND)
       Message(STATUS "--> using package OptiX")
       add_definitions(-DUSEOPTIX)
       include_directories(${OPTIX_INCLUDE_DIRS})
 endif()
+
+
 
 find_package(Qt5Widgets REQUIRED core opengl widgets gui )
 include_directories( ${Qt5Widgets_INCLUDE_DIRS} )
@@ -162,7 +163,7 @@ file(GLOB HEADERS_CORE
   )
 
 file(GLOB HEADERS_GUI 
-    ${CMAKE_SOURCE_DIR}/include/GUI/QColorRampEditor.h
+  ${CMAKE_SOURCE_DIR}/include/GUI/QColorRampEditor.h
     ${CMAKE_SOURCE_DIR}/include/GUI/gridscene.h
     ${CMAKE_SOURCE_DIR}/include/GUI/highlighter.h
     ${CMAKE_SOURCE_DIR}/include/GUI/mainwindow.h
@@ -219,7 +220,6 @@ file(GLOB HEADERS
     ${CMAKE_SOURCE_DIR}/kernel/*.h
   )
 
-
 include_directories(
     ${CMAKE_SOURCE_DIR}/include/Core
     ${CMAKE_SOURCE_DIR}/include/GUI
@@ -236,6 +236,25 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/kernel
   )
 
+
+# set(
+#     CUDA_NVCC_FLAGS
+#     ${CUDA_NVCC_FLAGS};
+#     
+#     )
+
+CUDA_INCLUDE_DIRECTORIES(${OPTIX_INCLUDE_DIRS})
+
+CUDA_COMPILE_PTX( CUDA_PTX_FILES ${KERNEL_SOURCES}
+                  OPTIONS --use_fast_math
+)
+
+add_custom_command( OUTPUT ${CMAKE_BINARY_DIR}/ptx 
+                    COMMAND ${CMAKE_COMMAND} -E rename ${CMAKE_BINARY_DIR}/ptx DEPENDS ${CUDA_PTX_FILES}) 
+add_custom_target(ptx ALL
+    DEPENDS ${CUDA_PTX_FILES}
+    SOURCES ${KERNEL_SOURCES}
+)
 
 
 add_executable(romanesco ${CPP_SOURCES} ${HEADERS} ${VERTEX_SOURCES} ${FRAGMENT_SOURCES})
