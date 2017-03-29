@@ -237,27 +237,35 @@ include_directories(
   )
 
 
-# set(
-#     CUDA_NVCC_FLAGS
-#     ${CUDA_NVCC_FLAGS};
-#     
-#     )
-
 CUDA_INCLUDE_DIRECTORIES(${OPTIX_INCLUDE_DIRS})
+
+set(KERNEL_SOURCES ${KERNEL_SOURCES})
 
 CUDA_COMPILE_PTX( CUDA_PTX_FILES ${KERNEL_SOURCES}
                   OPTIONS --use_fast_math
 )
 
-add_custom_command( OUTPUT ${CMAKE_BINARY_DIR}/ptx 
-                    COMMAND ${CMAKE_COMMAND} -E rename ${CMAKE_BINARY_DIR}/ptx DEPENDS ${CUDA_PTX_FILES}) 
 add_custom_target(ptx ALL
     DEPENDS ${CUDA_PTX_FILES}
-    SOURCES ${KERNEL_SOURCES}
-)
+    SOURCES ${KERNEL_SOURCES} )
+
+set(CUDA_CU_FILES)
+foreach(_file ${CUDA_PTX_FILES})
+  # Fix the weird generated name from findCUDA
+  STRING(REGEX REPLACE "cuda_compile_ptx_1_generated_" "ptx/" cuda_file ${_file})
+  string(APPEND CUDA_CU_FILES ${cuda_file})
+  
+  get_filename_component(PTXDIR ${cuda_file} DIRECTORY)
+
+  add_custom_command(TARGET ptx POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E make_directory ${PTXDIR}
+      COMMAND ${CMAKE_COMMAND} -E rename ${_file} ${cuda_file} DEPENDS ${_file}
+      COMMENT "Moving ${_file} -> ${cuda_file}\n" VERBATIM 
+  )
+endforeach()
 
 
-add_executable(romanesco ${CPP_SOURCES} ${HEADERS} ${VERTEX_SOURCES} ${FRAGMENT_SOURCES})
+add_executable(${PROJECT_NAME} ${CPP_SOURCES} ${HEADERS} ${VERTEX_SOURCES} ${FRAGMENT_SOURCES})
 
 source_group("Shaders\\Vertex"  FILES ${VERTEX_SOURCES})
 source_group("Shaders\\Fragment"  FILES ${FRAGMENT_SOURCES})
@@ -280,3 +288,6 @@ target_link_libraries(${PROJECT_NAME}
                     ${OPENEXR_LIBRARIES}
                     ${Boost_LIBRARIES}
 									  )
+
+
+# install(TARGETS ${PROJECT_NAME} DESTINATION ${PROJECT_BINARY_BIN}/bin)
