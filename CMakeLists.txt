@@ -239,8 +239,6 @@ include_directories(
 
 CUDA_INCLUDE_DIRECTORIES(${OPTIX_INCLUDE_DIRS})
 
-set(KERNEL_SOURCES ${KERNEL_SOURCES})
-
 CUDA_COMPILE_PTX( CUDA_PTX_FILES ${KERNEL_SOURCES}
                   OPTIONS --use_fast_math
 )
@@ -263,7 +261,6 @@ foreach(_file ${CUDA_PTX_FILES})
       COMMENT "Moving ${_file} -> ${cuda_file}\n" VERBATIM 
   )
 endforeach()
-
 
 add_executable(${PROJECT_NAME} ${CPP_SOURCES} ${HEADERS} ${VERTEX_SOURCES} ${FRAGMENT_SOURCES})
 
@@ -289,5 +286,16 @@ target_link_libraries(${PROJECT_NAME}
                     ${Boost_LIBRARIES}
 									  )
 
+# @ToDo Setup this deployment stuff for Optix/CUDA too
+# http://stackoverflow.com/questions/36981942/how-to-use-add-custom-command-to-copy-dlls-using-generator-expressions
+
+# Windows specific build steps
+if(WIN32)
+    # Run winddeployqt if it can be found
+    find_program(WINDEPLOYQT_EXECUTABLE NAMES windeployqt HINTS ${QTDIR} ENV QTDIR PATH_SUFFIXES bin)
+    message( "Configuring Qt deployment with ${WINDEPLOYQT_EXECUTABLE}" )
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${WINDEPLOYQT_EXECUTABLE} $<TARGET_FILE:${PROJECT_NAME}>)
+endif()
 
 # install(TARGETS ${PROJECT_NAME} DESTINATION ${PROJECT_BINARY_BIN}/bin)
