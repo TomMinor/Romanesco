@@ -35,9 +35,14 @@ endif()
 
 find_package(Optix REQUIRED)
 if(OPTIX_FOUND)
-      Message(STATUS "--> using package OptiX")
-      add_definitions(-DUSEOPTIX)
-      include_directories(${OPTIX_INCLUDE_DIRS})
+    Message(STATUS "--> using package OptiX")
+    add_definitions(-DUSEOPTIX)
+    include_directories(${OPTIX_INCLUDE_DIRS})
+
+    # The OptiX math libraries require this be set so windows.h includes min/max properly
+    if(WIN32)
+        add_definitions(-DNOMINMAX)
+    endif()
 endif()
 
 
