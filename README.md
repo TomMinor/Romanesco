@@ -19,15 +19,15 @@ If Optix, CUDA, OpenEXR or Boost cannot be found (if they are installed in a non
 
 ***Note: On Windows it is currently necessary to force a 64-bit build with CMAKE_GENERATOR_PLATFORM***
 #### Windows
-```
+```batch
 mkdir build
 cd build
-cmake .. -DCMAKE_GENERATOR_PLATFORM=x64 -DCMAKE_PREFIX_PATH="D:\Qt\5.8\msvc2013_64;D:\ProgramData\NVIDIA Corporation\OptiX SDK 3.8.0;"
+cmake .. -DCMAKE_GENERATOR_PLATFORM=x64 -DCMAKE_PREFIX_PATH="D:\Qt\5.8\msvc2013_64;D:\ProgramData\NVIDIA Corporation\OptiX SDK 3.8.0"
 ```
 
 #### Linux
-```
+```bash
 mkdir build
 cd build
-cmake .. -DCMAKE_PREFIX_PATH="/opt/Qt/5.8/gcc_64;/opt/NVIDIA-OptiX-SDK-3.8.0-linux64;"
+cmake .. -DCMAKE_PREFIX_PATH="/opt/Qt/5.8/gcc_64;/opt/NVIDIA-OptiX-SDK-3.8.0-linux64"
 ```
