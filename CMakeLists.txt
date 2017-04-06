@@ -2,7 +2,12 @@ cmake_minimum_required(VERSION 2.8.11)
 
 project(romanesco)
 
-#Todo: Detect 32bit build and react accordingly (no nvrtc, etc)
+#Todo: Detect 32bit build and react accordingly (no nvrtc)
+
+# Force C++11
+if(UNIX)
+  SET(CMAKE_CXX_FLAGS "-std=c++0x")
+endif()
 
 # Find includes in corresponding build directories
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -10,11 +15,6 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
-
-# Force C++11
-if(UNIX)
-  SET(CMAKE_CXX_FLAGS "-std=c++0x")
-endif()
 
 find_package(OpenGL)
 
@@ -46,6 +46,7 @@ if(OPTIX_FOUND)
 endif()
 
 
+
 find_package(Qt5Widgets REQUIRED core opengl widgets gui )
 include_directories( ${Qt5Widgets_INCLUDE_DIRS} )
 include_directories( ${Qt5Widgets_LIBRARIES} )
@@ -62,10 +63,6 @@ if(OpenEXR_FOUND)
 	include_directories(${OPENEXR_INCLUDE_DIRS} )
 	link_directories( ${OPENEXR_LIBRARY_DIR} )
     	add_definitions(-DOPENEXR_AVAILABLE)
-
-  find_package(ZLIB)
-  get_filename_component(ZLIB_ROOT_DIR "${ZLIB_LIBRARIES}" DIRECTORY)
-  get_filename_component(ZLIB_ROOT_DIR "${ZLIB_ROOT_DIR}/.." ABSOLUTE)
 endif(OpenEXR_FOUND)
 
 # find_package(glm REQUIRED)
@@ -76,11 +73,10 @@ add_definitions(${Qt5Widgets_DEFINITIONS})
 
 add_definitions(-DDEBUG_GL)
 
-
-
 file(GLOB CPP_SOURCES 
 		${CMAKE_SOURCE_DIR}/src/main.cpp
  	)
+
 
 file(GLOB CPP_SOURCES_CORE
     ${CMAKE_SOURCE_DIR}/src/Core/ImageWriter.cpp
@@ -259,8 +255,7 @@ add_custom_target(ptx ALL
 set(CUDA_CU_FILES)
 foreach(_file ${CUDA_PTX_FILES})
   # Fix the weird generated name from findCUDA
-  STRING(REGEX REPLACE "cuda_compile_ptx_[0-9]+_+generated_" "ptx/" cuda_file ${_file})
-  
+  STRING(REGEX REPLACE "cuda_compile_ptx_*generated_" "ptx/" cuda_file ${_file})
   set(CUDA_CU_FILES ${CUDA_CU_FILES} ${cuda_file})
   
   get_filename_component(PTXDIR ${cuda_file} DIRECTORY)
@@ -271,7 +266,6 @@ foreach(_file ${CUDA_PTX_FILES})
       COMMENT "Moving ${_file} -> ${cuda_file}\n" VERBATIM 
   )
 endforeach()
-
 
 add_executable(${PROJECT_NAME} ${CPP_SOURCES} ${HEADERS} ${VERTEX_SOURCES} ${FRAGMENT_SOURCES})
 
@@ -297,6 +291,9 @@ target_link_libraries(${PROJECT_NAME}
                     ${Boost_LIBRARIES}
 									  )
 
+# @ToDo Setup this deployment stuff for Optix/CUDA too
+# http://stackoverflow.com/questions/36981942/how-to-use-add-custom-command-to-copy-dlls-using-generator-expressions
+
 # Windows specific build steps
 if(WIN32)
     # Run winddeployqt if it can be found
@@ -304,36 +301,6 @@ if(WIN32)
     message( "Configuring Qt deployment with ${WINDEPLOYQT_EXECUTABLE}" )
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${WINDEPLOYQT_EXECUTABLE} $<TARGET_FILE:${PROJECT_NAME}>)
-
-    # Install Optix DLLs
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${OPTIX_ROOT_DIR}/bin64"
-        $<TARGET_FILE_DIR:${PROJECT_NAME}>)
-
-    # Install OpenEXR/IlmBase/ZLib DLLs
-    if(OpenEXR_FOUND)
-      message(${OPENEXR_ROOT_DIR})
-      add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E copy_directory
-          "${OPENEXR_ROOT_DIR}/lib"
-          $<TARGET_FILE_DIR:${PROJECT_NAME}>)
-
-      add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E copy_directory
-          "${ZLIB_ROOT_DIR}/bin"
-          $<TARGET_FILE_DIR:${PROJECT_NAME}>)
-    endif(OpenEXR_FOUND)
 endif()
-
-# Copy resources to build folder (styles/, shaders/, kernel/, images/, scenes/)
-# ToDo this doesn't automatically copy every build, but good enough if you're not doing kernel development
-add_custom_target(copy-runtime-files ALL
-    COMMAND cmake -E copy_directory "${CMAKE_SOURCE_DIR}/styles" "${PROJECT_BINARY_DIR}/styles"
-    COMMAND cmake -E copy_directory "${CMAKE_SOURCE_DIR}/shaders" "${PROJECT_BINARY_DIR}/shaders"
-    COMMAND cmake -E copy_directory "${CMAKE_SOURCE_DIR}/kernel" "${PROJECT_BINARY_DIR}/kernel"
-    COMMAND cmake -E copy_directory "${CMAKE_SOURCE_DIR}/images" "${PROJECT_BINARY_DIR}/images"
-    COMMAND cmake -E copy_directory "${CMAKE_SOURCE_DIR}/scenes" "${PROJECT_BINARY_DIR}/scenes"
-)
 
 # install(TARGETS ${PROJECT_NAME} DESTINATION ${PROJECT_BINARY_BIN}/bin)

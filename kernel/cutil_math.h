@@ -19,7 +19,7 @@
 #ifndef CUTIL_MATH_H
 #define CUTIL_MATH_H
 
-//#include "cuda_runtime.h"
+#include "cuda_runtime.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 typedef unsigned int uint;
