@@ -1,9 +1,8 @@
-kernel/* linguist-vendored
-shaders/* linguist-vendored
-styles/* linguist-vendored
-utils/* linguist-vendored
-images/* linguist-vendored
-doc/* linguist-vendored
-include/* linguist-vendored
-*.h linguist-vendored
-*.c linguist-vendored
+linguist-language=C++
+kernel/* linguist-vendored=false
+shaders/* linguist-vendored=false
+styles/* linguist-vendored=false
+utils/* linguist-vendored=false
+images/* linguist-vendored=false
+doc/* linguist-vendored=false
+*.c linguist-vendored=false
