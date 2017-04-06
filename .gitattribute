@@ -5,4 +5,5 @@ styles/** linguist-vendored=false
 utils/** linguist-vendored=false
 images/** linguist-vendored=false
 doc/** linguist-vendored=false
+include/** linguist-vendored=false
 *.c linguist-vendored=false
