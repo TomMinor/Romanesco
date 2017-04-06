@@ -11,6 +11,14 @@ Fractal Renderer
 * *[Optional]* OpenEXR
 * *[Optional]* Boost
 
+### Get the code
+
+```
+git clone --recursive https://github.com/TomMinor/Romanesco
+```
+
+*Note: Make sure to add --recursive so all the submodules in dependencies/ are synced too*
+
 ### Configuring CMake
 
 As specified in the [Qt docs](http://doc.qt.io/qt-5/cmake-manual.html), you need to set CMAKE_PREFIX_PATH to Qt5's location.
