@@ -4,3 +4,5 @@ styles/* linguist-vendored
 utils/* linguist-vendored
 images/* linguist-vendored
 doc/* linguist-vendored
+*.h linguist-vendored
+*.c linguist-vendored
