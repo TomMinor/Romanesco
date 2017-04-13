@@ -1,6 +1,16 @@
 # Romanesco
-Fractal Renderer
+Romanesco is a GPU based Fractal Renderer developed using the NVIDIA Optix framework, it is still in a work in progress state but has been proven in production already!
 
+![exr_contactsheet](doc/images/contactsheet.png)
+
+### Features:
+* Progressive rendering of SDF *(Signed Distance Field)* surfaces using path tracing.
+* Dump animated frames to **.exr** files, with useful data channels including surface normal, depth and orbit traps.
+* SDF scenes are defined with simple hit kernels, these can be edited and compiled at runtime if Romanesco is built with a CUDA version that supports [NVRTC](http://docs.nvidia.com/cuda/nvrtc/index.html). These scene hit functions can define any possible distance field, by combining primitives using distance operations like those found [here](http://iquilezles.org/www/articles/distfunctions/distfunctions.htm).
+* Render scenes in 360 for fractal environment maps!
+* Cross-platform (tested on Windows/Linux, builds on Mac).
+
+![tunnelbulb](doc/images/tunnelbulb.jpg)
 
 ## Build
 
