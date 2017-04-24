@@ -21,6 +21,8 @@ Romanesco is a GPU based Fractal Renderer developed using the NVIDIA Optix frame
 * *[Optional]* OpenEXR
 * *[Optional]* Boost
 
+***Note: The supported versions of CUDA/Optix will only work with up to VS2013 on Windows, if you are running a more up to date version of VS then install the [build tools](https://www.microsoft.com/en-gb/download/details.aspx?id=40760) and force the toolset as described below***
+
 ### Get the code
 
 ```
@@ -42,6 +44,12 @@ mkdir build
 cd build
 cmake .. -DCMAKE_GENERATOR_PLATFORM=x64 -DCMAKE_PREFIX_PATH="D:\Qt\5.8\msvc2013_64;D:\ProgramData\NVIDIA Corporation\OptiX SDK 3.8.0"
 ```
+
+*Use the toolset argument *(-T)* to force the 2013 compilers in a newer version of Visual Studio (such as [community](https://www.visualstudio.com/vs/community/))*
+```batch
+cmake .. -DCMAKE_GENERATOR_PLATFORM=x64 -T v120 -DCMAKE_PREFIX_PATH="D:\Qt\5.8\msvc2013_64;D:\ProgramData\NVIDIA Corporation\OptiX SDK 3.8.0"
+```
+
 
 #### Linux
 ```bash
