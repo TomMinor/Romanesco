@@ -16,8 +16,8 @@ Romanesco is a GPU based Fractal Renderer developed using the NVIDIA Optix frame
 
 ### Dependencies
 * Qt 5
-* [CUDA 7.x](https://developer.nvidia.com/cuda-75-downloads-archive) *(tested with 7.5)*
-* [Optix 3.8.0](https://developer.nvidia.com/designworks/optix/downloads/legacy) *(other versions are untested)*
+* [CUDA 7.0](https://developer.nvidia.com/cuda-70-downloads-archive)
+* [Optix 3.8.0](https://developer.nvidia.com/designworks/optix/downloads/legacy) *(other versions are untested, may require different CUDA versions)*
 * *[Optional]* OpenEXR
 * *[Optional]* Boost
 
