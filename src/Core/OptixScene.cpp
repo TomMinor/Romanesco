@@ -691,12 +691,9 @@ void OptixScene::createCameras()
     m_context->setMissProgram( static_cast<unsigned int>(PathTraceRay::CAMERA), m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "envmap_miss" ) );
 
     const optix::float3 default_color = m_context["bg_color"]->getFloat3();
+	
 	/// @todo Fix absolute path
-	m_context["envmap"]->setTextureSampler(loadTexture(m_context, "D:/Optix/OptiX SDK 3.8.0/SDK/tutorial/data/CedarCity.hdr", default_color));
-    //m_context["envmap"]->setTextureSampler( loadTexture( m_context, qgetenv("HOME").toStdString() +  + "/src/optix/SDK/tutorial/data/CedarCity.hdr", default_color) );
-//    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/tom/src/Fragmentarium/Fragmentarium-Source/Examples/Include/Ditch-River_2k.hdr", default_color) );
-//    m_context["envmap"]->setTextureSampler( loadTexture( m_context,  qgetenv("HOME").toStdString() + "/Downloads/Milkyway/Milkyway_small.hdr", default_color) );
-//    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/i7245143/Pictures/hdri/hdrmaps_com_free_050_half.hdr", default_color) );
+	m_context["envmap"]->setTextureSampler(loadTexture(m_context, qPrintable(QDir::currentPath() + QString("/hdr/CedarCity.hdr")), default_color));
 }
 
 void OptixScene::createLightGeo()

@@ -19,7 +19,7 @@ endif()
 find_package(OpenGL)
 
 # Find at least a 4.0 version of CUDA.
-find_package(CUDA REQUIRED)
+find_package(CUDA 7.0 REQUIRED)
 include_directories( ${CUDA_INCLUDE_DIRS} )
 set(CUDA_LIBRARIES ${CUDA_LIBRARIES} ${CUDA_cudart_static_LIBRARY})
 
@@ -69,7 +69,14 @@ if(OpenEXR_FOUND)
 endif(OpenEXR_FOUND)
 
 # find_package(glm REQUIRED)
-include_directories( "${CMAKE_CURRENT_LIST_DIR}/thirdparty/glm" )
+
+set(GLM_DIR "${CMAKE_SOURCE_DIR}/dependencies/glm")
+
+if(EXISTS "${GLM_DIR}")
+    include_directories( "${GLM_DIR}" )
+else()
+    message( FATAL_ERROR "${GLM_DIR} doesn't exist, did you sync all submodules?" )
+endif()
 
 # We need add -DQT_WIDGETS_LIB when using QtWidgets in Qt 5.
 add_definitions(${Qt5Widgets_DEFINITIONS})
@@ -334,6 +341,7 @@ add_custom_target(copy-runtime-files ALL
     COMMAND cmake -E copy_directory "${CMAKE_SOURCE_DIR}/kernel" "${PROJECT_BINARY_DIR}/kernel"
     COMMAND cmake -E copy_directory "${CMAKE_SOURCE_DIR}/images" "${PROJECT_BINARY_DIR}/images"
     COMMAND cmake -E copy_directory "${CMAKE_SOURCE_DIR}/scenes" "${PROJECT_BINARY_DIR}/scenes"
+    COMMAND cmake -E copy_directory "${CMAKE_SOURCE_DIR}/hdr" "${PROJECT_BINARY_DIR}/hdr"
 )
 
 # install(TARGETS ${PROJECT_NAME} DESTINATION ${PROJECT_BINARY_BIN}/bin)
