@@ -266,7 +266,7 @@ add_custom_target(ptx ALL
 set(CUDA_CU_FILES)
 foreach(_file ${CUDA_PTX_FILES})
   # Fix the weird generated name from findCUDA
-  STRING(REGEX REPLACE "cuda_compile_ptx_[0-9]+_+generated_" "ptx/" cuda_file ${_file})
+  STRING(REGEX REPLACE "cuda_compile_ptx_[0-9]*_*generated_" "ptx/" cuda_file ${_file})
   
   set(CUDA_CU_FILES ${CUDA_CU_FILES} ${cuda_file})
   
