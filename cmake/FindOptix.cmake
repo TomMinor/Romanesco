@@ -27,7 +27,7 @@ if ( OPTIX_ROOT_DIR )
 else()
   message(WARNING "
     OPTIX not found. 
-    The Optix folder containg the following should be added to CMAKE_PREFIX_PATH or set via OPTIX_LOCATION:
+    The Optix folder containing the following should be added to CMAKE_PREFIX_PATH or set via OPTIX_LOCATION:
     /lib64: containing optix[64_]*.lib or *.so
     /include: containing the header files"
   )
@@ -37,9 +37,9 @@ get_filename_component(OPTIX_ROOT_DIR "${OPTIX_ROOT_DIR}"
                        REALPATH BASE_DIR "${CMAKE_BINARY_DIR}")
 
 # Cmake likes to grab the libs from /lib instead of /lib64, so disable default paths
-find_library(OPTIX_LIBRARY NAMES optix optix.1 PATHS "${OPTIX_ROOT_DIR}" NO_DEFAULT_PATH PATH_SUFFIXES lib64)
-find_library(OPTIXU_LIBRARY NAMES optixu optixu.1 PATHS "${OPTIX_ROOT_DIR}" NO_DEFAULT_PATH PATH_SUFFIXES lib64)
-find_library(OPTIXPRIME_LIBRARY NAMES optix_prime optix_prime.1 PATHS "${OPTIX_ROOT_DIR}" NO_DEFAULT_PATH PATH_SUFFIXES lib64)
+find_library(OPTIX_LIBRARY NAMES optix.6.0.0 PATHS "${OPTIX_ROOT_DIR}" NO_DEFAULT_PATH PATH_SUFFIXES lib64)
+find_library(OPTIXU_LIBRARY NAMES optixu.6.0.0 PATHS "${OPTIX_ROOT_DIR}" NO_DEFAULT_PATH PATH_SUFFIXES lib64)
+find_library(OPTIXPRIME_LIBRARY NAMES optix_prime.6.0.0 PATHS "${OPTIX_ROOT_DIR}" NO_DEFAULT_PATH PATH_SUFFIXES lib64)
 
 
 set(OPTIX_INCLUDE_DIR "${OPTIX_ROOT_DIR}/include")

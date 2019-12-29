@@ -1,4 +1,4 @@
-#include "include/SDFOps/DistOp/DistOpInterface_SDFOP.h"
+#include "SDFOps/DistOp/DistOpInterface_SDFOP.h"
 
 static const std::vector<Argument> args = {
     {"a", ReturnType::Float, "0.0f"},

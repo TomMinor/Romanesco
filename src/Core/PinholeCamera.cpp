@@ -1,5 +1,7 @@
 #include "PinholeCamera.h"
 
+#include <glm/gtc/type_ptr.hpp>
+
 # ifdef _WIN32
    #include <cfloat>
    #define ISFINITE _finite
@@ -10,7 +12,7 @@
 
 namespace Romanesco {
 
-PinholeCamera::PinholeCamera(optix::float3 eye, optix::float3 lookat, optix::float3 up, float hfov, float vfov, AspectRatioMode arm)
+PinholeCamera::PinholeCamera(glm::vec3 eye, glm::vec3 lookat, glm::vec3 up, float hfov = 60, float vfov = 60, AspectRatioMode arm)
   : eye(eye)
   , lookat(lookat)
   , up(up)
@@ -57,7 +59,7 @@ float assignWithCheck( float& dst, const float &src )
   dst = isReal(src) ? src : dst;
 */
 
-optix::float3 assignWithCheck( optix::float3& dst, const optix::float3 &src )
+glm::vec3 assignWithCheck(glm::vec3& dst, const glm::vec3& src )
 {
   if( ISFINITE( src.x ) && ISFINITE( src.y ) && ISFINITE( src.z ) ) {
     dst = src;
@@ -92,7 +94,7 @@ void PinholeCamera::setAspectRatio(float ratio)
   setup();
 }
 
-void PinholeCamera::setParameters(optix::float3 eye_in, optix::float3 lookat_in, optix::float3 up_in, float hfov_in, float vfov_in, PinholeCamera::AspectRatioMode aspectRatioMode_in)
+void PinholeCamera::setParameters(glm::vec3 eye_in, glm::vec3 lookat_in, glm::vec3 up_in, float hfov_in, float vfov_in, PinholeCamera::AspectRatioMode aspectRatioMode_in)
 {
   eye = eye_in;
   lookat = lookat_in;
@@ -106,18 +108,18 @@ void PinholeCamera::setParameters(optix::float3 eye_in, optix::float3 lookat_in,
 
 void PinholeCamera::setup()
 {
-  lookdir = assignWithCheck( lookdir, lookat-eye );  // do not normalize lookdir -- implies focal length
-  float lookdir_len = optix::length(lookdir);
-  up = assignWithCheck(up, optix::normalize(up));
-  camera_u = assignWithCheck(camera_u, optix::normalize(optix::cross(lookdir, up)));
-  camera_v = assignWithCheck(camera_v, optix::normalize(optix::cross(camera_u, lookdir)));
+  lookdir = assignWithCheck( lookdir, lookat - eye );  // do not normalize lookdir -- implies focal length
+  float lookdir_len = lookdir.length();
+  up = assignWithCheck(up, glm::normalize(up));
+  camera_u = assignWithCheck(camera_u, glm::normalize(glm::cross(lookdir, up)));
+  camera_v = assignWithCheck(camera_v, glm::normalize(glm::cross(camera_u, lookdir)));
   float ulen = lookdir_len * tanf(DtoR(hfov*0.5f));
   camera_u = assignWithCheck( camera_u, camera_u * ulen );
   float vlen = lookdir_len * tanf(DtoR(vfov*0.5f));
   camera_v = assignWithCheck( camera_v, camera_v * vlen );
 }
 
-void PinholeCamera::getEyeUVW(optix::float3& eye_out, optix::float3& U, optix::float3& V, optix::float3& W)
+void PinholeCamera::getEyeUVW(glm::vec3& eye_out, glm::vec3& U, glm::vec3& V, glm::vec3& W)
 {
   eye_out = eye;
   U = camera_u;
@@ -125,7 +127,7 @@ void PinholeCamera::getEyeUVW(optix::float3& eye_out, optix::float3& U, optix::f
   W = lookdir;
 }
 
-void PinholeCamera::getEyeLookUpFOV(optix::float3& eye_out, optix::float3& lookat_out, optix::float3& up_out, float& HFOV_out, float& VFOV_out)
+void PinholeCamera::getEyeLookUpFOV(glm::vec3& eye_out, glm::vec3& lookat_out, glm::vec3& up_out, float& HFOV_out, float& VFOV_out)
 {
   eye_out = eye;
   lookat_out = lookat;
@@ -149,9 +151,9 @@ void PinholeCamera::scaleFOV(float scale)
   setup();
 }
 
-void PinholeCamera::translate(optix::float2 t)
+void PinholeCamera::translate(glm::vec2 t)
 {
-  optix::float3 trans = camera_u*t.x + camera_v*t.y;
+  glm::vec3 trans = camera_u*t.x + camera_v*t.y;
 
   eye = assignWithCheck( eye, eye + trans );
   lookat = assignWithCheck( lookat, lookat + trans );
@@ -167,14 +169,13 @@ void PinholeCamera::dolly(float scale)
 {
   // Better make sure the scale isn't exactly one.
   if (scale == 1.0f) return;
-  optix::float3 d = (lookat - eye) * scale;
+  glm::vec3 d = (lookat - eye) * scale;
   eye  = assignWithCheck( eye, eye + d );
 
   setup();
 }
 
-optix::float3 projectToSphere( float x, float y, float radius )
-  {
+glm::vec3 projectToSphere( float x, float y, float radius ) {
     x /= radius;
     y /= radius;
     float rad2 = x*x+y*y;
@@ -182,23 +183,22 @@ optix::float3 projectToSphere( float x, float y, float radius )
       float rad = sqrt(rad2);
       x /= rad;
       y /= rad;
-      return optix::make_float3( x, y, 0.0f );
+	  return glm::vec3( x, y, 0.0f );
     } else {
       float z = sqrt(1-rad2);
-      return optix::make_float3( x, y, z );
+      return glm::vec3( x, y, z );
     }
   }
 
 
-optix::Matrix4x4 rotationMatrix( const optix::float3& _to, const optix::float3& _from )
-{
-	optix::float3 from = optix::normalize(_from);
-	optix::float3 to = optix::normalize(_to);
+glm::mat4x4 rotationMatrix(const glm::vec3& _to, const glm::vec3& _from ) {
+	glm::vec3 from = glm::normalize(_from);
+	glm::vec3 to = glm::normalize(_to);
 
-	optix::float3 v = optix::cross(from, to);
-	float  e = optix::dot(from, to);
+	glm::vec3 v = glm::cross(from, to);
+	float  e = glm::dot(from, to);
     if ( e > 1.0f-1.e-9f ) {
-        return optix::Matrix4x4::identity();
+		return glm::mat4();
     } else {
         float h = 1.0f/(1.0f + e);
         float mtx[16];
@@ -222,14 +222,14 @@ optix::Matrix4x4 rotationMatrix( const optix::float3& _to, const optix::float3& 
         mtx[14] = 0.0f;
         mtx[15] = 1.0f;
 
-        return optix::Matrix4x4( mtx );
+        return glm::transpose(glm::make_mat4(mtx));
     }
 }
 
-optix::Matrix4x4 initWithBasis( const optix::float3& u,
-                                const optix::float3& v,
-                                const optix::float3& w,
-                                const optix::float3& t )
+glm::mat4 initWithBasis(const glm::vec3& u,
+                        const glm::vec3& v,
+						const glm::vec3& w,
+                        const glm::vec3& t )
 {
     float m[16];
     m[0] = u.x;
@@ -252,114 +252,123 @@ optix::Matrix4x4 initWithBasis( const optix::float3& u,
     m[14] = 0.0f;
     m[15] = 1.0f;
 
-    return optix::Matrix4x4( m );
+	
+
+	return glm::transpose(glm::make_mat4(m));
 }
 
-inline float det3 (float a, float b, float c,
-                   float d, float e, float f,
-                   float g, float h, float i)
-{ return a*e*i + d*h*c + g*b*f - g*e*c - d*b*i - a*h*f; }
+//inline float det3 (float a, float b, float c,
+//                   float d, float e, float f,
+//                   float g, float h, float i)
+//{ return a*e*i + d*h*c + g*b*f - g*e*c - d*b*i - a*h*f; }
+//
+//#define mm(i,j) m[i*4+j]
+//  float det4( const glm::mat4& m )
+//  {
+//    float det;
+//    det  = mm(0,0) * det3(mm(1,1), mm(1,2), mm(1,3),
+//                          mm(2,1), mm(2,2), mm(2,3),
+//                          mm(3,1), mm(3,2), mm(3,3));
+//    det -= mm(0,1) * det3(mm(1,0), mm(1,2), mm(1,3),
+//                          mm(2,0), mm(2,2), mm(2,3),
+//                          mm(3,0), mm(3,2), mm(3,3));
+//    det += mm(0,2) * det3(mm(1,0), mm(1,1), mm(1,3),
+//                          mm(2,0), mm(2,1), mm(2,3),
+//                          mm(3,0), mm(3,1), mm(3,3));
+//    det -= mm(0,3) * det3(mm(1,0), mm(1,1), mm(1,2),
+//                          mm(2,0), mm(2,1), mm(2,2),
+//                          mm(3,0), mm(3,1), mm(3,2));
+//    return det;
+//  }
+//
+//  optix::Matrix4x4 inverse( const optix::Matrix4x4& m )
+//  {
+//    optix::Matrix4x4 inverse;
+//    float det = det4( m );
+//
+//    inverse[0]  =  det3(mm(1,1), mm(1,2), mm(1,3),
+//                        mm(2,1), mm(2,2), mm(2,3),
+//                        mm(3,1), mm(3,2), mm(3,3)) / det;
+//    inverse[1]  = -det3(mm(0,1), mm(0,2), mm(0,3),
+//                        mm(2,1), mm(2,2), mm(2,3),
+//                        mm(3,1), mm(3,2), mm(3,3)) / det;
+//    inverse[2]  =  det3(mm(0,1), mm(0,2), mm(0,3),
+//                        mm(1,1), mm(1,2), mm(1,3),
+//                        mm(3,1), mm(3,2), mm(3,3)) / det;
+//    inverse[3]  = -det3(mm(0,1), mm(0,2), mm(0,3),
+//                        mm(1,1), mm(1,2), mm(1,3),
+//                        mm(2,1), mm(2,2), mm(2,3)) / det;
+//
+//    inverse[4]  = -det3(mm(1,0), mm(1,2), mm(1,3),
+//                        mm(2,0), mm(2,2), mm(2,3),
+//                        mm(3,0), mm(3,2), mm(3,3)) / det;
+//    inverse[5]  =  det3(mm(0,0), mm(0,2), mm(0,3),
+//                        mm(2,0), mm(2,2), mm(2,3),
+//                        mm(3,0), mm(3,2), mm(3,3)) / det;
+//    inverse[6]  = -det3(mm(0,0), mm(0,2), mm(0,3),
+//                        mm(1,0), mm(1,2), mm(1,3),
+//                        mm(3,0), mm(3,2), mm(3,3)) / det;
+//    inverse[7]  =  det3(mm(0,0), mm(0,2), mm(0,3),
+//                        mm(1,0), mm(1,2), mm(1,3),
+//                        mm(2,0), mm(2,2), mm(2,3)) / det;
+//
+//    inverse[8]  =  det3(mm(1,0), mm(1,1), mm(1,3),
+//                        mm(2,0), mm(2,1), mm(2,3),
+//                        mm(3,0), mm(3,1), mm(3,3)) / det;
+//    inverse[9]  = -det3(mm(0,0), mm(0,1), mm(0,3),
+//                        mm(2,0), mm(2,1), mm(2,3),
+//                        mm(3,0), mm(3,1), mm(3,3)) / det;
+//    inverse[10] =  det3(mm(0,0), mm(0,1), mm(0,3),
+//                        mm(1,0), mm(1,1), mm(1,3),
+//                        mm(3,0), mm(3,1), mm(3,3)) / det;
+//    inverse[11] = -det3(mm(0,0), mm(0,1), mm(0,3),
+//                        mm(1,0), mm(1,1), mm(1,3),
+//                        mm(2,0), mm(2,1), mm(2,3)) / det;
+//
+//    inverse[12] = -det3(mm(1,0), mm(1,1), mm(1,2),
+//                        mm(2,0), mm(2,1), mm(2,2),
+//                        mm(3,0), mm(3,1), mm(3,2)) / det;
+//    inverse[13] =  det3(mm(0,0), mm(0,1), mm(0,2),
+//                        mm(2,0), mm(2,1), mm(2,2),
+//                        mm(3,0), mm(3,1), mm(3,2)) / det;
+//    inverse[14] = -det3(mm(0,0), mm(0,1), mm(0,2),
+//                        mm(1,0), mm(1,1), mm(1,2),
+//                        mm(3,0), mm(3,1), mm(3,2)) / det;
+//    inverse[15] =  det3(mm(0,0), mm(0,1), mm(0,2),
+//                        mm(1,0), mm(1,1), mm(1,2),
+//                        mm(2,0), mm(2,1), mm(2,2)) / det;
+//
+//    return inverse;
+//}
 
-#define mm(i,j) m[i*4+j]
-  float det4( const optix::Matrix4x4& m )
-  {
-    float det;
-    det  = mm(0,0) * det3(mm(1,1), mm(1,2), mm(1,3),
-                          mm(2,1), mm(2,2), mm(2,3),
-                          mm(3,1), mm(3,2), mm(3,3));
-    det -= mm(0,1) * det3(mm(1,0), mm(1,2), mm(1,3),
-                          mm(2,0), mm(2,2), mm(2,3),
-                          mm(3,0), mm(3,2), mm(3,3));
-    det += mm(0,2) * det3(mm(1,0), mm(1,1), mm(1,3),
-                          mm(2,0), mm(2,1), mm(2,3),
-                          mm(3,0), mm(3,1), mm(3,3));
-    det -= mm(0,3) * det3(mm(1,0), mm(1,1), mm(1,2),
-                          mm(2,0), mm(2,1), mm(2,2),
-                          mm(3,0), mm(3,1), mm(3,2));
-    return det;
-  }
 
-  optix::Matrix4x4 inverse( const optix::Matrix4x4& m )
-  {
-    optix::Matrix4x4 inverse;
-    float det = det4( m );
-
-    inverse[0]  =  det3(mm(1,1), mm(1,2), mm(1,3),
-                        mm(2,1), mm(2,2), mm(2,3),
-                        mm(3,1), mm(3,2), mm(3,3)) / det;
-    inverse[1]  = -det3(mm(0,1), mm(0,2), mm(0,3),
-                        mm(2,1), mm(2,2), mm(2,3),
-                        mm(3,1), mm(3,2), mm(3,3)) / det;
-    inverse[2]  =  det3(mm(0,1), mm(0,2), mm(0,3),
-                        mm(1,1), mm(1,2), mm(1,3),
-                        mm(3,1), mm(3,2), mm(3,3)) / det;
-    inverse[3]  = -det3(mm(0,1), mm(0,2), mm(0,3),
-                        mm(1,1), mm(1,2), mm(1,3),
-                        mm(2,1), mm(2,2), mm(2,3)) / det;
-
-    inverse[4]  = -det3(mm(1,0), mm(1,2), mm(1,3),
-                        mm(2,0), mm(2,2), mm(2,3),
-                        mm(3,0), mm(3,2), mm(3,3)) / det;
-    inverse[5]  =  det3(mm(0,0), mm(0,2), mm(0,3),
-                        mm(2,0), mm(2,2), mm(2,3),
-                        mm(3,0), mm(3,2), mm(3,3)) / det;
-    inverse[6]  = -det3(mm(0,0), mm(0,2), mm(0,3),
-                        mm(1,0), mm(1,2), mm(1,3),
-                        mm(3,0), mm(3,2), mm(3,3)) / det;
-    inverse[7]  =  det3(mm(0,0), mm(0,2), mm(0,3),
-                        mm(1,0), mm(1,2), mm(1,3),
-                        mm(2,0), mm(2,2), mm(2,3)) / det;
-
-    inverse[8]  =  det3(mm(1,0), mm(1,1), mm(1,3),
-                        mm(2,0), mm(2,1), mm(2,3),
-                        mm(3,0), mm(3,1), mm(3,3)) / det;
-    inverse[9]  = -det3(mm(0,0), mm(0,1), mm(0,3),
-                        mm(2,0), mm(2,1), mm(2,3),
-                        mm(3,0), mm(3,1), mm(3,3)) / det;
-    inverse[10] =  det3(mm(0,0), mm(0,1), mm(0,3),
-                        mm(1,0), mm(1,1), mm(1,3),
-                        mm(3,0), mm(3,1), mm(3,3)) / det;
-    inverse[11] = -det3(mm(0,0), mm(0,1), mm(0,3),
-                        mm(1,0), mm(1,1), mm(1,3),
-                        mm(2,0), mm(2,1), mm(2,3)) / det;
-
-    inverse[12] = -det3(mm(1,0), mm(1,1), mm(1,2),
-                        mm(2,0), mm(2,1), mm(2,2),
-                        mm(3,0), mm(3,1), mm(3,2)) / det;
-    inverse[13] =  det3(mm(0,0), mm(0,1), mm(0,2),
-                        mm(2,0), mm(2,1), mm(2,2),
-                        mm(3,0), mm(3,1), mm(3,2)) / det;
-    inverse[14] = -det3(mm(0,0), mm(0,1), mm(0,2),
-                        mm(1,0), mm(1,1), mm(1,2),
-                        mm(3,0), mm(3,1), mm(3,2)) / det;
-    inverse[15] =  det3(mm(0,0), mm(0,1), mm(0,2),
-                        mm(1,0), mm(1,1), mm(1,2),
-                        mm(2,0), mm(2,1), mm(2,2)) / det;
-
-    return inverse;
-}
-
-void PinholeCamera::transform( const optix::Matrix4x4& trans )
+glm::mat4 inverse(const glm::mat4& m)
 {
-  optix::float3 cen = lookat;         // TODO: Add logic for various rotation types (eg, flythrough)
+	return glm::inverse(m);
+}
 
-  optix::Matrix4x4 frame = initWithBasis(optix::normalize(camera_u),
-										 optix::normalize(camera_v),
-										 optix::normalize(-lookdir),
-                                         cen );
-  optix::Matrix4x4 frame_inv = inverse( frame );
 
-  optix::Matrix4x4 final_trans = frame * trans * frame_inv;
-  optix::float4 up4     = optix::make_float4( up );
-  optix::float4 eye4    = optix::make_float4( eye );
+void PinholeCamera::transform(const glm::mat4& trans )
+{
+  glm::vec3 cen = lookat;         // TODO: Add logic for various rotation types (eg, flythrough)
+
+  glm::mat4 frame = initWithBasis(glm::normalize(camera_u),
+	                              glm::normalize(camera_v),
+								  glm::normalize(-lookdir),
+                                  cen);
+  glm::mat4 frame_inv = inverse( frame );
+
+  glm::mat4 final_trans = frame * trans * frame_inv;
+  glm::vec4 up4     = glm::vec4(up, 1.0);
+  glm::vec4 eye4    = glm::vec4(eye, 1.0);
   eye4.w         = 1.0f;
-  optix::float4 lookat4 = optix::make_float4( lookat );
+  glm::vec4 lookat4 = glm::vec4(lookat, 1.0);
   lookat4.w      = 1.0f;
 
 
-  up     = assignWithCheck( up, optix::make_float3( final_trans*up4 ) );
-  eye    = assignWithCheck( eye, optix::make_float3( final_trans*eye4 ) );
-  lookat = assignWithCheck( lookat, optix::make_float3( final_trans*lookat4 ) );
+  up     = assignWithCheck( up, glm::vec3( final_trans*up4 ) );
+  eye    = assignWithCheck( eye, glm::vec3( final_trans*eye4 ) );
+  lookat = assignWithCheck( lookat, glm::vec3( final_trans*lookat4 ) );
 
   setup();
 }

@@ -1,0 +1,1 @@
+#cmakedefine OPTIX_ROOT_DIR "@OPTIX_ROOT_DIR@"

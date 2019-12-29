@@ -1,4 +1,4 @@
-#include "include/Core/inputhandler.h"
+#include "Core/inputhandler.h"
 
 InputHandler::InputHandler()
 {

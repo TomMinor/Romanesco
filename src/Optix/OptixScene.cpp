@@ -12,7 +12,7 @@
 #include <GL/glu.h>
 #endif
 
-
+#include "optixresources.h"
 #include "ImageWriter.h"
 #include "OptixScene.h"
 #include "RuntimeCompiler.h"
@@ -691,8 +691,9 @@ void OptixScene::createCameras()
     m_context->setMissProgram( static_cast<unsigned int>(PathTraceRay::CAMERA), m_context->createProgramFromPTXFile( "ptx/menger.cu.ptx", "envmap_miss" ) );
 
     const optix::float3 default_color = m_context["bg_color"]->getFloat3();
-	/// @todo Fix absolute path
-	m_context["envmap"]->setTextureSampler(loadTexture(m_context, "D:/Optix/OptiX SDK 3.8.0/SDK/tutorial/data/CedarCity.hdr", default_color));
+	
+	QDir optix_root = OPTIX_ROOT_DIR;
+	m_context["envmap"]->setTextureSampler(loadTexture(m_context, optix_root.absoluteFilePath("SDK/data/CedarCity.hdr").toStdString(), default_color));
     //m_context["envmap"]->setTextureSampler( loadTexture( m_context, qgetenv("HOME").toStdString() +  + "/src/optix/SDK/tutorial/data/CedarCity.hdr", default_color) );
 //    m_context["envmap"]->setTextureSampler( loadTexture( m_context, "/home/tom/src/Fragmentarium/Fragmentarium-Source/Examples/Include/Ditch-River_2k.hdr", default_color) );
 //    m_context["envmap"]->setTextureSampler( loadTexture( m_context,  qgetenv("HOME").toStdString() + "/Downloads/Milkyway/Milkyway_small.hdr", default_color) );
@@ -985,7 +986,7 @@ float* OptixScene::getBufferContents(std::string _name, RTsize* _elementSize, RT
 
     RTsize bufferSize = buffer_width * buffer_height;
     float* hostPtr = new float[buffer->getElementSize() * bufferSize];
-    CUdeviceptr devicePtr = buffer->getDevicePointer( 0 );
+    CUdeviceptr devicePtr = (CUdeviceptr)buffer->getDevicePointer( 0 );
 	cudaMemcpy((void*)hostPtr, (void*)devicePtr, buffer->getElementSize() * bufferSize, cudaMemcpyDeviceToHost);
 //    qDebug() << buffer->getElementSize() * bufferSize;
 
