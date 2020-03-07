@@ -1,6 +1,8 @@
 #ifndef OPTIXSCENE_H
 #define OPTIXSCENE_H
 
+#include "../core/BaseScene.h"
+
 #include "OptixHeaders.h"
 
 //#include <Mouse.h>
@@ -51,45 +53,33 @@ private:
 };
 #endif
 
-class OptixScene : public QObject
+class OptixScene : public BaseScene
 {
 	Q_OBJECT
 
-    enum class PathTraceRay : unsigned int
-    {
-        CAMERA   = 0u,
-        SHADOW   = 1u,
-        BSDF  = 2u
-    };
+
 
 public:
-    enum class CameraTypes : unsigned int
-    {
-        PINHOLE = 0u,
-        ENVIRONMENT = 1u,
-
-        TOTALCAMERATYPES
-    };
 
 	OptixScene(unsigned int _width, unsigned int _height, QOpenGLFunctions_4_3_Core* _gl, QObject *_parent = 0);
     virtual ~OptixScene();
 
-    virtual void updateBufferSize(unsigned int _width, unsigned int _height);
-    virtual void drawToBuffer();
+    virtual void updateBufferSize(unsigned int _width, unsigned int _height) override;
+    virtual void drawToBuffer() override;
 
-    virtual void initialiseScene();
-    virtual void createCameras();
-    virtual void createWorld();
-    virtual void createBuffers();
-    virtual void createLights();
-    virtual void createLightGeo();
+    virtual void initialiseScene() override;
+    virtual void createCameras() override;
+    virtual void createWorld() override;
+    virtual void createBuffers() override;
+    virtual void createLights() override;
+    virtual void createLightGeo() override;
 
 //    virtual void setMaterial(std::string _name);
 
 //    virtual void addLight(  )
 
-    virtual void setGeometryHitProgram(std::string _hit_src);
-    virtual void setShadingProgram(std::string _hit_src);
+    virtual void setGeometryHitProgram(std::string _hit_src) override;
+    virtual void setShadingProgram(std::string _hit_src) override;
 
     void setCurrentMaterial(std::string _name);
 

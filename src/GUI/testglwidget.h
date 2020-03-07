@@ -13,7 +13,9 @@
 #include <QKeyEvent>
 #include <QTimer>
 
-#include "OptixScene.h"
+#include <glm/vec2.hpp>
+
+//#include "OptixScene.h"
 
 
 class QOpenGLDebugMessage;
@@ -42,7 +44,7 @@ public:
 //    void overrideCameraRes(int _width, int _height);
 
 	///@todo This should be private
-    OptixScene* m_optixScene;
+    //OptixScene* m_optixScene;
     unsigned int m_previousWidth, m_previousHeight;
 
 
@@ -60,16 +62,16 @@ public slots:
         m_time = _t;
         m_updateCamera = true;
 
-		if (m_optixScene)
-	        m_optixScene->setTime(_t);
+		//if (m_optixScene)
+		//    m_optixScene->setTime(_t);
     }
 
     void updateRelativeTime(float _t)
     {
         m_updateCamera = true;
 
-		if (m_optixScene)
-			m_optixScene->setRelativeTime(_t);
+		//if (m_optixScene)
+		//	m_optixScene->setRelativeTime(_t);
     }
 
     void setShouldOverrideResolution(bool _v)
@@ -83,8 +85,8 @@ public slots:
         m_overrideWidth = _res.x;
         m_overrideHeight = _res.y;
 
-		if (m_optixScene)
-			m_optixScene->updateBufferSize( m_overrideWidth, m_overrideHeight );
+		//if (m_optixScene)
+		//	m_optixScene->updateBufferSize( m_overrideWidth, m_overrideHeight );
         updateCamera();
         m_updateCamera = true;
     }
